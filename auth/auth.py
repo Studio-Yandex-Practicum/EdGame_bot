@@ -1,1 +1,0 @@
-ROLE = ['METHODIST', 'COUNSELOR', 'KID']
