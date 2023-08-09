@@ -3,6 +3,9 @@ import logging
 
 from auth.auth import start_bot
 
+# Инициализируем логгер
+logger = logging.getLogger(__name__)
+
 
 # Функция конфигурирования и запуска бота
 async def main():
