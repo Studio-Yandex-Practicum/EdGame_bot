@@ -1,2 +1,2 @@
-def start_bot():
+async def start_bot():
     pass

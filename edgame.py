@@ -21,12 +21,12 @@ async def main():
     logger.info('Starting bot')
 
     # Загружаем конфиг в переменную config
-    config: Config = load_config()
+    config = load_config()
 
     # Инициализируем бот и диспетчер
-    bot: Bot = Bot(token=config.tg_bot.token,
-                   parse_mode='HTML')
-    dp: Dispatcher = Dispatcher()
+    bot = Bot(token=config.tg_bot.token,
+              parse_mode='HTML')
+    dp = Dispatcher()
 
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_webhook(drop_pending_updates=True)
