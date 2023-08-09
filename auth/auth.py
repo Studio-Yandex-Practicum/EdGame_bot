@@ -1,2 +1,1 @@
-async def start_bot():
-    pass
+ROLE = ['METHODIST', 'COUNSELOR', 'KID']
