@@ -1,10 +1,8 @@
 from aiogram import Router
 from aiogram.filters import Text, CommandStart
 from lexicon.lexicon import LEXICON_RU
-from keyboards.keyboards import welcome_kb
 
 router = Router()
-
 ROLE = {'methodist': {}, 'councelor': {}, 'kid': {}}
 
 
@@ -33,4 +31,11 @@ async def process_councelor_command(message):
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart())
 async def process_start_command(message):
-    await message.answer(text=LEXICON_RU['/start'], reply_markup=welcome_kb)
+    await message.answer(text=LEXICON_RU['/start'])
+
+
+@router.message()
+async def process_name(message):
+    ROLE['kid'][message.chat.id] = message.text
+    print(ROLE['kid'])
+    await message.answer(text='Принято!')
