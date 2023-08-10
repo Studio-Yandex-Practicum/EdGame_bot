@@ -34,8 +34,8 @@ async def process_start_command(message):
     await message.answer(text=LEXICON_RU['/start'])
 
 
+# Этот хэндлер получает и сохраняет имя пользователя
 @router.message()
 async def process_name(message):
     ROLE['kid'][message.chat.id] = message.text
-    print(ROLE['kid'])
     await message.answer(text='Принято!')
