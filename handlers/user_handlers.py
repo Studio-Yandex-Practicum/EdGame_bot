@@ -10,22 +10,32 @@ ROLE = {'methodist': {}, 'councelor': {}, 'kid': {}}
 @router.message(Text(text='methodist'))
 async def process_methodist_command(message):
     # Проверяем не получал ли юзер ранее права вожатого
-    if message.chat.id not in ROLE['councelor']:
-        ROLE['methodist'].append(message.chat.id)
-        await message.answer(text='Вы получили права доступа методиста.')
-    else:
+    if message.chat.id in ROLE['councelor']:
         await message.answer(text='У вас права доступа вожатого.')
+    # Проверяем получал ли юзер права доступа ребенка, если да, то переносим id в права доступа методиста
+    else:
+        user_name = message.chat.first_name
+        if message.chat.id in ROLE['kid']:
+            user_name = ROLE['kid'][message.chat.id]
+            del ROLE['kid'][message.chat.id]
+        ROLE['methodist'][message.chat.id] = user_name
+        await message.answer(text='Вы получили права доступа методиста.')
 
 
 # Этот хэндлер срабатывает на кодовое слово и присваивает роль вожатого
 @router.message(Text(text='councelor'))
 async def process_councelor_command(message):
     # Проверяем не получал ли юзер ранее права методиста
-    if message.chat.id not in ROLE['methodist']:
-        ROLE['councelor'].append(message.chat.id)
-        await message.answer(text='Вы получили права доступа вожатого.')
-    else:
+    if message.chat.id in ROLE['methodist']:
         await message.answer(text='У вас права доступа методиста.')
+    # Проверяем получал ли юзер права доступа ребенка, если да, то переносим id в права доступа методиста
+    else:
+        user_name = message.chat.first_name
+        if message.chat.id in ROLE['kid']:
+            user_name = ROLE['kid'][message.chat.id]
+            del ROLE['kid'][message.chat.id]
+        ROLE['councelor'][message.chat.id] = user_name
+        await message.answer(text='Вы получили права доступа вожатого.')
 
 
 # Этот хэндлер срабатывает на команду /start
@@ -38,4 +48,5 @@ async def process_start_command(message):
 @router.message()
 async def process_name(message):
     ROLE['kid'][message.chat.id] = message.text
+    print(ROLE['kid'])
     await message.answer(text='Принято!')
