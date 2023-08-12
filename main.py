@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 
 from config.config import load_config
-from handlers.handlers import router
+from handlers.user_handlers import router
 
 logger = logging.getLogger(__name__)
 
