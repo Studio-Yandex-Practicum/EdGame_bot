@@ -1,5 +1,6 @@
 # Виртуальное окружение
 venv/
+.env
 
 # Кэши Python
 __pycache__/
@@ -7,5 +8,4 @@ __pycache__/
 *.pyo
 
 # Файлы IDE и редакторов .DS_Store *.log
-
-
+.idea
