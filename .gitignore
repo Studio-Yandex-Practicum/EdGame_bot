@@ -8,4 +8,6 @@ __pycache__/
 *.pyo
 
 # Файлы IDE и редакторов .DS_Store *.log
-.idea
+.mypy_cache/
+.vscode/
+.idea/
