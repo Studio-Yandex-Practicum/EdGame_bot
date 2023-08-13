@@ -41,8 +41,8 @@ class Achievement(DeclarativeBase):
     achievement_type = Column(String, CheckConstraint(
         r"achievement_type in ('individual', 'teamwork')"
         ), nullable=False)
-    score = Column("achievement_score", Integer)
-    price = Column(Integer)
+    score = Column("achievement_score", Integer, nullable=False)
+    price = Column(Integer, nullable=True)
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
