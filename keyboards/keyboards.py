@@ -2,9 +2,6 @@ from aiogram.types import KeyboardButton, InlineKeyboardButton
 
 # Текст на кнопках
 
-back = KeyboardButton(text='Назад')
-forward = KeyboardButton(text='Вперед')
-
 # Главное меню
 profile = KeyboardButton(text='Личный кабинет')
 show_tasks = KeyboardButton(text='Посмотреть доступные ачивки')
@@ -19,29 +16,14 @@ menu_keyboard = [
 
 # Личный кабинет
 edit_profile = KeyboardButton(text='Редактировать профиль')
+write_to_methodist = KeyboardButton(text='Написать преподавателю')
 
 profile_keyboard = [
     [edit_profile],
-    [back]
+    [write_to_methodist]
 ]
 
 # Кнопки inline
-
-# Кнопки да, нет
-letsgo = InlineKeyboardButton(text='А давай', callback_data='letsgo')
-later = InlineKeyboardButton(text='Может позже..', callback_data='later')
-yes = InlineKeyboardButton(text='Да', callback_data='yes')
-no = InlineKeyboardButton(text='Нет', callback_data='no')
-already_registered = InlineKeyboardButton(
-    text='Я уже зарегистрирован', callback_data='already_registered')
-
-letsgo_keyboard = [
-    [letsgo, later]
-]
-yes_keyboard = [
-    [yes, no]
-]
-registered_keyboard = [[already_registered]]
 
 # Выбор языка
 russian = InlineKeyboardButton(text='Русский', callback_data='russian')
@@ -56,18 +38,15 @@ choose_language_keyboard = [
 
 # Редактирование профиля
 change_firstname = InlineKeyboardButton(
-    text='Имя', callback_data='change_firstname')
-change_lastname = InlineKeyboardButton(
-    text='Фамилию', callback_data='change_lastname')
-change_photo = InlineKeyboardButton(
-    text='Фото', callback_data='change_photo')
+    text='Имя', callback_data='change_name')
+change_language = InlineKeyboardButton(
+    text='Язык бота', callback_data='change_language')
 change_bio = InlineKeyboardButton(
     text='Информацию о себе', callback_data='change_bio')
 
 edit_profile_keyboard = [
     [change_firstname],
-    [change_lastname],
-    [change_photo],
+    [change_language],
     [change_bio]
 ]
 
@@ -76,10 +55,19 @@ one = InlineKeyboardButton(text='1', callback_data='1')
 two = InlineKeyboardButton(text='2', callback_data='2')
 three = InlineKeyboardButton(text='3', callback_data='3')
 four = InlineKeyboardButton(text='4', callback_data='4')
+five = InlineKeyboardButton(text='5', callback_data='5')
+six = InlineKeyboardButton(text='6', callback_data='6')
+seven = InlineKeyboardButton(text='7', callback_data='7')
 
-task_list_keyboard = [
-    [one, two, three, four]
-]
+task_list_keyboard = {
+    1: [[one]],
+    2: [[one, two]],
+    3: [[one, two, three]],
+    4: [[one, two, three, four]],
+    5: [[one, two, three, four, five]],
+    6: [[one, two, three, four, five, six]],
+    7: [[one, two, three, four, five, six, seven]]
+}
 
 # Отдельная ачивка
 main_menu = InlineKeyboardButton(

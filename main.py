@@ -7,19 +7,21 @@ from aiogram.enums import ParseMode
 
 from config.config import load_config
 from handlers.user_handlers import router
+from keyboards.set_menu import set_main_menu
 
 logger = logging.getLogger(__name__)
 
 
 async def main():
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(filename)s - %(lineno)d - %(levelname)s - '
-               '%(asctime)s - %(name)s - %(funcName)s - %(message)s',
+               '%(asctime)s - %(funcName)s - %(message)s',
         stream=sys.stdout)
     config = load_config()
 
     dp = Dispatcher()
+    dp.startup.register(set_main_menu)
     dp.include_router(router)
 
     logger.info('Запускаем бота!')
@@ -27,6 +29,7 @@ async def main():
     bot = Bot(token=config.bot.token, parse_mode=ParseMode.HTML)
 
     logger.info('Бот запущен!')
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 
