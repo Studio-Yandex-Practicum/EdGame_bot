@@ -15,7 +15,7 @@ from keyboards.keyboards import (
 from keyboards.methodist_keyboards import art_list_keyboard
 from lexicon.lexicon import LEXICON
 from data.temp_db import TASKS, ROLE
-from db.db_commands import DBManager
+from utils.db_commands import DBManager
 from .artifact_handlers import (
     process_photo, process_audio, process_document,
     process_video, process_voice)
