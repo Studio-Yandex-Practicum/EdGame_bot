@@ -1,9 +1,15 @@
 LEXICON_RU = {
-    '/start': 'Привет! Я бот Эдгам.\n'
-              'Я помогу отслеживать накопленные тобой баллы и доступные достижения.\n'
-              '<b>Представься пожалуйста:</b>'
+    'rus_lang_pressed': 'Вы выбрали русский язык'
 }
 
-LEXICON_TATAR = {}
+LEXICON_TATAR = {
+    'tatar_lang_pressed': 'Сез татар телен сайладыгыз'
+}
 
-LEXICON_EN = {}
+LEXICON_EN = {
+    'eng_lang_pressed': 'You have chosen English'
+}
+
+LEXICON_COMMANDS = {
+    '/start': 'Выбери язык.'
+}

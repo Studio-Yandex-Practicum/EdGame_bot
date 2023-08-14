@@ -1,6 +1,9 @@
 from aiogram import Router
+from aiogram.types import CallbackQuery
 from aiogram.filters import Text, CommandStart
-from lexicon.lexicon import LEXICON_RU
+from lexicon.lexicon import LEXICON_RU, LEXICON_TATAR, LEXICON_EN, \
+    LEXICON_COMMANDS
+from keyboards.keyboards import create_welcome_keyboard
 
 router = Router()
 ROLE = {'methodist': {}, 'councelor': {}, 'kid': {}}
@@ -41,12 +44,22 @@ async def process_councelor_command(message):
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart())
 async def process_start_command(message):
-    await message.answer(text=LEXICON_RU['/start'])
+    # Сохраняем имя пользователя
+    ROLE['kid'][message.chat.id] = message.chat.first_name
+    await message.answer(
+        text=f"{LEXICON_COMMANDS['/start']}",
+        reply_markup=create_welcome_keyboard()
+    )
 
 
-# Этот хэндлер получает и сохраняет имя пользователя
-@router.message()
-async def process_name(message):
-    ROLE['kid'][message.chat.id] = message.text
-    print(ROLE['kid'])
-    await message.answer(text=f'Добрый день, {message.text}')
+# Этот хендлер срабатывает на апдейт CallbackQuery с выбором языка
+@router.callback_query(
+    Text(text=['rus_lang_pressed', 'tatar_lang_pressed', 'eng_lang_pressed']))
+async def process_buttons_press(callback):
+    if callback.data == 'rus_lang_pressed':
+        text = LEXICON_RU['rus_lang_pressed']
+    elif callback.data == 'tatar_lang_pressed':
+        text = LEXICON_TATAR['tatar_lang_pressed']
+    else:
+        text = LEXICON_EN['eng_lang_pressed']
+    await callback.answer(text=text)
