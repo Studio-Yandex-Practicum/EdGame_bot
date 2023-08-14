@@ -1,6 +1,5 @@
 import logging
 
-from typing import Dict, Any
 from aiogram import Router, F, Bot
 from aiogram.types import (
     Message, ReplyKeyboardMarkup, InlineKeyboardMarkup, CallbackQuery,
@@ -16,7 +15,8 @@ from keyboards.keyboards import (
 from keyboards.methodist_keyboards import art_list_keyboard
 from lexicon.lexicon import LEXICON
 from data.temp_db import TASKS, ROLE
-from .artefact_handlers import (
+from db.db_commands import DBManager
+from .artifact_handlers import (
     process_photo, process_audio, process_document,
     process_video, process_voice)
 
@@ -87,6 +87,9 @@ async def process_name(message: Message, state: FSMContext):
     '''Обработчик после авторизации.'''
     ROLE['kid'][message.chat.id] = message.text
     # Добавить код для внесения пользователя в базу
+    db = DBManager()
+    db.create_user(id=message.from_user.id, name=message.text,
+                   login=message.from_user.username)
     await state.clear()
     await message.answer(
         f'Привет, {message.text}! {LEXICON["RU"]["hello_message"]}',
