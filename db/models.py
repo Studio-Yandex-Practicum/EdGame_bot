@@ -3,7 +3,7 @@ from sqlalchemy import TIMESTAMP
 from sqlalchemy.schema import CheckConstraint
 from sqlalchemy.ext.declarative import declarative_base
 
-from engine import engine
+from db.engine import engine
 
 DeclarativeBase = declarative_base()
 
@@ -16,8 +16,8 @@ class User(DeclarativeBase):
     role = Column(String, CheckConstraint(
         r"role in ('methodist', 'councelor', 'kid')"
         ), nullable=False)
-    login = Column(String(50), unique=True, nullable=False)
-    password = Column(String(50), nullable=False)
+    # login = Column(String(50), unique=True, nullable=False)
+    # password = Column(String(50), nullable=False)
     language = Column(String, CheckConstraint(
         r"language in ('ru', 'en', 'tt')"
         ), nullable=False)
@@ -88,7 +88,7 @@ class Artifact(DeclarativeBase):
 
 def create_db():
     # Метод создания таблиц бд по коду сверху
-    DeclarativeBase.metadata.create_all(engine())
+    DeclarativeBase.metadata.create_all(engine)
 
 
 if __name__ == "__main__":
