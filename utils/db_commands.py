@@ -1,4 +1,4 @@
-from sqlalchemy.exc import PendingRollbackError, IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 from db.models import User
 from db.engine import session
@@ -9,7 +9,6 @@ def register_user(message):
     user = User(id=int(message.chat.id), name=name, role='kid', language='ru', score=0)
 
     session.add(user)
-    print(user.language)
 
     try:
         session.commit()
