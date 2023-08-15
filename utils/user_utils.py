@@ -1,9 +1,6 @@
-from loguru import logger
 from sqlalchemy.orm import Session
 
 from db.models import Achievement, User
-
-logger.add("s.log", format="{level} - {name} - {message}", level="INFO")
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -36,5 +33,4 @@ def get_achievement_image(session: Session, achievement_id: int) -> bytes:
     achievement = (
         session.query(Achievement).filter(Achievement.id == achievement_id).first()
     )
-    logger.info(achievement.image)
     return achievement.image if achievement else b""

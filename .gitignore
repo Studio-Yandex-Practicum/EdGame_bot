@@ -1,6 +1,6 @@
 # Виртуальное окружение
+.venv/
 venv/
-
 # Кэши Python
 __pycache__/
 *.pyc
