@@ -30,7 +30,7 @@ async def main():
     dp = Dispatcher()
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню
-    dp.startup.register(set_main_menu)
+    # dp.startup.register(set_main_menu)
     dp.include_router(user_handlers.router)
 
     # Пропускаем накопившиеся апдейты и запускаем polling

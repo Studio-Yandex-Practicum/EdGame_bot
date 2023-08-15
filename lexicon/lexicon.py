@@ -1,15 +1,9 @@
-LEXICON_RU = {
-    'rus_lang_pressed': 'Вы выбрали русский язык'
-}
-
-LEXICON_TATAR = {
-    'tatar_lang_pressed': 'Сез татар телен сайладыгыз'
-}
-
-LEXICON_EN = {
-    'eng_lang_pressed': 'You have chosen English'
+LEXICON = {
+    'RU': {'ru_pressed': 'Вы выбрали русский язык'},
+    'TT': {'tt_pressed': 'Сез татар телен сайладыгыз'},
+    'EN': {'en_pressed': 'You have chosen English'}
 }
 
 LEXICON_COMMANDS = {
-    '/start': 'Выбери язык.'
+    '/start': 'Выберите язык/Select a language'
 }

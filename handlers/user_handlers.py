@@ -1,9 +1,10 @@
 from aiogram import Router
-from aiogram.types import CallbackQuery
 from aiogram.filters import Text, CommandStart
-from lexicon.lexicon import LEXICON_RU, LEXICON_TATAR, LEXICON_EN, \
-    LEXICON_COMMANDS
+
+from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
 from keyboards.keyboards import create_welcome_keyboard
+from utils.db_commands import register_user, select_user
+from db.engine import session
 
 router = Router()
 ROLE = {'methodist': {}, 'councelor': {}, 'kid': {}}
@@ -44,8 +45,8 @@ async def process_councelor_command(message):
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart())
 async def process_start_command(message):
-    # Сохраняем имя пользователя
-    ROLE['kid'][message.chat.id] = message.chat.first_name
+    # Сохраняем пользователя в БД, роль по умолчанию 'kid'
+    register_user(message)
     await message.answer(
         text=f"{LEXICON_COMMANDS['/start']}",
         reply_markup=create_welcome_keyboard()
@@ -54,12 +55,26 @@ async def process_start_command(message):
 
 # Этот хендлер срабатывает на апдейт CallbackQuery с выбором языка
 @router.callback_query(
-    Text(text=['rus_lang_pressed', 'tatar_lang_pressed', 'eng_lang_pressed']))
+    Text(text=['ru_pressed', 'tt_pressed', 'en_pressed']))
 async def process_buttons_press(callback):
-    if callback.data == 'rus_lang_pressed':
-        text = LEXICON_RU['rus_lang_pressed']
-    elif callback.data == 'tatar_lang_pressed':
-        text = LEXICON_TATAR['tatar_lang_pressed']
+    user = select_user(callback.from_user.id)
+    print(user)
+    if callback.data == 'ru_pressed':
+        user.language = 'ru'
+        session.add(user)
+        session.commit()
+        print(user.language)
+        text = LEXICON['RU']['ru_pressed']
+    elif callback.data == 'tt_pressed':
+        user.language = 'tt'
+        session.add(user)
+        session.commit()
+        print(user.language)
+        text = LEXICON['TT']['tt_pressed']
     else:
-        text = LEXICON_EN['eng_lang_pressed']
+        user.language = 'en'
+        session.add(user)
+        session.commit()
+        print(user.language)
+        text = LEXICON['EN']['en_pressed']
     await callback.answer(text=text)
