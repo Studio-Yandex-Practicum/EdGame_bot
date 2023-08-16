@@ -1,8 +1,9 @@
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, Integer, LargeBinary, String
-from sqlalchemy.ext.declarative import declarative_base
+# from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.schema import CheckConstraint
 
-from db.engine import engine
+from .engine import engine
 
 DeclarativeBase = declarative_base()
 
@@ -15,12 +16,14 @@ class User(DeclarativeBase):
     role = Column(
         String,
         CheckConstraint(r"role in ('methodist', 'councelor', 'kid')"),
-        nullable=False,
+        nullable=False
     )
     # login = Column(String(50), unique=True, nullable=False)
     # password = Column(String(50), nullable=False)
     language = Column(
-        String, CheckConstraint(r"language in ('ru', 'en', 'tt')"), nullable=False
+        String,
+        CheckConstraint(r"language in ('RU', 'EN', 'TT')"),
+        nullable=False
     )
     score = Column("user_score", Integer, nullable=False)
 

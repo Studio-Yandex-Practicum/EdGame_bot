@@ -18,7 +18,7 @@ from data.temp_db import TASKS, ROLE
 from .artifact_handlers import (
     process_photo, process_audio, process_document,
     process_video, process_voice)
-from utils.db_commands import register_user, select_user
+from utils.db_commands import register_user, select_user, set_user_param
 from db.engine import session
 
 logger = logging.getLogger(__name__)
@@ -33,11 +33,12 @@ class Data(StatesGroup):
     Машина состояний для реализации сценариев диалогов с пользователем.
     '''
     name = State()
+    language = State()
     change_name = State()
     change_bio = State()
     change_language = State()
     tasks = State()
-    artefact = State()
+    artifact = State()
 
 
 # Этот хэндлер срабатывает на кодовое слово и присваивает роль методиста
@@ -85,7 +86,7 @@ async def process_start_command(message):
 async def process_buttons_press(callback):
     user = select_user(callback.from_user.id)
     if callback.data == "ru_pressed":
-        user.language = "ru"
+        user.language = "RU"
         session.add(user)
         session.commit()
         text = LEXICON["RU"]["ru_pressed"]
@@ -106,11 +107,13 @@ async def process_buttons_press(callback):
 @child_router.message(Data.name)
 async def process_name(message: Message, state: FSMContext):
     '''Обработчик после авторизации.'''
-    ROLE['kid'][message.chat.id] = message.text
-    # Добавить код для внесения пользователя в базу
+    user = select_user(message.chat.id)
+    language = user.language
+    set_user_param(user, name=message.text)
     await state.clear()
     await message.answer(
-        f'Привет, {message.text}! {LEXICON["RU"]["hello_message"]}',
+        f'{LEXICON[language]["hello"]}, {user.name}! '
+        f'{LEXICON[language]["hello_message"]}',
         reply_markup=ReplyKeyboardMarkup(
             keyboard=menu_keyboard,
             resize_keyboard=True,
@@ -217,7 +220,7 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         logger.error(f'Ошибка при получении ачивки: {err}')
 
 
-@child_router.message(Data.artefact)
+@child_router.message(Data.artifact)
 async def process_artefact(message: Message, state: FSMContext, bot: Bot):
     '''
     Обработчик артефактов, файлов, которые отправляет ребенок.
@@ -300,12 +303,12 @@ async def show_current_tasks(message: Message):
 async def profile_info(message: Message):
     '''Обработчик показывает главное меню профиля студента.'''
     # Достаем инфу о пользователе из базы
-    name = message.from_user.first_name  # достать из базы
-    score = 12  # Достать из базы
-    group_number = 21  # Достать из базы
-    info = (f'{LEXICON["RU"]["student_profile"]}\n\n'
-            f'Информация:\nИмя - {name}\nБаллы - {score}\n'
-            f'Номер группы - {group_number}\nЦель - Перегнать всех.')
+    user = select_user(message.chat.id)
+    language = user.language
+    info = (f'{LEXICON[language]["student_profile"]}\n\n'
+            f'{LEXICON[language]["lk_info"]}:\n'
+            f'{LEXICON[language]["name"]} - {user.name}\n'
+            f'{LEXICON[language]["score"]} - {user.score}\n')
     await message.answer(
         info,
         reply_markup=ReplyKeyboardMarkup(
@@ -316,14 +319,19 @@ async def profile_info(message: Message):
 
 
 @child_router.message(F.text.regexp(r'^Редактировать профиль$'))
-async def edit_profile(message: Message):
+async def edit_profile(message: Message, state: FSMContext):
     '''Обработчик для редактирования профиля ребенка.'''
-    text = LEXICON['RU']['edit_profile']
-    await message.answer(
-        text,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=edit_profile_keyboard)
-    )
+    try:
+        user = select_user(message.chat.id)
+        await message.answer(
+            LEXICON[user.language]["edit_profile"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=edit_profile_keyboard)
+        )
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при изменении профиля: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при изменении профиля: {err}')
 
 
 @child_router.callback_query(F.data == 'change_name')
@@ -332,24 +340,36 @@ async def change_name(query: CallbackQuery, state: FSMContext):
     Обработчик создает состояние для смены имени, просит
     прислать сообщение.
     '''
-    await query.answer()
-    await state.set_state(Data.change_name)
-    await query.message.answer(
-        'Ок, пришли свое новое имя!',
-        reply_markup=ReplyKeyboardRemove()
-    )
+    try:
+        await query.answer()
+        await state.set_state(Data.change_name)
+        user = select_user(query.from_user.id)
+        await query.message.answer(
+            LEXICON[user.language]["change_name"],
+            reply_markup=ReplyKeyboardRemove()
+        )
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при запросе имени: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при запросе имени: {err}')
 
 
 @child_router.message(Data.change_name)
 async def process_change_name(message: Message, state: FSMContext):
     '''Обрабатывает сообщение для изменения имени.'''
-    # обновляем инфу о пользователе в базе данных
-    await message.answer(
-        f'Ок, {message.text}, теперь у тебя новое имя!\n\n'
-        'Еще что-то надо изменить?',
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=edit_profile_keyboard)
-    )
+    try:
+        user = select_user(message.chat.id)
+        set_user_param(user, name=message.text)
+        await state.clear()
+        await message.answer(
+            LEXICON[user.language]["name_changed"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=edit_profile_keyboard)
+        )
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при изменении имени: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при изменении имени: {err}')
 
 
 @child_router.callback_query(F.data == 'change_language')
@@ -358,38 +378,36 @@ async def change_language(query: CallbackQuery, state: FSMContext):
     Обработчик создает состояние для смены языка, уточняет,
     какой язык установить.
     '''
-    await query.answer()
-    await state.set_state(Data.change_language)
-    await state.update_data(
-        change_language={
-            'russian': 'RU',
-            'english': 'EN',
-            'tatar': 'TATAR'}
+    try:
+        await query.answer()
+        await state.set_state(Data.change_language)
+        user = select_user(query.from_user.id)
+        await query.message.edit_text(
+            LEXICON[user.language]["change_language"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=choose_language_keyboard)
         )
-    await query.message.edit_text(
-        'Ок, какой язык предпочитаешь?',
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=choose_language_keyboard)
-    )
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при запросе языка: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при запросе языка: {err}')
 
 
 @child_router.callback_query(Data.change_language)
 async def process_change_language(query: CallbackQuery, state: FSMContext):
     '''Обработчик для изменения языка интерфейса.'''
-    await query.answer()
-    data = await state.get_data()
-    if not data:
+    try:
+        await query.answer()
+        user = select_user(query.from_user.id)
+        await state.clear()
+        # Изменяем язык бота на новый
+        set_user_param(user, language=query.data)
         await query.message.answer(
-            'Выбери раздел для изменения.',
+            LEXICON[query.data]['language_changed'],
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=edit_profile_keyboard)
         )
-        return
-    await state.clear()
-    language = data['change_language'].get(query.data)
-    # Изменяем язык бота на новый
-    await query.message.answer(
-        LEXICON[language]['language_changed'],
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=edit_profile_keyboard)
-    )
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при изменении языка: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при изменении языка: {err}')

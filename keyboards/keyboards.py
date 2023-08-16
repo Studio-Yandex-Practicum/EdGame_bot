@@ -48,9 +48,9 @@ profile_keyboard = [
 # Кнопки inline
 
 # Выбор языка
-russian = InlineKeyboardButton(text='Русский', callback_data='russian')
-tatar = InlineKeyboardButton(text='Татарский', callback_data='tatar')
-english = InlineKeyboardButton(text='Английский', callback_data='english')
+russian = InlineKeyboardButton(text='Русский язык', callback_data='RU')
+tatar = InlineKeyboardButton(text='Татар теле', callback_data='TT')
+english = InlineKeyboardButton(text='English language', callback_data='EN')
 
 choose_language_keyboard = [
     [russian],
@@ -68,8 +68,7 @@ change_bio = InlineKeyboardButton(
 
 edit_profile_keyboard = [
     [change_firstname],
-    [change_language],
-    [change_bio]
+    [change_language]
 ]
 
 # Список ачивок
