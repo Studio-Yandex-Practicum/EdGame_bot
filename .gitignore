@@ -5,7 +5,7 @@ venv/
 __pycache__/
 *.pyc
 *.pyo
-
+.venv
 # Файлы IDE и редакторов .DS_Store *.log
 .env
 .mypy_cache/
