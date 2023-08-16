@@ -148,5 +148,7 @@ async def accept_handler(callback_query: types.CallbackQuery):
 
 
 @router.callback_query(lambda c: c.data == "back")
-async def back_handler(callback_query: types.CallbackQuery):
+async def back_handler(
+    callback_query: types.CallbackQuery,
+):  # TODO: надо придумать логику и реализовать метод
     await callback_query.message.answer("Работает!!!!!!")

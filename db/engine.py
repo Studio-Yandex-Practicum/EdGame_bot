@@ -3,7 +3,8 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
+from keyboards.set_menu import set_main_menu
 
 load_dotenv()
 
@@ -26,13 +27,6 @@ url_object = URL.create(
 # Cоздать первую миграцию - alembic revision --autogenerate -m "Initial migration"
 # Применить миграции - alembic upgrade head
 
+
 engine = create_engine(url_object)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+session = scoped_session(sessionmaker(bind=engine))
