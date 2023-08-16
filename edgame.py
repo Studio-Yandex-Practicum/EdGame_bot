@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 
 from config_data.config import load_config
 from handlers import counselor_handlers, user_handlers
+from keyboards.set_menu import set_main_menu
 
 # Инициализируем логгер
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ async def main():
     dp = Dispatcher()
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню
+    # dp.startup.register(set_main_menu) и устанавливаем меню
     # dp.startup.register(set_main_menu)
     dp.include_router(user_handlers.router)
     dp.include_router(counselor_handlers.router)

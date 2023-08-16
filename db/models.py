@@ -22,11 +22,6 @@ class User(DeclarativeBase):
     language = Column(
         String, CheckConstraint(r"language in ('ru', 'en', 'tt')"), nullable=False
     )
-    login = Column(String(50), unique=True, nullable=False)
-    password = Column(String(50), nullable=False)
-    language = Column(
-        String, CheckConstraint(r"language in ('ru', 'en', 'tt')"), nullable=False
-    )
     score = Column("user_score", Integer, nullable=False)
 
     def __repr__(self):
@@ -104,7 +99,7 @@ class Artifact(DeclarativeBase):
 
 def create_db():
     # Метод создания таблиц бд по коду сверху
-    DeclarativeBase.metadata.create_all(engine())
+    DeclarativeBase.metadata.create_all(engine)
 
 
 if __name__ == "__main__":

@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 from sqlalchemy import URL, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
-from keyboards.set_menu import set_main_menu
+from sqlalchemy import URL
+from dotenv import load_dotenv
 
 load_dotenv()
 
