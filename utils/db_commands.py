@@ -6,7 +6,7 @@ from db.engine import session
 
 def register_user(message):
     name = message.chat.first_name if message.chat.first_name else None
-    user = User(id=int(message.chat.id), name=name, role='kid', language='ru', score=0)
+    user = User(id=int(message.chat.id), name=name, role="kid", language="ru", score=0)
 
     session.add(user)
 

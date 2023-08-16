@@ -10,7 +10,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     CallbackQuery,
 )
-from db.engine import SessionLocal
+from db.engine import session
 from db.models import AchievementStatus, User
 from utils.user_utils import (
     get_achievement_description,
@@ -58,7 +58,6 @@ async def children_list(message: types.Message):
 @router.message(Text("Список детей"))
 async def children_list(message: types.Message):
     """Обработчик для команды получения списка детей."""
-    session = SessionLocal()
     children = session.query(User).filter(User.role == "kid").all()
     session.close()
     children_text = "\n".join(
@@ -71,7 +70,6 @@ async def children_list(message: types.Message):
 @router.message(Text("Проверить задания"))
 async def requests_inspection(message: types.Message, state: FSMContext):
     """Обработчик для команды получения списка заданий на проверку."""
-    session = SessionLocal()
     children = session.query(User).filter(User.role == "kid").all()
 
     for child in children:
@@ -128,7 +126,6 @@ async def requests_inspection(message: types.Message, state: FSMContext):
 @router.callback_query(lambda c: c.data.startswith("accept:"))
 async def accept_handler(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
-    session = SessionLocal()
     if change_achievement_status_by_id(session, task_id, "approved"):
         await callback_query.message.answer(f"Задание с ID {task_id} принято!")
     else:
@@ -139,7 +136,6 @@ async def accept_handler(callback_query: types.CallbackQuery):
 @router.callback_query(lambda c: c.data.startswith("reject:"))
 async def accept_handler(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
-    session = SessionLocal()
     if change_achievement_status_by_id(session, task_id, "rejected"):
         await callback_query.message.answer(f"Задание с ID {task_id} отклонено!")
     else:
