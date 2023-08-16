@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy import URL
 from dotenv import load_dotenv
 
@@ -23,6 +24,5 @@ url_object = URL.create(
 )
 
 
-def engine():
-    engine = create_engine(url_object)
-    return engine
+engine = create_engine(url_object)
+session = scoped_session(sessionmaker(bind=engine))
