@@ -1,15 +1,30 @@
 LEXICON = {
-    'RU': {'ru_pressed': 'Вы выбрали русский язык',
-           'methodist': 'Вы получили права доступа методиста',
-           'councelor': 'Вы получили права доступа вожатого'},
+    'RU': {
+        'ru_pressed': 'Вы выбрали русский язык',
+        'methodist': 'Вы получили права доступа методиста',
+        'councelor': 'Вы получили права доступа вожатого',
+        'hello_ask_name': 'Привет! Я бот Эдгам.\n'
+                          'Я помогу отслеживать накопленные тобой баллы и доступные достижения.\n'
+                          '<b>Представься пожалуйста:</b>',
+        'hello_message': 'Ты можешь управлять мной с помощью кнопок, '
+                         'поэтому не будем медлить - выбирай нужный раздел!',
+        'task_instruction': 'Для выполнения этого задания просто отправь мне артефакты, приложив '
+                            'их к сообщению. Преподаватель проверит его и пришлет тебе ответ.',
+        'student_menu': 'Имя: Юзер\n\nБаллы: 100\n\nНомер отряда: 10',
+        'student_profile': 'На этой странице ты можешь изменить информацию о себе, '
+                           'обратиться к методисту или что-то еще.',
+        'edit_profile': 'Что ты хочешь изменить?',
+        'language_changed': 'Принято, будем с тобой общаться на русском! Что дальше?'},
 
-    'TT': {'tt_pressed': 'Сез татар телен сайладыгыз',
-           'methodist': 'Сез методистка керү хокукын алдыгызмы',
-           'councelor': 'Сез башлыкның керү хокукын алдыгызмы'},
+    'TT': {
+        'tt_pressed': 'Сез татар телен сайладыгыз',
+        'methodist': 'Сез методистка керү хокукын алдыгызмы',
+        'councelor': 'Сез башлыкның керү хокукын алдыгызмы'},
 
-    'EN': {'en_pressed': 'You have chosen English',
-           'methodist': 'You have received the access rights of a methodologist',
-           'councelor': 'You have received the access rights of a counselor'},
+    'EN': {
+        'en_pressed': 'You have chosen English',
+        'methodist': 'You have received the access rights of a methodologist',
+        'councelor': 'You have received the access rights of a counselor'},
 }
 
 LEXICON_COMMANDS = {

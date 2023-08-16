@@ -6,12 +6,11 @@ from environs import Env
 @dataclass
 class TgBot:
     token: str
-    admin_id: int
 
 
 @dataclass
 class Config:
-    tg_bot: TgBot
+    bot: TgBot
 
 
 def load_config() -> Config:
