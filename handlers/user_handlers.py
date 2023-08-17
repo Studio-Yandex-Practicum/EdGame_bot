@@ -1,10 +1,10 @@
 from aiogram import Router
-from aiogram.filters import Text, CommandStart
+from aiogram.filters import CommandStart, Text
 
-from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
-from keyboards.keyboards import create_welcome_keyboard
-from utils.db_commands import register_user, select_user
 from db.engine import session
+from keyboards.keyboards import create_welcome_keyboard
+from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
+from utils.db_commands import register_user, select_user
 
 router = Router()
 

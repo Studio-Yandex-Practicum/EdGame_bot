@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from db.models import Achievement, User, AchievementStatus
+from db.models import Achievement, AchievementStatus, User
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -29,7 +29,9 @@ def get_achievement_instruction(session: Session, achievement_id: int) -> str:
     return achievement.instruction if achievement else "Unknown Achievement"
 
 
-def get_achievement_image(session: Session, achievement_id: int) -> bytes:
+def get_achievement_image(
+    session: Session, achievement_id: int
+) -> bytes:  # TODO: изменить на получение контена по его id из БД телеграм
     achievement = (
         session.query(Achievement).filter(Achievement.id == achievement_id).first()
     )
@@ -37,6 +39,7 @@ def get_achievement_image(session: Session, achievement_id: int) -> bytes:
 
 
 def change_achievement_status_by_id(session: Session, id: int, new_status: str) -> bool:
+    """Получает AchievementStatus по его id и изменяет статус задания."""
     if achievement_status := (
         session.query(AchievementStatus).filter(AchievementStatus.id == id).first()
     ):

@@ -1,30 +1,27 @@
 import base64
 
-from aiogram import F, Router, types
+from aiogram import Router, types
 from aiogram.filters import Command, Text
+from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     BufferedInputFile,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    CallbackQuery,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
 )
+
 from db.engine import session
 from db.models import AchievementStatus, User
 from utils.user_utils import (
+    change_achievement_status_by_id,
     get_achievement_description,
     get_achievement_image,
     get_achievement_instruction,
     get_achievement_name,
-    change_achievement_status_by_id,
 )
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram import Dispatcher
 
 router = Router()
-dp = Dispatcher()
 
 
 # Войти в личный кабинет
@@ -36,17 +33,6 @@ requests_inspection = KeyboardButton(text="Проверить задания")
 
 # Кнопки в личном кабинете
 profile_keyboard = [[children_list], [requests_inspection]]
-inline_keyboard = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(text="Принять", callback_data="accept", width=2),
-            InlineKeyboardButton(text="Отклонить", callback_data="reject", width=2),
-            InlineKeyboardButton(
-                text="Отправить на доп.проверку", callback_data="back", width=1
-            ),
-        ]
-    ]
-)
 
 
 @router.message(Command("lk"))
@@ -94,6 +80,7 @@ async def requests_inspection(message: types.Message, state: FSMContext):
             image_64_encode = base64.b64encode(achievement_image).decode("utf-8")
             image_bytes = base64.b64decode(image_64_encode)
             inline_keyboard = InlineKeyboardMarkup(
+                row_width=1,
                 inline_keyboard=[
                     [
                         InlineKeyboardButton(
@@ -112,7 +99,7 @@ async def requests_inspection(message: types.Message, state: FSMContext):
                             width=1,
                         ),
                     ]
-                ]
+                ],
             )
 
             await message.answer_photo(
@@ -125,6 +112,7 @@ async def requests_inspection(message: types.Message, state: FSMContext):
 
 @router.callback_query(lambda c: c.data.startswith("accept:"))
 async def accept_handler(callback_query: types.CallbackQuery):
+    """Обработчик для нажатия кнопки 'Принять'."""
     task_id = int(callback_query.data.split(":")[1])
     if change_achievement_status_by_id(session, task_id, "approved"):
         await callback_query.message.answer(f"Задание с ID {task_id} принято!")
@@ -135,6 +123,7 @@ async def accept_handler(callback_query: types.CallbackQuery):
 
 @router.callback_query(lambda c: c.data.startswith("reject:"))
 async def accept_handler(callback_query: types.CallbackQuery):
+    """Обработчик для нажатия кнопки 'Отклонить'."""
     task_id = int(callback_query.data.split(":")[1])
     if change_achievement_status_by_id(session, task_id, "rejected"):
         await callback_query.message.answer(f"Задание с ID {task_id} отклонено!")
@@ -147,4 +136,12 @@ async def accept_handler(callback_query: types.CallbackQuery):
 async def back_handler(
     callback_query: types.CallbackQuery,
 ):  # TODO: надо придумать логику и реализовать метод
-    await callback_query.message.answer("Работает!!!!!!")
+    """Обработчик для нажатия кнопки 'Отправить на доп.проверку'."""
+    task_id = int(callback_query.data.split(":")[1])
+    if change_achievement_status_by_id(session, task_id, "pending_methodist"):
+        await callback_query.message.answer(
+            f"Задание с ID {task_id} отправлено на проверку методисту!"
+        )
+    else:
+        await callback_query.message.answer(f"Не удалось найти задание с ID {task_id}.")
+    session.close()

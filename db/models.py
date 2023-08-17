@@ -1,4 +1,5 @@
-from sqlalchemy import TIMESTAMP, Column, ForeignKey, Integer, LargeBinary, String
+from sqlalchemy import (TIMESTAMP, Column, ForeignKey, Integer, LargeBinary,
+                        String)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.schema import CheckConstraint
 

@@ -1,7 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 
-from db.models import User
 from db.engine import session
+from db.models import User
 
 
 def register_user(message):
