@@ -3,8 +3,10 @@ from aiogram.types import BotCommand
 
 
 async def set_main_menu(bot: Bot):
-    # Создаем список с командами и их описанием для кнопки menu
+    '''Создаем список с командами и их описанием для кнопки menu.'''
     main_menu_commands = [
+        BotCommand(command='/start',
+                   description='Начало работы бота'),
         BotCommand(command='/help',
                    description='Справка по работе бота'),
         BotCommand(command='/lk',
@@ -12,6 +14,6 @@ async def set_main_menu(bot: Bot):
         BotCommand(command='/achievements',
                    description='Доступные задания'),
         BotCommand(command='/current_achievements',
-                   description='Текущие задания')]
-
-    await bot.set_my_commands(main_menu_commands)
+                   description='Текущие задания')
+        ]
+    await bot.set_my_commands(commands=main_menu_commands)

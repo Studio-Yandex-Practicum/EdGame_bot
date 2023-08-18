@@ -68,7 +68,9 @@ class AchievementStatus(DeclarativeBase):
     )
     status = Column(
         String,
-        CheckConstraint(r"status in ('pending', 'approved', 'rejected')"),
+        CheckConstraint(
+            r"status in ('pending', 'approved', 'rejected', 'pending_methodist')"
+        ),
         nullable=False,
     )
     created_at = Column(TIMESTAMP, nullable=False)
