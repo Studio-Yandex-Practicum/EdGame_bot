@@ -80,7 +80,7 @@ five = InlineKeyboardButton(text='5', callback_data='5')
 six = InlineKeyboardButton(text='6', callback_data='6')
 seven = InlineKeyboardButton(text='7', callback_data='7')
 
-task_list_keyboard = {
+'''task_list_keyboard = {
     1: [[one]],
     2: [[one, two]],
     3: [[one, two, three]],
@@ -88,7 +88,36 @@ task_list_keyboard = {
     5: [[one, two, three, four, five]],
     6: [[one, two, three, four, five, six]],
     7: [[one, two, three, four, five, six, seven]]
-}
+}'''
+
+
+def task_list_keyboard(buttons_count: int, start: int = 0, end: int = 5):
+    '''Функция для генерации кнопок с номерами ачивок.'''
+    keyboard = []
+    buttons = []
+    nav_buttons = []
+    button_next = InlineKeyboardButton(text='>>', callback_data='next')
+    button_prev = InlineKeyboardButton(text='<<', callback_data='previous')
+    info_button = InlineKeyboardButton(
+        text=f'{end}/{buttons_count}', callback_data='info')
+    for i in range(buttons_count):
+        buttons.append(InlineKeyboardButton(
+            text=f'{i + 1}', callback_data=f'{i + 1}'))
+    keyboard.append(buttons[start:end])
+    if start > 0 and buttons_count > end:
+        nav_buttons.append(button_prev)
+        nav_buttons.append(info_button)
+        nav_buttons.append(button_next)
+    elif buttons_count > end:
+        nav_buttons.append(info_button)
+        nav_buttons.append(button_next)
+    elif start > 0:
+        nav_buttons.append(button_prev)
+        nav_buttons.append(info_button)
+    if nav_buttons:
+        keyboard.append(nav_buttons)
+    return keyboard
+
 
 # Отдельная ачивка
 main_menu = InlineKeyboardButton(

@@ -14,18 +14,25 @@ from keyboards.keyboards import (
     task_keyboard, create_welcome_keyboard)
 from keyboards.methodist_keyboards import art_list_keyboard
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
-from data.temp_db import TASKS, ROLE
-from .artifact_handlers import (
-    process_photo, process_audio, process_document,
-    process_video, process_voice)
-from utils.db_commands import register_user, select_user, set_user_param
+from .artifact_handlers import process_artifact
+from utils.db_commands import (
+    register_user, select_user, set_user_param, available_achievements,
+    get_achievement, get_all_achievements, get_users_by_role)
+from utils.utils import (
+    process_next_achievements, process_previous_achievements)
 from db.engine import session
+from data.temp_db import TASKS
 
 logger = logging.getLogger(__name__)
 
 router = Router()
 child_router = Router()
 router.include_router(child_router)
+
+# Количество ачивок на странице ачивок
+PAGE_SIZE = 2
+# Количество возможных кнопок
+ACHIEVEMENTS_NUM = len(get_all_achievements())
 
 
 class Data(StatesGroup):
@@ -37,7 +44,9 @@ class Data(StatesGroup):
     change_name = State()
     change_bio = State()
     change_language = State()
+    task_id = State()
     tasks = State()
+    tasks_info = State()
     artifact = State()
 
 
@@ -130,23 +139,23 @@ async def show_tasks_list(message: Message, state: FSMContext):
     ачивки и их id через Data.
     '''
     try:
-        task_list = []
-        task_state = {}
-        count = 0
+        user = select_user(message.from_user.id)
+        language = user.language
+        tasks = available_achievements(user.id, user.score)
+        info = process_next_achievements(tasks=tasks, page_size=PAGE_SIZE)
+        text = info[0]
+        task_ids = info[1]
+        task_info = info[2]
+        final_item = task_info['final_item']
+        await state.update_data(
+            tasks=task_ids, task_info=task_info, language=language)
         await state.set_state(Data.tasks)
-        for task in TASKS:
-            if TASKS[task].get('status') == 'open':
-                count += 1
-                task_list.append(f'{count}: {TASKS[task].get("text")}.')
-                task_state[count] = task
-        text = '\n\n'.join(task_list)
-        await state.update_data(tasks=task_state)
         await message.answer(
-            'Вот доступные тебе ачивки:\n\n'
-            f'{text}\n\nВыбери ачивку, которую хочешь выполнить:',
+            f'{LEXICON[language]["available_achievements"]}:\n\n'
+            f'{text}\n\n{LEXICON[language]["choose_achievement"]}:',
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_list_keyboard[count])
-        )
+                inline_keyboard=task_list_keyboard(len(tasks), end=final_item))
+            )
     except KeyError as err:
         logger.error(f'Проверь правильность ключевых слов: {err}')
     except Exception as err:
@@ -162,22 +171,22 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
     '''
     try:
         await query.answer()
-        task_list = []
-        task_state = {}
-        count = 0
+        user = select_user(query.from_user.id)
+        language = user.language
+        tasks = available_achievements(user.id, user.score)
+        info = process_next_achievements(tasks=tasks, page_size=PAGE_SIZE)
+        text = info[0]
+        task_ids = info[1]
+        task_info = info[2]
+        final_item = task_info['final_item']
+        await state.update_data(
+            tasks=task_ids, task_info=task_info, language=language)
         await state.set_state(Data.tasks)
-        for task in TASKS:
-            if TASKS[task].get('status') == 'open':
-                count += 1
-                task_list.append(f'{count}: {TASKS[task].get("text")}.')
-                task_state[count] = task
-        text = '\n\n'.join(task_list)
-        await state.update_data(tasks=task_state)
         await query.message.answer(
-            'Вот доступные тебе ачивки:\n\n'
-            f'{text}\n\nВыбери ачивку, которую хочешь выполнить:',
+            f'{LEXICON[language]["available_achievements"]}:\n\n'
+            f'{text}\n\n{LEXICON[language]["choose_achievement"]}:',
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_list_keyboard[count])
+                inline_keyboard=task_list_keyboard(len(tasks), end=final_item))
         )
     except KeyError as err:
         logger.error(f'Проверь правильность ключевых слов: {err}')
@@ -185,8 +194,85 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         logger.error(f'Ошибка при отправке списка ачивок. {err}')
 
 
+@child_router.callback_query(F.data == 'next')
+async def process_next_tasks(query: CallbackQuery, state: FSMContext):
+    '''
+    Обработчик-пагинатор кнопки next. Достает инфу из машины
+    состояний без запроса к базе.
+    '''
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data['language']
+        tasks = data['task_info']['tasks']
+        count = data['task_info']['count']
+        previous_final_item = data['task_info']['final_item']
+        info = process_next_achievements(
+            tasks=tasks, count=count, previous_final_item=previous_final_item,
+            page_size=PAGE_SIZE)
+        text = info[0]
+        task_ids = info[1]
+        task_info = info[2]
+        final_item = task_info['final_item']
+        await state.update_data(tasks=task_ids, task_info=task_info)
+        await state.set_state(Data.tasks)
+        await query.message.edit_text(
+                f'{LEXICON[language]["available_achievements"]}:\n\n'
+                f'{text}\n\n{LEXICON[language]["choose_achievement"]}:',
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=task_list_keyboard(
+                        len(tasks), previous_final_item, final_item))
+            )
+    except KeyError as err:
+        logger.error(f'Проверь правильность ключевых слов: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при обработке next. {err}')
+
+
+@child_router.callback_query(F.data == 'previous')
+async def process_previous_tasks(query: CallbackQuery, state: FSMContext):
+    '''
+    Обработчик-пагинатор кнопки previous. Достает инфу из машины
+    состояний без запроса к базе.
+    '''
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data['language']
+        tasks = data['task_info']['tasks']
+        count = data['task_info']['count']
+        previous_final_item = data['task_info']['final_item']
+        info = process_previous_achievements(
+            tasks=tasks, count=count, previous_final_item=previous_final_item,
+            page_size=PAGE_SIZE)
+        text = info[0]
+        task_ids = info[1]
+        task_info = info[2]
+        first_item = task_info['first_item']
+        final_item = task_info['final_item']
+        await state.update_data(tasks=task_ids, task_info=task_info)
+        await state.set_state(Data.tasks)
+        await query.message.edit_text(
+                f'{LEXICON[language]["available_achievements"]}:\n\n'
+                f'{text}\n\n{LEXICON[language]["choose_achievement"]}:',
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=task_list_keyboard(
+                        len(tasks), first_item, final_item))
+            )
+    except KeyError as err:
+        logger.error(f'Проверь правильность ключевых слов: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при обработке previous. {err}')
+
+
+@child_router.callback_query(F.data == 'info')
+async def process_info_button(query: CallbackQuery):
+    pass
+
+
 @child_router.callback_query(Data.tasks)
-@child_router.callback_query(F.data.in_(['1', '2', '3', '4']))
+@child_router.callback_query(F.data.in_(
+    [str(x) for x in range(ACHIEVEMENTS_NUM)]))
 async def show_task(query: CallbackQuery, state: FSMContext):
     '''
     Обработчик кнопок выбора отдельной ачивки.
@@ -195,25 +281,46 @@ async def show_task(query: CallbackQuery, state: FSMContext):
     '''
     try:
         await query.answer()
-        task_data = await state.get_data()
-        if not task_data:
+        data = await state.get_data()
+        if not data:
+            user = select_user(query.from_user.id)
+
             await query.message.answer(
-                'Вернись к списку ачивок и выбери заново(=',
+                LEXICON[user.language]["error_getting_achievement"],
                 reply_markup=InlineKeyboardMarkup(
-                    inline_keyboard=task_keyboard)
-            )
+                    inline_keyboard=task_keyboard))
             return
-        await state.set_state(Data.artefact)
+        language = data['language']
+        lexicon = LEXICON[language]
         task_number = int(query.data)
         # Достаем id ачивки из состояния и делаем запрос к базе
-        task_id = task_data['tasks'][task_number]
-        task_info = TASKS[task_id].get('text')
+        task_id = data['tasks'][task_number]
+        task = get_achievement(task_id)
+        name = task.name
+        description = task.description
+        instruction = task.instruction
+        artifact_type = task.artifact_type
+        task_type = task.achievement_type
+        score = task.score
+        price = task.price
+        info = (
+            f'{lexicon["task_name"]}: {name}\n'
+            f'{lexicon["score_rate"]}: {score}\n'
+            f'{lexicon["task_description"]}: {description}\n'
+            f'{lexicon["task_instruction"]}: {instruction}\n'
+            f'{lexicon["artifact_type"]}: {artifact_type}\n'
+            f'{lexicon["task_type"]}: {task_type}\n'
+            f'{lexicon["task_price"]}: {price}')
+        msg = (
+            f'{lexicon["achievement_chosen"]}\n\n'
+            f'{info}\n\n'
+            f'{lexicon["send_artifact"]}')
+        await state.update_data(task_id=task_id)
+        await state.set_state(Data.artifact)
         await query.message.answer(
-            f'Итак, ты выбрал ачивку. Вот подробности:\n\n{task_info}\n\n'
-            f'{LEXICON["RU"]["task_instruction"]}',
+            msg,
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_keyboard)
-        )
+                inline_keyboard=task_keyboard))
     except KeyError as err:
         logger.error(f'Проверь правильность ключевых слов: {err}')
     except Exception as err:
@@ -227,31 +334,27 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
     '''
     try:
         # Достаем id профиля преподавателя в тг из базы
-        methodist_id = ROLE['methodist'].get('id')
+        data = await state.get_data()
+        task_id = data['task_id']
+        language = data['language']
+        methodists = get_users_by_role('methodist')
+        methodist = methodists[0] if methodists else select_user(message.from_user.id)
         await state.clear()
-        if message.photo:
-            await process_photo(message)
-        elif message.video:
-            await process_video(message)
-        elif message.document:
-            await process_document(message)
-        elif message.voice:
-            await process_voice(message)
-        elif message.audio:
-            await process_audio(message)
-        await bot.send_message(
-            chat_id=methodist_id,
-            text='Проверить артефакт',
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=art_list_keyboard,
-                resize_keyboard=True,
-                one_time_keyboard=True)
-            )
+        status_changed = await process_artifact(message, task_id)
+        if status_changed:
+            await bot.send_message(
+                chat_id=methodist.id,
+                text=LEXICON[methodist.language]["new_artifact"],
+                reply_markup=ReplyKeyboardMarkup(
+                    keyboard=art_list_keyboard,
+                    resize_keyboard=True,
+                    one_time_keyboard=True))
         await message.answer(
-            'Артефакт отправлен, ты молодец! Хочешь сделать еще одну ачивку?',
+            LEXICON[language]["artifact_sent"],
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_keyboard)
-        )
+                inline_keyboard=task_keyboard))
+    except KeyError as err:
+        logger.error(f'Проверь правильность ключевых слов: {err}')
     except Exception as err:
         logger.error(f'Ошибка при обработке артефакта: {err}')
 
