@@ -1,6 +1,6 @@
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, Integer
 from sqlalchemy import String, ARRAY
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.schema import CheckConstraint
 
 from engine import engine
@@ -24,6 +24,7 @@ class User(DeclarativeBase):
         r"language in ('RU', 'EN', 'TT')"
         ), nullable=False)
     score = Column("user_score", Integer, nullable=False)
+    group = Column(Integer, nullable=False)
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
@@ -80,6 +81,16 @@ class AchievementStatus(DeclarativeBase):
     message_text = Column(String, nullable=True)
     created_at = Column(TIMESTAMP, nullable=False)
     rejection_reason = Column(String(255), nullable=True)
+
+    user = relationship(
+        'User', foreign_keys='AchievementStatus.user_id',
+        lazy='joined'
+        )
+    achievement = relationship(
+        'Achievement',
+        foreign_keys='AchievementStatus.achievement_id',
+        lazy='joined'
+        )
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
