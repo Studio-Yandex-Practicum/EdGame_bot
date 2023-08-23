@@ -94,14 +94,23 @@ def available_achievements(user_id, user_score) -> list:
 def get_achievement(achievement_id: int) -> Achievement:
     '''Достаем ачивку из базы по ее id.'''
     achievement = (
-        session.query(Achievement).filter(Achievement.id == achievement_id).first()
+        session.query(
+            Achievement).filter(Achievement.id == achievement_id).first()
     )
     return achievement if achievement else "Unknown Achievement"
 
 
-def get_all_achievements():
+def get_all_achievements(status: str = None):
     '''Возвращает все ачивки из базы'''
     achievements = session.query(Achievement).all()
+    if status:
+        achievement_statuses = session.query(
+            AchievementStatus).filter(AchievementStatus.status == status).all()
+        achievements = []
+        for achievement_status in achievement_statuses:
+            user = select_user(achievement_status.user_id)
+            task = get_achievement(achievement_status.achievement_id)
+            achievements.append((user, task, achievement_status))
     return achievements
 
 

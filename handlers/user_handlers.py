@@ -13,7 +13,8 @@ from keyboards.keyboards import (
     choose_language_keyboard, task_list_keyboard,
     task_keyboard, create_welcome_keyboard, contacts_keyboard, help_keyboard)
 from keyboards.set_menu import set_main_menu
-from keyboards.methodist_keyboards import art_list_keyboard
+from keyboards.methodist_keyboards import (
+    art_list_keyboard, methodist_profile_keyboard)
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
 from .artifact_handlers import process_artifact
 from utils.db_commands import (
@@ -23,12 +24,13 @@ from utils.db_commands import (
 from utils.utils import (
     process_next_achievements, process_previous_achievements)
 from db.engine import session
+from .methodist_handlers import methodist_router
 
 logger = logging.getLogger(__name__)
 
 router = Router()
 child_router = Router()
-router.include_router(child_router)
+router.include_routers(child_router, methodist_router)
 
 # Количество ачивок на странице ачивок
 PAGE_SIZE = 2
@@ -53,17 +55,17 @@ class Data(StatesGroup):
 
 # Этот хэндлер срабатывает на кодовое слово и присваивает роль методиста
 @router.message(Text(text='methodist'))
-async def process_methodist_command(message):
+async def process_methodist_command(message: Message):
     user = select_user(message.chat.id)
     user.role = "methodist"
     session.add(user)
     session.commit()
-    if user.language == "ru":
-        await message.answer(text=LEXICON["RU"]["methodist"])
-    elif user.language == "tt":
-        await message.answer(text=LEXICON["TT"]["methodist"])
-    else:
-        await message.answer(text=LEXICON["EN"]["methodist"])
+    await message.answer(
+        text=LEXICON[user.language]["methodist"],
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=methodist_profile_keyboard(user.language),
+            resize_keyboard=True,
+            one_time_keyboard=True))
 
 
 # Этот хэндлер срабатывает на кодовое слово и присваивает роль вожатого
@@ -137,6 +139,9 @@ async def process_name(message: Message, state: FSMContext):
 
 
 @child_router.message(Command(commands='help'))
+@child_router.message(
+    F.text.regexp(r'^Справка по работе бота$')
+    | F.text.regexp(r'^Instructions on how to use the bot$'))
 async def help_command(message: Message):
     try:
         user = select_user(message.from_user.id)
@@ -313,7 +318,6 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         data = await state.get_data()
         if not data:
             user = select_user(query.from_user.id)
-
             await query.message.answer(
                 LEXICON[user.language]["error_getting_achievement"],
                 reply_markup=InlineKeyboardMarkup(
@@ -326,6 +330,7 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         task_id = data['tasks'][task_number]
         task = get_achievement(task_id)
         name = task.name
+        image = task.image
         description = task.description
         instruction = task.instruction
         artifact_type = task.artifact_type
@@ -346,8 +351,9 @@ async def show_task(query: CallbackQuery, state: FSMContext):
             f'{lexicon["send_artifact"]}')
         await state.update_data(task_id=task_id)
         await state.set_state(Data.artifact)
-        await query.message.answer(
-            msg,
+        await query.message.answer_photo(
+            photo=image,
+            caption=msg,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_keyboard(language)))
     except KeyError as err:
@@ -375,7 +381,7 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
                 chat_id=councelor.id,
                 text=LEXICON[councelor.language]["new_artifact"],
                 reply_markup=ReplyKeyboardMarkup(
-                    keyboard=art_list_keyboard,
+                    keyboard=art_list_keyboard(councelor.language),
                     resize_keyboard=True,
                     one_time_keyboard=True))
         await message.answer(
@@ -418,13 +424,6 @@ async def show_current_tasks(message: Message):
                 count += 1
                 task_info = (
                     f'{count}: {lexicon["pending_methodist"]}\n'
-                    f'{lexicon["task_name"]}: {task.name}\n'
-                    f'{lexicon["task_description"]}: {task.description}')
-                in_review.append(task_info)
-            if status == 'approved':
-                count += 1
-                task_info = (
-                    f'{count}: {lexicon["status_approved"]}\n'
                     f'{lexicon["task_name"]}: {task.name}\n'
                     f'{lexicon["task_description"]}: {task.description}')
                 in_review.append(task_info)
@@ -633,7 +632,7 @@ async def process_change_language(query: CallbackQuery, state: FSMContext,
         # Изменяем язык бота на новый
         language = query.data
         set_user_param(user, language=language)
-        await set_main_menu(bot, language)
+        # await set_main_menu(bot, language) меню удаляем в итоге
         await query.message.answer(
             LEXICON[language]['language_changed'],
             reply_markup=InlineKeyboardMarkup(

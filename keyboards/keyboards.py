@@ -51,10 +51,12 @@ def profile_keyboard(language):
     reviewed_achievements = KeyboardButton(
         text=buttons["reviewed_achievements"])
     write_to_councelor = KeyboardButton(text=buttons["write_to_councelor"])
+    help_button = KeyboardButton(text=buttons["help"])
     keyboard = [
         [available_achievements, current_achievements],
         [reviewed_achievements],
-        [edit_profile, write_to_councelor]]
+        [edit_profile],
+        [help_button, write_to_councelor]]
     return keyboard
 
 
