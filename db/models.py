@@ -1,9 +1,8 @@
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, Integer, String, ARRAY
-from sqlalchemy.ext.declarative import declarative_base
-# from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.schema import CheckConstraint
 
-from .engine import engine
+from engine import engine
 
 DeclarativeBase = declarative_base()
 
