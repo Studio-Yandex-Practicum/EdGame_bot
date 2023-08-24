@@ -111,3 +111,10 @@ def create_inline_keyboard(task_id):
     return InlineKeyboardMarkup(
         inline_keyboard=[[accept_button], [reject_button], [send_back_button]]
     )
+
+
+# Создание инлайн клавиатуры для добавления комментария при отколении вожатым дз
+def create_yes_no_keyboard(task_id):
+    yes_button = InlineKeyboardButton(text="Да", callback_data=f"yes:{task_id}")
+    no_button = InlineKeyboardButton(text="Нет", callback_data=f"no:{task_id}")
+    return InlineKeyboardMarkup(inline_keyboard=[[yes_button], [no_button]])
