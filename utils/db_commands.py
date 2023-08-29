@@ -9,7 +9,9 @@ from db.models import Achievement, AchievementStatus, User
 
 def register_user(message):
     name = message.chat.first_name if message.chat.first_name else None
-    user = User(id=int(message.chat.id), name=name, role="kid", language="RU", score=0)
+    user = User(
+        id=int(message.chat.id), name=name, role="kid", language="RU", score=0
+    )
 
     session.add(user)
 
@@ -84,7 +86,8 @@ def available_achievements(user_id, user_score) -> list:
     выполненных, из которых вынимаем нужные данные.
     """
     user_achievements = session.query(AchievementStatus).filter(
-        AchievementStatus.user_id == user_id, AchievementStatus.status != "rejected"
+        AchievementStatus.user_id == user_id,
+        AchievementStatus.status != "rejected",
     )
     nonavailable_achievement_list = []
     for user_achievement in user_achievements:
@@ -155,7 +158,9 @@ def send_task(user_id, achievement_id, files_id, message_text):
 def change_language(user_id, language):
     # На вход: user_id текущего юзера, которого мы получили при старте бота в
     # select_user(), язык на который хотим сменить.
-    session.query(User).filter(User.id == user_id).update({"language": language})
+    session.query(User).filter(User.id == user_id).update(
+        {"language": language}
+    )
 
     try:
         session.commit()
@@ -179,7 +184,9 @@ def approve_task(user_achievement_id):
         .filter(Achievement.id == user_achievement.achievement_id)
         .first()
     )
-    user = session.query(User).filter(User.id == user_achievement.user_id).first()
+    user = (
+        session.query(User).filter(User.id == user_achievement.user_id).first()
+    )
     user.score += achievement.score
     try:
         session.commit()

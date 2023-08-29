@@ -20,7 +20,9 @@ class User(DeclarativeBase):
     # login = Column(String(50), unique=True, nullable=False)
     # password = Column(String(50), nullable=False)
     language = Column(
-        String, CheckConstraint(r"language in ('RU', 'EN', 'TT')"), nullable=False
+        String,
+        CheckConstraint(r"language in ('RU', 'EN', 'TT')"),
+        nullable=False,
     )
 
     score = Column("user_score", Integer, nullable=False)
@@ -58,9 +60,13 @@ class Achievement(DeclarativeBase):
 class AchievementStatus(DeclarativeBase):
     __tablename__ = "users_achievements"
 
-    id = Column("user_achievement_id", Integer, nullable=False, primary_key=True)
+    id = Column(
+        "user_achievement_id", Integer, nullable=False, primary_key=True
+    )
     user_id = Column(
-        Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
     )
     achievement_id = Column(
         Integer,
@@ -70,7 +76,8 @@ class AchievementStatus(DeclarativeBase):
     status = Column(
         String,
         CheckConstraint(
-            r"status in ('pending', 'pending_methodist', 'approved', " r"'rejected')"
+            r"status in ('pending', 'pending_methodist', 'approved', "
+            r"'rejected')"
         ),
         nullable=False,
     )

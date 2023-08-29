@@ -1,4 +1,9 @@
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 
 from lexicon.lexicon import BUTTONS
 
@@ -40,9 +45,13 @@ def profile_keyboard(language):
     """Генерирует клавиатуру с кнопками в личном кабинете."""
     buttons = BUTTONS[language]
     edit_profile = KeyboardButton(text=buttons["edit_profile"])
-    available_achievements = KeyboardButton(text=buttons["available_achievements"])
+    available_achievements = KeyboardButton(
+        text=buttons["available_achievements"]
+    )
     current_achievements = KeyboardButton(text=buttons["current_achievements"])
-    reviewed_achievements = KeyboardButton(text=buttons["reviewed_achievements"])
+    reviewed_achievements = KeyboardButton(
+        text=buttons["reviewed_achievements"]
+    )
     write_to_councelor = KeyboardButton(text=buttons["write_to_councelor"])
     help_button = KeyboardButton(text=buttons["help"])
     keyboard = [
@@ -91,7 +100,9 @@ def task_list_keyboard(buttons_count: int, start: int = 0, end: int = 5):
         text=f"{end}/{buttons_count}", callback_data="info"
     )
     for i in range(buttons_count):
-        buttons.append(InlineKeyboardButton(text=f"{i + 1}", callback_data=f"{i + 1}"))
+        buttons.append(
+            InlineKeyboardButton(text=f"{i + 1}", callback_data=f"{i + 1}")
+        )
     keyboard.append(buttons[start:end])
     if start > 0 and buttons_count > end:
         nav_buttons.append(button_prev)
@@ -114,7 +125,8 @@ def task_keyboard(language: str):
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     available_achievements = InlineKeyboardButton(
-        text=buttons["available_achievements"], callback_data="available_achievements"
+        text=buttons["available_achievements"],
+        callback_data="available_achievements",
     )
 
     keyboard = [[available_achievements], [lk]]
@@ -141,3 +153,38 @@ def help_keyboard(language):
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     keyboard = [[lk]]
     return keyboard
+
+
+# Создание клавиатуры для ЛК вожатого
+def create_profile_keyboard():
+    profile_keyboard = [
+        [KeyboardButton(text="Список детей")],
+        [KeyboardButton(text="Проверить задания")],
+    ]
+    return ReplyKeyboardMarkup(keyboard=profile_keyboard, resize_keyboard=True)
+
+
+# Создание инлайн клавиатуры для проверки задания вожатым
+def create_inline_keyboard(task_id):
+    accept_button = InlineKeyboardButton(
+        text="✔️ Принять", callback_data=f"accept:{task_id}"
+    )
+
+    reject_button = InlineKeyboardButton(
+        text="❌ Отклонить", callback_data=f"reject:{task_id}"
+    )
+    send_back_button = InlineKeyboardButton(
+        text="🔄 Отправить на доп.проверку", callback_data=f"back:{task_id}"
+    )
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[accept_button], [reject_button], [send_back_button]]
+    )
+
+
+# Создание инлайн клавиатуры для добавления комментария при отколении вожатым дз
+def create_yes_no_keyboard(task_id):
+    yes_button = InlineKeyboardButton(
+        text="Да", callback_data=f"yes:{task_id}"
+    )
+    no_button = InlineKeyboardButton(text="Нет", callback_data=f"no:{task_id}")
+    return InlineKeyboardMarkup(inline_keyboard=[[yes_button], [no_button]])

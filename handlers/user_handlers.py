@@ -24,7 +24,10 @@ from keyboards.keyboards import (
     help_keyboard,
 )
 from keyboards.set_menu import set_main_menu
-from keyboards.methodist_keyboards import art_list_keyboard, methodist_profile_keyboard
+from keyboards.methodist_keyboards import (
+    art_list_keyboard,
+    methodist_profile_keyboard,
+)
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
 from .artifact_handlers import process_artifact
 from utils.db_commands import (
@@ -37,7 +40,10 @@ from utils.db_commands import (
     get_users_by_role,
     user_achievements,
 )
-from utils.utils import process_next_achievements, process_previous_achievements
+from utils.utils import (
+    process_next_achievements,
+    process_previous_achievements,
+)
 from db.engine import session
 from .methodist_handlers import methodist_router
 
@@ -107,7 +113,8 @@ async def process_start_command(message):
     # Сохраняем пользователя в БД, роль по умолчанию 'kid'
     register_user(message)
     await message.answer(
-        text=f"{LEXICON_COMMANDS['/start']}", reply_markup=create_welcome_keyboard()
+        text=f"{LEXICON_COMMANDS['/start']}",
+        reply_markup=create_welcome_keyboard(),
     )
 
 
@@ -168,10 +175,14 @@ async def help_command(message: Message):
         language = user.language
         await message.answer(
             LEXICON[language]["help_info"],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=help_keyboard(language)),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=help_keyboard(language)
+            ),
         )
     except KeyError as err:
-        logger.error(f"Ошибка в ключевом слове при обработке команды help: {err}")
+        logger.error(
+            f"Ошибка в ключевом слове при обработке команды help: {err}"
+        )
     except Exception as err:
         logger.error(f"Ошибка при обработке команды help: {err}")
 
@@ -195,7 +206,9 @@ async def show_tasks_list(message: Message, state: FSMContext):
         task_ids = info[1]
         task_info = info[2]
         final_item = task_info["final_item"]
-        await state.update_data(tasks=task_ids, task_info=task_info, language=language)
+        await state.update_data(
+            tasks=task_ids, task_info=task_info, language=language
+        )
         await state.set_state(Data.tasks)
         await message.answer(
             f'{lexicon["available_achievements"]}:\n\n'
@@ -229,7 +242,9 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         task_ids = info[1]
         task_info = info[2]
         final_item = task_info["final_item"]
-        await state.update_data(tasks=task_ids, task_info=task_info, language=language)
+        await state.update_data(
+            tasks=task_ids, task_info=task_info, language=language
+        )
         await state.set_state(Data.tasks)
         await query.message.edit_text(
             f'{lexicon["available_achievements"]}:\n\n'
@@ -319,7 +334,9 @@ async def process_previous_tasks(query: CallbackQuery, state: FSMContext):
             f"{text}\n\n"
             f'{lexicon["choose_achievement"]}:',
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_list_keyboard(len(tasks), first_item, final_item)
+                inline_keyboard=task_list_keyboard(
+                    len(tasks), first_item, final_item
+                )
             ),
         )
     except KeyError as err:
@@ -334,7 +351,9 @@ async def process_info_button(query: CallbackQuery):
 
 
 @child_router.callback_query(Data.tasks)
-@child_router.callback_query(F.data.in_([str(x) for x in range(ACHIEVEMENTS_NUM)]))
+@child_router.callback_query(
+    F.data.in_([str(x) for x in range(ACHIEVEMENTS_NUM)])
+)
 async def show_task(query: CallbackQuery, state: FSMContext):
     """
     Обработчик кнопок выбора отдельной ачивки.
@@ -386,7 +405,9 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         await query.message.answer_photo(
             photo=image,
             caption=msg,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=task_keyboard(language)),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=task_keyboard(language)
+            ),
         )
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
@@ -405,7 +426,9 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
         task_id = data["task_id"]
         language = data["language"]
         councelors = get_users_by_role("councelor")
-        councelor = councelors[0] if councelors else select_user(message.from_user.id)
+        councelor = (
+            councelors[0] if councelors else select_user(message.from_user.id)
+        )
         await state.clear()
         status_changed = await process_artifact(message, task_id)
         if status_changed:
@@ -420,7 +443,9 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
             )
         await message.answer(
             LEXICON[language]["artifact_sent"],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=task_keyboard(language)),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=task_keyboard(language)
+            ),
         )
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
@@ -566,7 +591,9 @@ async def profile_info(message: Message, state: FSMContext):
             ),
         )
     except KeyError as err:
-        logger.error(f"Ошибка в ключевом слове при открытии личного кабинета: {err}")
+        logger.error(
+            f"Ошибка в ключевом слове при открытии личного кабинета: {err}"
+        )
     except Exception as err:
         logger.error(f"Ошибка при открытии личного кабинета: {err}")
 
@@ -595,7 +622,9 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
             ),
         )
     except KeyError as err:
-        logger.error(f"Ошибка в ключевом слове при открытии личного кабинета: {err}")
+        logger.error(
+            f"Ошибка в ключевом слове при открытии личного кабинета: {err}"
+        )
     except Exception as err:
         logger.error(f"Ошибка при открытии личного кабинета: {err}")
 
@@ -630,7 +659,8 @@ async def change_name(query: CallbackQuery, state: FSMContext):
         await state.set_state(Data.change_name)
         user = select_user(query.from_user.id)
         await query.message.answer(
-            LEXICON[user.language]["change_name"], reply_markup=ReplyKeyboardRemove()
+            LEXICON[user.language]["change_name"],
+            reply_markup=ReplyKeyboardRemove(),
         )
     except KeyError as err:
         logger.error(f"Ошибка в ключевом слове при запросе имени: {err}")
@@ -669,7 +699,9 @@ async def change_language(query: CallbackQuery, state: FSMContext):
         user = select_user(query.from_user.id)
         await query.message.edit_text(
             LEXICON[user.language]["change_language"],
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=choose_language_keyboard),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=choose_language_keyboard
+            ),
         )
     except KeyError as err:
         logger.error(f"Ошибка в ключевом слове при запросе языка: {err}")
@@ -678,7 +710,9 @@ async def change_language(query: CallbackQuery, state: FSMContext):
 
 
 @child_router.callback_query(Data.change_language)
-async def process_change_language(query: CallbackQuery, state: FSMContext, bot: Bot):
+async def process_change_language(
+    query: CallbackQuery, state: FSMContext, bot: Bot
+):
     """Обработчик для изменения языка интерфейса."""
     try:
         await query.answer()
@@ -719,6 +753,8 @@ async def write_to_councelor(message: Message):
             ),
         )
     except KeyError as err:
-        logger.error(f"Ошибка в ключевом слове при отправке контакта вожатого: {err}")
+        logger.error(
+            f"Ошибка в ключевом слове при отправке контакта вожатого: {err}"
+        )
     except Exception as err:
         logger.error(f"Ошибка при отправке контакта вожатого: {err}")
