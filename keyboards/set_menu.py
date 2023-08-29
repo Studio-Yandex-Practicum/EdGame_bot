@@ -1,19 +1,24 @@
 from aiogram import Bot
 from aiogram.types import BotCommand
 
+from lexicon.lexicon import BUTTONS
 
-async def set_main_menu(bot: Bot):
+
+async def set_main_menu(bot: Bot, language: str = 'RU'):
     '''Создаем список с командами и их описанием для кнопки menu.'''
+    buttons = BUTTONS[language]
     main_menu_commands = [
         BotCommand(command='/start',
-                   description='Начало работы бота'),
+                   description=buttons["start_description"]),
         BotCommand(command='/help',
-                   description='Справка по работе бота'),
+                   description=buttons["help"]),
         BotCommand(command='/lk',
-                   description='Личный кабинет'),
+                   description=buttons["lk"]),
         BotCommand(command='/achievements',
-                   description='Доступные задания'),
+                   description=buttons["available_achievements"]),
         BotCommand(command='/current_achievements',
-                   description='Текущие задания')
+                   description=buttons["current_achievements"]),
+        BotCommand(command='/reviewed_achievements',
+                   description=buttons["reviewed_achievements"])
         ]
     await bot.set_my_commands(commands=main_menu_commands)

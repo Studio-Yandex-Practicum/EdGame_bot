@@ -9,7 +9,11 @@ from db.engine import session
 def register_user(message):
     name = message.chat.first_name if message.chat.first_name else None
     user = User(
-        id=int(message.chat.id), name=name, role="kid", language="RU", score=0
+        id=int(message.chat.id),
+        name=name,
+        role="kid",
+        language="RU",
+        score=0
         )
 
     session.add(user)
@@ -22,15 +26,41 @@ def register_user(message):
         return False
 
 
-def select_user(user_id):
+def select_user(user_id) -> User:
+    '''Получаем пользователя по id.'''
     user = session.query(User).filter(User.id == user_id).first()
     return user
 
 
+def get_users_by_role(role: str):
+    '''Получаем пользователей по статусу.'''
+    users = session.query(User).filter(User.role == role).all()
+    return users
+
+
+def set_user_param(user: User, name: str = None, role: str = None,
+                   language: str = None, score: int = None):
+    '''Сеттер для обновления свойств объекта User.'''
+    if name:
+        user.name = name
+    elif role:
+        user.role = role
+    elif language:
+        user.language = language
+    elif score:
+        user.score = score
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+
+
 def user_achievements(user_id):
-    # Вставляем id текущего пользователя и получаем список кортежей, где у нас
-    # имеется объект ачивки (вынимаем необходимые для бота данные), статус
-    # проверки и причину отказа, если та имеется.
+    '''
+    Вставляем id текущего пользователя и получаем список кортежей, где у нас
+    имеется объект ачивки (вынимаем необходимые для бота данные), статус
+    проверки и причину отказа, если та имеется.
+    '''
     user_achievements = session.query(AchievementStatus).filter(
         AchievementStatus.user_id == user_id
         )
@@ -44,10 +74,12 @@ def user_achievements(user_id):
     return achievement_list
 
 
-def available_achievements(user_id, user_score):
-    # Присылаем id пользователя, получаем список доступных ему по количеству
-    # баллов ачивок, среди который нет находящихся в проверке или уже
-    # выполненных, из которых вынимаем нужные данные.
+def available_achievements(user_id, user_score) -> list:
+    '''
+    Присылаем id пользователя, получаем список доступных ему по количеству
+    баллов ачивок, среди который нет находящихся в проверке или уже
+    выполненных, из которых вынимаем нужные данные.
+    '''
     user_achievements = session.query(AchievementStatus).filter(
         AchievementStatus.user_id == user_id,
         AchievementStatus.status != 'rejected'
@@ -65,13 +97,38 @@ def available_achievements(user_id, user_score):
     return available_achievements_list
 
 
+def get_achievement(achievement_id: int) -> Achievement:
+    '''Достаем ачивку из базы по ее id.'''
+    achievement = (
+        session.query(
+            Achievement).filter(Achievement.id == achievement_id).first()
+    )
+    return achievement if achievement else "Unknown Achievement"
+
+
+def get_all_achievements(status: str = None):
+    '''Возвращает все ачивки из базы'''
+    achievements = session.query(Achievement).all()
+    if status:
+        achievement_statuses = session.query(
+            AchievementStatus).filter(AchievementStatus.status == status).all()
+        achievements = []
+        for achievement_status in achievement_statuses:
+            user = select_user(achievement_status.user_id)
+            task = get_achievement(achievement_status.achievement_id)
+            achievements.append((user, task, achievement_status))
+    return achievements
+
+
 def send_task(user_id, achievement_id, files_id, message_text):
-    # На вход: user_id текущего юзера, которого мы получили при старте бота в
-    # select_user(), achievement_id, полученный из ачивки, на кнопку которой
-    # юзер нажмёт, files_id, список, который будет состоять из id
-    # отправленных юзером артефактов, message_text, сообщение, которое может
-    # прислать юзер вместе с заданием. Значения files_id и message_text могут
-    # быть None. На выходе получаем новую запись AchievementStatus.
+    '''
+    На вход: user_id текущего юзера, которого мы получили при старте бота в
+    select_user(), achievement_id, полученный из ачивки, на кнопку которой
+    юзер нажмёт, files_id, список, который будет состоять из id
+    отправленных юзером артефактов, message_text, сообщение, которое может
+    прислать юзер вместе с заданием. Значения files_id и message_text могут
+    быть None. На выходе получаем новую запись AchievementStatus.
+    '''
     task = AchievementStatus(
         user_id=user_id,
         achievement_id=achievement_id,

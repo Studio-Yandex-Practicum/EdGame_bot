@@ -2,85 +2,32 @@ import logging
 
 from aiogram.types import Message
 
-from data.temp_db import ARTEFACTS
+from utils.db_commands import send_task
 
 logger = logging.getLogger(__name__)
 
 
-async def process_photo(message: Message):
+async def process_artifact(message: Message, achievement_id: int):
     '''
-    Сохраняем id фото в базу данных. Телеграм может отправить фото по его id.
+    Достает id из возможных типов сообщения и сохраняет в базе
+    информацию об ачивке с новым статусом.
     '''
+    user_id = message.from_user.id
+    files_id = []
+    if message.photo:
+        files_id.append(message.photo[0].file_id)
+    if message.video:
+        files_id.append(message.video.file_id)
+    if message.document:
+        files_id.append(message.document.file_id)
+    if message.voice:
+        files_id.append(message.voice.file_id)
+    if message.audio:
+        files_id.append(message.audio.file_id)
+    text = message.text if message.text else message.caption
     try:
-        photo_id = message.photo[0].file_id
-        user = message.from_user.first_name
-        if user not in ARTEFACTS:
-            ARTEFACTS[user] = {}
-        ARTEFACTS[user]['photo'] = photo_id
-        logger.debug(ARTEFACTS)
-    except KeyError as err:
-        logger.error(f'KeyWord {err}')
+        send_task(user_id, achievement_id, files_id, text)
+        return True
     except Exception as err:
-        logger.error(f'Ошибка при обработке артефакта с фото: {err}')
-
-
-async def process_video(message: Message):
-    '''
-    Сохраняем id видео в базу данных. Телеграм может отправить видео по его id.
-    '''
-    try:
-        video_id = message.video.file_id
-        user = message.from_user.first_name
-        if user not in ARTEFACTS:
-            ARTEFACTS[user] = {}
-        ARTEFACTS[user]['video'] = video_id
-        logger.debug(ARTEFACTS)
-    except Exception as err:
-        logger.error(f'Ошибка при обработке артефакта с video: {err}')
-
-
-async def process_document(message: Message):
-    '''
-    Сохраняем id файла в базу данных. Телеграм может отправить файл по его id.
-    '''
-    try:
-        doc_id = message.document.file_id
-        user = message.from_user.first_name
-        if user not in ARTEFACTS:
-            ARTEFACTS[user] = {}
-        ARTEFACTS[user]['document'] = doc_id
-        logger.debug(ARTEFACTS)
-    except Exception as err:
-        logger.error(f'Ошибка при обработке артефакта с document: {err}')
-
-
-async def process_audio(message: Message):
-    '''
-    Сохраняем id аудио (не путать с голосовым сообщением) в базу данных.
-    Телеграм может отправить аудио по его id.
-    '''
-    try:
-        audio_id = message.audio.file_id
-        user = message.from_user.first_name
-        if user not in ARTEFACTS:
-            ARTEFACTS[user] = {}
-        ARTEFACTS[user]['audio'] = audio_id
-        logger.debug(ARTEFACTS)
-    except Exception as err:
-        logger.error(f'Ошибка при обработке артефакта с audio: {err}')
-
-
-async def process_voice(message: Message):
-    '''
-    Сохраняем id голосового сообщения в базу данных.
-    Телеграм может отправить голосовое по его id.
-    '''
-    try:
-        voice_id = message.voice.file_id
-        user = message.from_user.first_name
-        if user not in ARTEFACTS:
-            ARTEFACTS[user] = {}
-        ARTEFACTS[user]['voice'] = voice_id
-        logger.debug(ARTEFACTS)
-    except Exception as err:
-        logger.error(f'Ошибка при обработке артефакта с voice: {err}')
+        logger.error(f'Ошибка при сохранении статуса ачивки в базе: {err}')
+        return False

@@ -16,13 +16,15 @@ class User(DeclarativeBase):
     role = Column(
         String,
         CheckConstraint(r"role in ('methodist', 'councelor', 'kid')"),
-        nullable=False,
+        nullable=False
     )
     # login = Column(String(50), unique=True, nullable=False)
     # password = Column(String(50), nullable=False)
-    language = Column(String, CheckConstraint(
-        r"language in ('RU', 'EN', 'TT')"
-        ), nullable=False)
+    language = Column(
+        String,
+        CheckConstraint(r"language in ('RU', 'EN', 'TT')"),
+        nullable=False
+    )
     score = Column("user_score", Integer, nullable=False)
     group = Column(Integer, nullable=False)
 
