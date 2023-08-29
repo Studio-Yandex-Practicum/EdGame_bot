@@ -17,6 +17,7 @@ from utils.user_utils import (
     get_achievement_name,
     save_rejection_reason_in_db,
     send_achievement_file,
+    get_achievement_file_type,
 )
 
 router = Router()
@@ -68,16 +69,23 @@ async def check_requests(message: types.Message):
             )
 
             for task in tasks:
-                achievement_name = get_achievement_name(session, task.achievement_id)
+                achievement_name = get_achievement_name(
+                    session, task.achievement_id
+                )
                 achievement_description = get_achievement_description(
                     session, task.achievement_id
                 )
                 achievement_instruction = get_achievement_instruction(
                     session, task.achievement_id
                 )
+
                 achievement_file_id = get_achievement_file_id(
                     session, task.achievement_id
                 )
+                achievement_file_type = get_achievement_file_type(
+                    session, task.achievement_id
+                )
+
                 inline_keyboard = create_inline_keyboard(task.id)
                 await send_achievement_file(
                     message,
@@ -86,10 +94,11 @@ async def check_requests(message: types.Message):
                     achievement_description,
                     achievement_instruction,
                     achievement_file_id,
+                    achievement_file_type,
                     inline_keyboard,
                 )
     except Exception as e:
-        await message.answer("Произошла ошибка при проверке заданий.")
+        await message.answer("Не удалось найти задания на проверку.")
     finally:
         session.close()
 
@@ -99,14 +108,16 @@ async def approve_handler(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
     try:
         if approve_task(task_id):
-            await callback_query.message.answer(f"Задание с ID {task_id} принято!")
+            await callback_query.message.answer(
+                f"Задание с ID {task_id} принято!"
+            )
         else:
             await callback_query.message.answer(
                 f"Не удалось найти задание с ID {task_id}."
             )
     except Exception as e:
         await callback_query.message.answer(
-            f"Произошла ошибка при подтверждении задания."
+            "Произошла ошибка при подтверждении задания."
         )
     finally:
         session.close()
@@ -127,7 +138,9 @@ async def reject_handler(callback_query: types.CallbackQuery):
                 f"Не удалось найти задание с ID {task_id}."
             )
     except Exception as e:
-        await callback_query.message.answer(f"Произошла ошибка при отклонении задания.")
+        await callback_query.message.answer(
+            "Произошла ошибка при отклонении задания."
+        )
     finally:
         session.close()
 
@@ -143,24 +156,33 @@ async def yes_handler(callback_query: types.CallbackQuery, state: FSMContext):
             "Введите причину отказа следующим сообщением. Если передумаете - введите 'Отмена'"
         )
     except Exception as e:
-        await callback_query.message.answer("Произошла ошибка при обработке запроса.")
+        await callback_query.message.answer(
+            "Произошла ошибка при обработке запроса."
+        )
     finally:
         session.close()
 
 
-@router.message(state=TaskState.reject_message)
-async def ejection_reason(message: types.Message, state: FSMContext):
+@router.message(TaskState.reject_message)
+async def rejection_reason(message: types.Message, state: FSMContext):
     task_data = await state.get_data()
     task_id = task_data.get("task_id")
-    try:
-        if message.text != "Отмена":
-            save_rejection_reason_in_db(session, task_id, message.text)
-            await message.answer("Причина отказа сохранена")
-    except Exception as e:
-        await message.answer("Произошла ошибка при сохранении причины отказа.")
-    finally:
+
+    if message.text != "Отмена":
+        save_rejection_reason_in_db(session, task_id, message.text)
+        await message.answer("Причина отказа сохранена")
+    else:
         await message.answer(
             "Хорошо! Сообщение об отмене будет доставлено без комментария"
         )
         await state.clear()
         session.close()
+
+
+@router.callback_query(lambda c: c.data.startswith("back:"))
+async def send_to_methodist(callback_query: types.CallbackQuery):
+    task_id = int(callback_query.data.split(":")[1])
+    if send_to_methdist(task_id):
+        await callback_query.message.answer(
+            "Задание отправлено на проверку методисту"
+        )

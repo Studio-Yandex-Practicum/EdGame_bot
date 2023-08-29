@@ -4,22 +4,36 @@ from aiogram import Bot, F, Router
 from aiogram.filters import Command, CommandStart, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import (CallbackQuery, InlineKeyboardMarkup, Message,
-                           ReplyKeyboardMarkup, ReplyKeyboardRemove)
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    Message,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+)
 
 from data.temp_db import ROLE, TASKS
 from db.engine import session
-from keyboards.keyboards import (choose_language_keyboard,
-                                 create_welcome_keyboard,
-                                 edit_profile_keyboard, menu_keyboard,
-                                 profile_keyboard, task_keyboard,
-                                 task_list_keyboard)
+from keyboards.keyboards import (
+    choose_language_keyboard,
+    create_welcome_keyboard,
+    edit_profile_keyboard,
+    menu_keyboard,
+    profile_keyboard,
+    task_keyboard,
+    task_list_keyboard,
+)
 from keyboards.methodist_keyboards import art_list_keyboard
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
 from utils.db_commands import register_user, select_user
 
-from .artifact_handlers import (process_audio, process_document, process_photo,
-                                process_video, process_voice)
+from .artifact_handlers import (
+    process_audio,
+    process_document,
+    process_photo,
+    process_video,
+    process_voice,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +92,8 @@ async def process_start_command(message):
     # Сохраняем пользователя в БД, роль по умолчанию 'kid'
     register_user(message)
     await message.answer(
-        text=f"{LEXICON_COMMANDS['/start']}", reply_markup=create_welcome_keyboard()
+        text=f"{LEXICON_COMMANDS['/start']}",
+        reply_markup=create_welcome_keyboard(),
     )
 
 
@@ -114,7 +129,9 @@ async def process_name(message: Message, state: FSMContext):
     await message.answer(
         f'Привет, {message.text}! {LEXICON["RU"]["hello_message"]}',
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=menu_keyboard, resize_keyboard=True, one_time_keyboard=True
+            keyboard=menu_keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=True,
         ),
     )
 
@@ -199,7 +216,9 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         if not task_data:
             await query.message.answer(
                 "Вернись к списку ачивок и выбери заново(=",
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=task_keyboard),
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=task_keyboard
+                ),
             )
             return
         await state.set_state(Data.artefact)
@@ -241,7 +260,9 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
             chat_id=methodist_id,
             text="Проверить артефакт",
             reply_markup=ReplyKeyboardMarkup(
-                keyboard=art_list_keyboard, resize_keyboard=True, one_time_keyboard=True
+                keyboard=art_list_keyboard,
+                resize_keyboard=True,
+                one_time_keyboard=True,
             ),
         )
         await message.answer(
@@ -280,8 +301,11 @@ async def show_current_tasks(message: Message):
                 in_review.append(task_info)
         if not in_review:
             await message.answer(
-                "Кажется, ты еще не выполнил ни одной ачивки...\n\n" "Готов начать?=)",
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=task_keyboard),
+                "Кажется, ты еще не выполнил ни одной ачивки...\n\n"
+                "Готов начать?=)",
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=task_keyboard
+                ),
             )
         text = "\n\n".join(in_review)
         await message.answer(
@@ -311,7 +335,9 @@ async def profile_info(message: Message):
     await message.answer(
         info,
         reply_markup=ReplyKeyboardMarkup(
-            keyboard=profile_keyboard, resize_keyboard=True, one_time_keyboard=True
+            keyboard=profile_keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=True,
         ),
     )
 
@@ -321,7 +347,10 @@ async def edit_profile(message: Message):
     """Обработчик для редактирования профиля ребенка."""
     text = LEXICON["RU"]["edit_profile"]
     await message.answer(
-        text, reply_markup=InlineKeyboardMarkup(inline_keyboard=edit_profile_keyboard)
+        text,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=edit_profile_keyboard
+        ),
     )
 
 
@@ -343,8 +372,11 @@ async def process_change_name(message: Message, state: FSMContext):
     """Обрабатывает сообщение для изменения имени."""
     # обновляем инфу о пользователе в базе данных
     await message.answer(
-        f"Ок, {message.text}, теперь у тебя новое имя!\n\n" "Еще что-то надо изменить?",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=edit_profile_keyboard),
+        f"Ок, {message.text}, теперь у тебя новое имя!\n\n"
+        "Еще что-то надо изменить?",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=edit_profile_keyboard
+        ),
     )
 
 
@@ -361,7 +393,9 @@ async def change_language(query: CallbackQuery, state: FSMContext):
     )
     await query.message.edit_text(
         "Ок, какой язык предпочитаешь?",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=choose_language_keyboard),
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=choose_language_keyboard
+        ),
     )
 
 
@@ -373,7 +407,9 @@ async def process_change_language(query: CallbackQuery, state: FSMContext):
     if not data:
         await query.message.answer(
             "Выбери раздел для изменения.",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=edit_profile_keyboard),
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=edit_profile_keyboard
+            ),
         )
         return
     await state.clear()
@@ -381,5 +417,7 @@ async def process_change_language(query: CallbackQuery, state: FSMContext):
     # Изменяем язык бота на новый
     await query.message.answer(
         LEXICON[language]["language_changed"],
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=edit_profile_keyboard),
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=edit_profile_keyboard
+        ),
     )
