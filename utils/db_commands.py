@@ -1,9 +1,12 @@
 import time
+import logging
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 from db.models import User, AchievementStatus, Achievement
 from db.engine import session
+
+logger = logging.getLogger(__name__)
 
 
 def register_user(message):
@@ -13,7 +16,8 @@ def register_user(message):
         name=name,
         role="kid",
         language="RU",
-        score=0
+        score=0,
+        group=0
         )
 
     session.add(user)
@@ -43,15 +47,17 @@ def set_user_param(user: User, name: str = None, role: str = None,
     '''Сеттер для обновления свойств объекта User.'''
     if name:
         user.name = name
-    elif role:
+    if role:
         user.role = role
-    elif language:
+    if language:
         user.language = language
-    elif score:
+    if score:
         user.score = score
     try:
         session.commit()
-    except IntegrityError:
+        logger.info('Пользователь обновлен')
+    except IntegrityError as err:
+        logger.error(f'Ошибка при обновлении пользователя: {err}')
         session.rollback()
 
 
@@ -97,12 +103,15 @@ def available_achievements(user_id, user_score) -> list:
     return available_achievements_list
 
 
-def get_achievement(achievement_id: int) -> Achievement:
+def get_achievement(achievement_id: int = None,
+                    name: str = None) -> Achievement:
     '''Достаем ачивку из базы по ее id.'''
     achievement = (
         session.query(
-            Achievement).filter(Achievement.id == achievement_id).first()
-    )
+            Achievement).filter(
+                Achievement.id == achievement_id if achievement_id
+                else Achievement.name == name
+            ).first())
     return achievement if achievement else "Unknown Achievement"
 
 
@@ -118,6 +127,39 @@ def get_all_achievements(status: str = None):
             task = get_achievement(achievement_status.achievement_id)
             achievements.append((user, task, achievement_status))
     return achievements
+
+
+def set_achievement_param(achievement_id: int, name: str = None,
+                          description: str = None, instruction: str = None,
+                          score: int = None, price: int = None,
+                          artifact_type: str = None, image: str = None,
+                          achievement_type: str = None):
+    '''Сеттер для обновления свойств объекта Achievement.'''
+    achievement = get_achievement(achievement_id)
+    if name:
+        achievement.name = name
+    if description:
+        achievement.description = description
+    if instruction:
+        achievement.instruction = instruction
+    if image:
+        achievement.image = image
+    if score:
+        achievement.score = score
+    if price:
+        achievement.price = price
+    if artifact_type:
+        achievement.artifact_type = artifact_type
+    if achievement_type:
+        achievement.achievement_type = achievement_type
+    try:
+        session.commit()
+        logger.info('Ачивка обновлена')
+        return True
+    except IntegrityError as err:
+        logger.error(f'Ошибка при обновлении ачивки: {err}')
+        session.rollback()
+        return False
 
 
 def send_task(user_id, achievement_id, files_id, message_text):
@@ -213,4 +255,26 @@ def send_to_methdist(user_achievement_id):
         return True
     except IntegrityError:
         session.rollback()
+        return False
+
+
+def create_achievement(data: dict):
+    new_achievement = Achievement(
+        name=data.get('name', 'test'),
+        image=data.get('image'),
+        description=data.get('description', 'test_desc'),
+        instruction=data.get('instruction', 'test_inst'),
+        price=data.get('price', 0),
+        score=data.get('score', 0),
+        achievement_type=data.get('achievement_type', 'individual'),
+        artifact_type=data.get('artifact_type', 'text')
+    )
+    session.add(new_achievement)
+    try:
+        session.commit()
+        logger.info('Ачивка добавлена')
+        return True
+    except IntegrityError as err:
+        session.rollback()  # откатываем session.add(user)
+        logger.error(f'Ошибка при сохранении ачивки: {err}')
         return False

@@ -12,30 +12,28 @@ from keyboards.keyboards import (
     menu_keyboard, profile_keyboard, edit_profile_keyboard,
     choose_language_keyboard, task_list_keyboard,
     task_keyboard, create_welcome_keyboard, contacts_keyboard, help_keyboard)
-from keyboards.set_menu import set_main_menu
+# from keyboards.set_menu import set_main_menu
 from keyboards.methodist_keyboards import (
     art_list_keyboard, methodist_profile_keyboard)
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
-from .artifact_handlers import process_artifact
 from utils.db_commands import (
     register_user, select_user, set_user_param, available_achievements,
-    get_achievement, get_all_achievements, get_users_by_role,
-    user_achievements)
+    get_users_by_role)
 from utils.utils import (
-    process_next_achievements, process_previous_achievements)
+    process_next_achievements, process_previous_achievements, process_artifact,
+    generate_text_with_available_tasks, generate_text_with_reviewed_tasks,
+    generate_profile_info, get_achievement_info)
 from db.engine import session
+from config_data.config import Pagination
+from filters.custom_filters import IsStudent
 from .methodist_handlers import methodist_router
 
 logger = logging.getLogger(__name__)
 
 router = Router()
 child_router = Router()
-router.include_routers(child_router, methodist_router)
-
-# Количество ачивок на странице ачивок
-PAGE_SIZE = 2
-# Количество возможных кнопок
-ACHIEVEMENTS_NUM = len(get_all_achievements())
+child_router.message.filter(IsStudent())
+router.include_routers(methodist_router, child_router)
 
 
 class Data(StatesGroup):
@@ -138,6 +136,137 @@ async def process_name(message: Message, state: FSMContext):
         logger.error(f'Ошибка при отправке сообщения с меню. {err}')
 
 
+# Обработчики обычных кнопок
+@child_router.message(Command(commands='current_achievements'))
+@child_router.message(F.text.regexp(r'^Текущие задания$'))
+@child_router.message(F.text.regexp(r'^Current achievements$'))
+async def show_current_tasks(message: Message):
+    '''
+    Показывам ачивки в статусе на проверке либо предлагаем
+    перейти к списку ачивок.
+    '''
+    try:
+        # Достаем из базы ачивки со статусом на проверке
+        user = select_user(message.from_user.id)
+        lexicon = LEXICON[user.language]
+        # Генерируем текст с инфой об ачивках
+        text = generate_text_with_available_tasks(user.id, lexicon)
+        msg = (f'{lexicon["achievements_completed"]}\n\n'
+               f'{text}\n\n'
+               f'{lexicon["cheer_up"]}')
+        if not text:
+            msg = lexicon["no_achievement_completed"]
+        await message.answer(
+            msg,
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=task_keyboard(user.language)))
+    except KeyError as err:
+        logger.error(f'Проверь правильность ключевых слов: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при получении текущих ачивок: {err}')
+
+
+@child_router.message(Command(commands='reviewed_achievements'))
+@child_router.message(F.text.regexp(r'^Проверенные задания$'))
+@child_router.message(F.text.regexp(r'^Reviewed achievements$'))
+async def show_reviewed_tasks(message: Message):
+    '''
+    Показывам ачивки в статусе на проверке либо предлагаем
+    перейти к списку ачивок.
+    '''
+    try:
+        # Достаем из базы ачивки со статусом на проверке
+        user = select_user(message.from_user.id)
+        lexicon = LEXICON[user.language]
+        # Генерируем текст с инфой об ачивках
+        text = generate_text_with_reviewed_tasks(user.id, lexicon)
+        msg = (f'{lexicon["achievements_completed"]}\n\n'
+               f'{text}\n\n'
+               f'{lexicon["cheer_up"]}')
+        if not text:
+            msg = lexicon["no_achievement_reviewed"]
+        await message.answer(
+            msg,
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=task_keyboard(user.language)))
+    except KeyError as err:
+        logger.error(f'Проверь правильность ключевых слов: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при получении проверенных ачивок: {err}')
+
+
+@child_router.message(
+    (F.text.regexp(r'^Личный кабинет$') | F.text.regexp(r'^Profile$')))
+@child_router.message(Command(commands='lk'))
+async def profile_info(message: Message, state: FSMContext):
+    '''Обработчик показывает главное меню профиля студента.'''
+    try:
+        await state.clear()
+        # Достаем инфу о пользователе из базы
+        user = select_user(message.chat.id)
+        lexicon = LEXICON[user.language]
+        # Генерируем инфу для ЛК
+        msg = generate_profile_info(user, lexicon)
+        await message.answer(
+            msg,
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=profile_keyboard(user.language),
+                resize_keyboard=True,
+                one_time_keyboard=True))
+    except KeyError as err:
+        logger.error(
+            f'Ошибка в ключевом слове при открытии личного кабинета: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при открытии личного кабинета: {err}')
+
+
+@child_router.callback_query(F.data == 'profile')
+async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
+    '''Обработчик показывает главное меню профиля студента.'''
+    try:
+        await query.answer()
+        await state.clear()
+        # Достаем инфу о пользователе из базы
+        user = select_user(query.from_user.id)
+        lexicon = LEXICON[user.language]
+        # Генерируем инфу для ЛК
+        msg = generate_profile_info(user, lexicon)
+        await query.message.answer(
+            msg,
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=profile_keyboard(user.language),
+                resize_keyboard=True,
+                one_time_keyboard=True))
+    except KeyError as err:
+        logger.error(
+            f'Ошибка в ключевом слове при открытии личного кабинета: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при открытии личного кабинета: {err}')
+
+
+@child_router.message(F.text.regexp(r'^Написать вожатому$'))
+@child_router.message(F.text.regexp(r'^Write to councelor$'))
+async def write_to_councelor(message: Message):
+    '''
+    Обработчик кнопки Написать вожатому.
+    Отправляет инлайн кнопку со ссылкой на вожатого.
+    '''
+    try:
+        user = select_user(message.from_user.id)
+        language = user.language
+        # Как-то получаем username вожатого
+        councelor = message.from_user.username
+        await message.answer(
+            LEXICON[language]["councelor_contact"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=contacts_keyboard(language, councelor)))
+    except KeyError as err:
+        logger.error(
+            f'Ошибка в ключевом слове при отправке контакта вожатого: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при отправке контакта вожатого: {err}')
+
+
 @child_router.message(Command(commands='help'))
 @child_router.message(
     F.text.regexp(r'^Справка по работе бота$')
@@ -157,6 +286,7 @@ async def help_command(message: Message):
         logger.error(f'Ошибка при обработке команды help: {err}')
 
 
+# Обработчики списка ачивок и пагинации
 @child_router.message(F.text.regexp(r'^Доступные задания$'))
 @child_router.message(F.text.regexp(r'^Available achievements$'))
 @child_router.message(Command(commands='achievements'))
@@ -171,7 +301,8 @@ async def show_tasks_list(message: Message, state: FSMContext):
         language = user.language
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
-        info = process_next_achievements(tasks=tasks, page_size=PAGE_SIZE)
+        info = process_next_achievements(
+            tasks=tasks, page_size=Pagination.page_size)
         text = info[0]
         task_ids = info[1]
         task_info = info[2]
@@ -205,7 +336,8 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         language = user.language
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
-        info = process_next_achievements(tasks=tasks, page_size=PAGE_SIZE)
+        info = process_next_achievements(
+            tasks=tasks, page_size=Pagination.page_size)
         text = info[0]
         task_ids = info[1]
         task_info = info[2]
@@ -242,7 +374,7 @@ async def process_next_tasks(query: CallbackQuery, state: FSMContext):
         previous_final_item = data['task_info']['final_item']
         info = process_next_achievements(
             tasks=tasks, count=count, previous_final_item=previous_final_item,
-            page_size=PAGE_SIZE)
+            page_size=Pagination.page_size)
         text = info[0]
         task_ids = info[1]
         task_info = info[2]
@@ -278,7 +410,7 @@ async def process_previous_tasks(query: CallbackQuery, state: FSMContext):
         previous_final_item = data['task_info']['final_item']
         info = process_previous_achievements(
             tasks=tasks, count=count, previous_final_item=previous_final_item,
-            page_size=PAGE_SIZE)
+            page_size=Pagination.page_size)
         text = info[0]
         task_ids = info[1]
         task_info = info[2]
@@ -304,9 +436,10 @@ async def process_info_button(query: CallbackQuery):
     pass
 
 
+# Обработчики выбора и выполнения ачивки
 @child_router.callback_query(Data.tasks)
 @child_router.callback_query(F.data.in_(
-    [str(x) for x in range(ACHIEVEMENTS_NUM)]))
+    [str(x) for x in range(Pagination.achievements_num)]))
 async def show_task(query: CallbackQuery, state: FSMContext):
     '''
     Обработчик кнопок выбора отдельной ачивки.
@@ -328,29 +461,21 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         task_number = int(query.data)
         # Достаем id ачивки из состояния и делаем запрос к базе
         task_id = data['tasks'][task_number]
-        task = get_achievement(task_id)
-        name = task.name
-        image = task.image
-        description = task.description
-        instruction = task.instruction
-        artifact_type = task.artifact_type
-        task_type = task.achievement_type
-        score = task.score
-        price = task.price
-        info = (
-            f'{lexicon["task_name"]}: {name}\n'
-            f'{lexicon["score_rate"]}: {score}\n'
-            f'{lexicon["task_description"]}: {description}\n'
-            f'{lexicon["task_instruction"]}: {instruction}\n'
-            f'{lexicon["artifact_type"]}: {artifact_type}\n'
-            f'{lexicon["task_type"]}: {task_type}\n'
-            f'{lexicon["task_price"]}: {price}')
+        task_info = get_achievement_info(task_id, lexicon)
+        info = task_info["info"]
+        image = task_info["image"]
         msg = (
             f'{lexicon["achievement_chosen"]}\n\n'
             f'{info}\n\n'
             f'{lexicon["send_artifact"]}')
         await state.update_data(task_id=task_id)
         await state.set_state(Data.artifact)
+        if not image:
+            await query.message.answer(
+                msg,
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=task_keyboard(language)))
+            return
         await query.message.answer_photo(
             photo=image,
             caption=msg,
@@ -368,14 +493,15 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
     Обработчик артефактов, файлов, которые отправляет ребенок.
     '''
     try:
-        # Достаем id профиля преподавателя в тг из базы
+        # Достаем id профиля вожатого в тг из базы
         data = await state.get_data()
         task_id = data['task_id']
         language = data['language']
+        lexicon = LEXICON[language]
         councelors = get_users_by_role('councelor')
         councelor = councelors[0] if councelors else select_user(message.from_user.id)
         await state.clear()
-        status_changed = await process_artifact(message, task_id)
+        status_changed = await process_artifact(message, task_id, lexicon)
         if status_changed:
             await bot.send_message(
                 chat_id=councelor.id,
@@ -385,7 +511,7 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
                     resize_keyboard=True,
                     one_time_keyboard=True))
         await message.answer(
-            LEXICON[language]["artifact_sent"],
+            lexicon["artifact_sent"],
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_keyboard(language)))
     except KeyError as err:
@@ -394,160 +520,7 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
         logger.error(f'Ошибка при обработке артефакта: {err}')
 
 
-@child_router.message(Command(commands='current_achievements'))
-@child_router.message(F.text.regexp(r'^Текущие задания$'))
-@child_router.message(F.text.regexp(r'^Current achievements$'))
-async def show_current_tasks(message: Message):
-    '''
-    Показывам ачивки в статусе на проверке либо предлагаем
-    перейти к списку ачивок.
-    '''
-    try:
-        # Достаем из базы ачивки со статусом на проверке
-        user = select_user(message.from_user.id)
-        lexicon = LEXICON[user.language]
-        achievements = user_achievements(user.id)
-        in_review = []
-        count = 0
-        for achievement in achievements:
-            # Добавляем описания ачивок в список
-            task = achievement[0]
-            status = achievement[1]
-            if status == 'pending':
-                count += 1
-                task_info = (
-                    f'{count}: {lexicon["pending_councelor"]}\n'
-                    f'{lexicon["task_name"]}: {task.name}\n'
-                    f'{lexicon["task_description"]}: {task.description}')
-                in_review.append(task_info)
-            if status == 'pending_methodist':
-                count += 1
-                task_info = (
-                    f'{count}: {lexicon["pending_methodist"]}\n'
-                    f'{lexicon["task_name"]}: {task.name}\n'
-                    f'{lexicon["task_description"]}: {task.description}')
-                in_review.append(task_info)
-        text = '\n\n'.join(in_review)
-        msg = (f'{lexicon["achievements_completed"]}\n\n'
-               f'{text}\n\n'
-               f'{lexicon["cheer_up"]}')
-        if not in_review:
-            msg = lexicon["no_achievement_completed"]
-        await message.answer(
-            msg,
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_keyboard(user.language)))
-    except KeyError as err:
-        logger.error(f'Проверь правильность ключевых слов: {err}')
-    except Exception as err:
-        logger.error(f'Ошибка при получении текущих ачивок: {err}')
-
-
-@child_router.message(Command(commands='reviewed_achievements'))
-@child_router.message(F.text.regexp(r'^Проверенные задания$'))
-@child_router.message(F.text.regexp(r'^Reviewed achievements$'))
-async def show_reviewed_tasks(message: Message):
-    '''
-    Показывам ачивки в статусе на проверке либо предлагаем
-    перейти к списку ачивок.
-    '''
-    try:
-        # Достаем из базы ачивки со статусом на проверке
-        user = select_user(message.from_user.id)
-        lexicon = LEXICON[user.language]
-        achievements = user_achievements(user.id)
-        reviewed = []
-        count = 0
-        for achievement in achievements:
-            # Добавляем описания ачивок в список
-            task = achievement[0]
-            status = achievement[1]
-            rejection_reason = achievement[2]
-            if status == 'rejected':
-                count += 1
-                task_info = (
-                    f'{count}: {lexicon["status_rejected"]}\n'
-                    f'{lexicon["rejection_reason"]}: {rejection_reason}'
-                    f'{lexicon["task_name"]}: {task.name}\n'
-                    f'{lexicon["task_description"]}: {task.description}')
-                reviewed.append(task_info)
-            if status == 'approved':
-                count += 1
-                task_info = (
-                    f'{count}: {lexicon["status_approved"]}\n'
-                    f'{lexicon["task_name"]}: {task.name}\n'
-                    f'{lexicon["task_description"]}: {task.description}'
-                    f'{lexicon["score_added"]}: {task.score}')
-                reviewed.append(task_info)
-        text = '\n\n'.join(reviewed)
-        msg = (f'{lexicon["achievements_completed"]}\n\n'
-               f'{text}\n\n'
-               f'{lexicon["cheer_up"]}')
-        if not reviewed:
-            msg = lexicon["no_achievement_reviewed"]
-        await message.answer(
-            msg,
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_keyboard(user.language)))
-    except KeyError as err:
-        logger.error(f'Проверь правильность ключевых слов: {err}')
-    except Exception as err:
-        logger.error(f'Ошибка при получении проверенных ачивок: {err}')
-
-
-@child_router.message(F.text.regexp(r'^Личный кабинет$'))
-@child_router.message(F.text.regexp(r'^Profile$'))
-@child_router.message(Command(commands='lk'))
-async def profile_info(message: Message, state: FSMContext):
-    '''Обработчик показывает главное меню профиля студента.'''
-    try:
-        await state.clear()
-        # Достаем инфу о пользователе из базы
-        user = select_user(message.chat.id)
-        lexicon = LEXICON[user.language]
-        msg = (f'{lexicon["student_profile"]}\n\n'
-               f'{lexicon["lk_info"]}:\n'
-               f'{lexicon["name"]} - {user.name}\n'
-               f'{lexicon["score"]} - {user.score}\n')
-        await message.answer(
-            msg,
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=profile_keyboard(user.language),
-                resize_keyboard=True,
-                one_time_keyboard=True))
-    except KeyError as err:
-        logger.error(
-            f'Ошибка в ключевом слове при открытии личного кабинета: {err}')
-    except Exception as err:
-        logger.error(f'Ошибка при открытии личного кабинета: {err}')
-
-
-@child_router.callback_query(F.data == 'profile')
-async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
-    '''Обработчик показывает главное меню профиля студента.'''
-    try:
-        await query.answer()
-        await state.clear()
-        # Достаем инфу о пользователе из базы
-        user = select_user(query.from_user.id)
-        lexicon = LEXICON[user.language]
-        msg = (f'{lexicon["student_profile"]}\n\n'
-               f'{lexicon["lk_info"]}:\n'
-               f'{lexicon["name"]} - {user.name}\n'
-               f'{lexicon["score"]} - {user.score}\n')
-        await query.message.answer(
-            msg,
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=profile_keyboard(user.language),
-                resize_keyboard=True,
-                one_time_keyboard=True))
-    except KeyError as err:
-        logger.error(
-            f'Ошибка в ключевом слове при открытии личного кабинета: {err}')
-    except Exception as err:
-        logger.error(f'Ошибка при открытии личного кабинета: {err}')
-
-
+# Обработчики редактирования профиля
 @child_router.message(F.text.regexp(r'^Редактировать профиль$'))
 @child_router.message(F.text.regexp(r'^Edit profile$'))
 async def edit_profile(message: Message, state: FSMContext):
@@ -641,26 +614,3 @@ async def process_change_language(query: CallbackQuery, state: FSMContext,
         logger.error(f'Ошибка в ключевом слове при изменении языка: {err}')
     except Exception as err:
         logger.error(f'Ошибка при изменении языка: {err}')
-
-
-@child_router.message(F.text.regexp(r'^Написать вожатому$'))
-@child_router.message(F.text.regexp(r'^Write to councelor$'))
-async def write_to_councelor(message: Message):
-    '''
-    Обработчик кнопки Написать вожатому.
-    Отправляет инлайн кнопку со ссылкой на вожатого.
-    '''
-    try:
-        user = select_user(message.from_user.id)
-        language = user.language
-        # Как-то получаем username вожатого
-        councelor = message.from_user.username
-        await message.answer(
-            LEXICON[language]["councelor_contact"],
-            reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=contacts_keyboard(language, councelor)))
-    except KeyError as err:
-        logger.error(
-            f'Ошибка в ключевом слове при отправке контакта вожатого: {err}')
-    except Exception as err:
-        logger.error(f'Ошибка при отправке контакта вожатого: {err}')
