@@ -5,8 +5,6 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
-from lexicon.lexicon import BUTTONS
-
 
 # Функция, генерирующая клавиатуру для выбора языка
 def create_welcome_keyboard():

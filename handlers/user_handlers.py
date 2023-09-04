@@ -23,7 +23,6 @@ from keyboards.keyboards import (
     contacts_keyboard,
     help_keyboard,
 )
-from keyboards.set_menu import set_main_menu
 from keyboards.methodist_keyboards import (
     art_list_keyboard,
     methodist_profile_keyboard,
