@@ -1,5 +1,9 @@
 from aiogram.types import (
-    InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton)
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 
 from lexicon.lexicon import BUTTONS
 
@@ -8,100 +12,97 @@ from lexicon.lexicon import BUTTONS
 def create_welcome_keyboard():
     # Создаем объекты инлайн-кнопок
     rus_lang: InlineKeyboardButton = InlineKeyboardButton(
-        text='Русский язык',
-        callback_data='ru_pressed')
+        text="Русский язык", callback_data="ru_pressed"
+    )
     tatar_lang: InlineKeyboardButton = InlineKeyboardButton(
-        text='Татар теле',
-        callback_data='tt_pressed')
+        text="Татар теле", callback_data="tt_pressed"
+    )
     eng_lang: InlineKeyboardButton = InlineKeyboardButton(
-        text='English language',
-        callback_data='en_pressed')
+        text="English language", callback_data="en_pressed"
+    )
     # Создаем объект инлайн-клавиатуры
     welcome_keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup(
-        inline_keyboard=[[rus_lang],
-                         [tatar_lang],
-                         [eng_lang]])
+        inline_keyboard=[[rus_lang], [tatar_lang], [eng_lang]]
+    )
     return welcome_keyboard
 
 
 # Текст на кнопках
 # Главное меню
 def menu_keyboard(language):
-    '''Генерирует клавиатуру с кнопками в главном меню.'''
+    """Генерирует клавиатуру с кнопками в главном меню."""
     buttons = BUTTONS[language]
     write_to_methodist = KeyboardButton(text=buttons["write_to_methodist"])
     lk = KeyboardButton(text=buttons["lk"])
     help_button = KeyboardButton(text=buttons["help"])
 
-    keyboard = [
-        [lk],
-        [help_button],
-        [write_to_methodist]]
+    keyboard = [[lk], [help_button], [write_to_methodist]]
     return keyboard
 
 
 # Личный кабинет
 def profile_keyboard(language):
-    '''Генерирует клавиатуру с кнопками в личном кабинете.'''
+    """Генерирует клавиатуру с кнопками в личном кабинете."""
     buttons = BUTTONS[language]
     edit_profile = KeyboardButton(text=buttons["edit_profile"])
     available_achievements = KeyboardButton(
-        text=buttons["available_achievements"])
+        text=buttons["available_achievements"]
+    )
     current_achievements = KeyboardButton(text=buttons["current_achievements"])
     reviewed_achievements = KeyboardButton(
-        text=buttons["reviewed_achievements"])
+        text=buttons["reviewed_achievements"]
+    )
     write_to_councelor = KeyboardButton(text=buttons["write_to_councelor"])
     help_button = KeyboardButton(text=buttons["help"])
     keyboard = [
         [available_achievements, current_achievements],
         [reviewed_achievements],
         [edit_profile],
-        [help_button, write_to_councelor]]
+        [help_button, write_to_councelor],
+    ]
     return keyboard
 
 
 # Кнопки inline
 
 # Выбор языка
-russian = InlineKeyboardButton(text='Русский язык', callback_data='RU')
-tatar = InlineKeyboardButton(text='Татар теле', callback_data='TT')
-english = InlineKeyboardButton(text='English language', callback_data='EN')
+russian = InlineKeyboardButton(text="Русский язык", callback_data="RU")
+tatar = InlineKeyboardButton(text="Татар теле", callback_data="TT")
+english = InlineKeyboardButton(text="English language", callback_data="EN")
 
-choose_language_keyboard = [
-    [russian],
-    [tatar],
-    [english]
-]
+choose_language_keyboard = [[russian], [tatar], [english]]
 
 
 # Редактирование профиля
 def edit_profile_keyboard(language: str):
-    '''Генерирует клавиатуру с кнопками в редактировании профиля.'''
+    """Генерирует клавиатуру с кнопками в редактировании профиля."""
     buttons = BUTTONS[language]
     change_firstname = InlineKeyboardButton(
-        text=buttons["change_firstname"], callback_data='change_name')
+        text=buttons["change_firstname"], callback_data="change_name"
+    )
     change_language = InlineKeyboardButton(
-        text=buttons["change_language"], callback_data='change_language')
+        text=buttons["change_language"], callback_data="change_language"
+    )
 
-    keyboard = [
-        [change_firstname],
-        [change_language]]
+    keyboard = [[change_firstname], [change_language]]
     return keyboard
 
 
 # Список ачивок
 def task_list_keyboard(buttons_count: int, start: int = 0, end: int = 5):
-    '''Функция для генерации кнопок с номерами ачивок.'''
+    """Функция для генерации кнопок с номерами ачивок."""
     keyboard = []
     buttons = []
     nav_buttons = []
-    button_next = InlineKeyboardButton(text='>>', callback_data='next')
-    button_prev = InlineKeyboardButton(text='<<', callback_data='previous')
+    button_next = InlineKeyboardButton(text=">>", callback_data="next")
+    button_prev = InlineKeyboardButton(text="<<", callback_data="previous")
     info_button = InlineKeyboardButton(
-        text=f'{end}/{buttons_count}', callback_data='info')
+        text=f"{end}/{buttons_count}", callback_data="info"
+    )
     for i in range(buttons_count):
-        buttons.append(InlineKeyboardButton(
-            text=f'{i + 1}', callback_data=f'{i + 1}'))
+        buttons.append(
+            InlineKeyboardButton(text=f"{i + 1}", callback_data=f"{i + 1}")
+        )
     keyboard.append(buttons[start:end])
     if start > 0 and buttons_count > end:
         nav_buttons.append(button_prev)
@@ -120,40 +121,70 @@ def task_list_keyboard(buttons_count: int, start: int = 0, end: int = 5):
 
 # Отдельная ачивка
 def task_keyboard(language: str):
-    '''Генерирует клавиатуру с кнопками в отдельной ачивке.'''
+    """Генерирует клавиатуру с кнопками в отдельной ачивке."""
     buttons = BUTTONS[language]
-    lk = InlineKeyboardButton(
-        text=buttons["lk"], callback_data='profile')
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     available_achievements = InlineKeyboardButton(
         text=buttons["available_achievements"],
-        callback_data='available_achievements')
+        callback_data="available_achievements",
+    )
 
-    keyboard = [
-        [available_achievements],
-        [lk]]
+    keyboard = [[available_achievements], [lk]]
     return keyboard
 
 
 # Написать вожатому
 def contacts_keyboard(language, username):
-    '''Генерирует клавиатуру для связи с вожатым.'''
+    """Генерирует клавиатуру для связи с вожатым."""
     buttons = BUTTONS[language]
     councelor_chat = InlineKeyboardButton(
-        text=buttons["councelor_chat"], url=f'https://t.me/{username}')
-    lk = InlineKeyboardButton(
-        text=buttons["lk"], callback_data='profile')
+        text=buttons["councelor_chat"], url=f"https://t.me/{username}"
+    )
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
 
-    keyboard = [
-        [councelor_chat],
-        [lk]]
+    keyboard = [[councelor_chat], [lk]]
     return keyboard
 
 
 # Клавиатура с кнопкой Личный кабинет
 def help_keyboard(language):
-    '''Генерирует клавиатуру при нажатии команды help.'''
+    """Генерирует клавиатуру при нажатии команды help."""
     buttons = BUTTONS[language]
-    lk = InlineKeyboardButton(
-        text=buttons["lk"], callback_data='profile')
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     keyboard = [[lk]]
     return keyboard
+
+
+# Создание клавиатуры для ЛК вожатого
+def create_profile_keyboard():
+    profile_keyboard = [
+        [KeyboardButton(text="Список детей")],
+        [KeyboardButton(text="Проверить задания")],
+    ]
+    return ReplyKeyboardMarkup(keyboard=profile_keyboard, resize_keyboard=True)
+
+
+# Создание инлайн клавиатуры для проверки задания вожатым
+def create_inline_keyboard(task_id):
+    accept_button = InlineKeyboardButton(
+        text="✔️ Принять", callback_data=f"accept:{task_id}"
+    )
+
+    reject_button = InlineKeyboardButton(
+        text="❌ Отклонить", callback_data=f"reject:{task_id}"
+    )
+    send_back_button = InlineKeyboardButton(
+        text="🔄 Отправить на доп.проверку", callback_data=f"back:{task_id}"
+    )
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[accept_button], [reject_button], [send_back_button]]
+    )
+
+
+# Создание инлайн клавиатуры для добавления комментария при отколении вожатым дз
+def create_yes_no_keyboard(task_id):
+    yes_button = InlineKeyboardButton(
+        text="Да", callback_data=f"yes:{task_id}"
+    )
+    no_button = InlineKeyboardButton(text="Нет", callback_data=f"no:{task_id}")
+    return InlineKeyboardMarkup(inline_keyboard=[[yes_button], [no_button]])

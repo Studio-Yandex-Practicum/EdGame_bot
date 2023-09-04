@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 
 
 async def process_artifact(message: Message, achievement_id: int):
-    '''
+    """
     Достает id из возможных типов сообщения и сохраняет в базе
     информацию об ачивке с новым статусом.
-    '''
+    """
     user_id = message.from_user.id
     files_id = []
     if message.photo:
@@ -29,5 +29,5 @@ async def process_artifact(message: Message, achievement_id: int):
         send_task(user_id, achievement_id, files_id, text)
         return True
     except Exception as err:
-        logger.error(f'Ошибка при сохранении статуса ачивки в базе: {err}')
+        logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
         return False

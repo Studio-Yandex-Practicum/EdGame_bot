@@ -6,30 +6,10 @@ from faker import Faker
 from models import Achievement, AchievementStatus, User
 from PIL import Image, ImageDraw
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import cast
+from sqlalchemy.types import LargeBinary
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-def generate_fake_image_data():
-    """Генерирует фейковые изображения."""
-    width = 100
-    height = 100
-    color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-
-    image = Image.new("RGB", (width, height), color)
-    draw = ImageDraw.Draw(image)
-    for _ in range(1000):
-        x = random.randint(0, width - 1)
-        y = random.randint(0, height - 1)
-        draw.point((x, y), fill=color)
-
-    image_data = io.BytesIO()
-    image.save(image_data, format="JPEG")
-    image_data.seek(0)
-    image_bytes = image_data.getvalue()
-    image_data.close()
-
-    return image_bytes
 
 
 def create_test_data():
@@ -42,8 +22,6 @@ def create_test_data():
         #     user = User(
         #         name=fake.name(),
         #         role=fake.random_element(["methodist", "counselor", "kid"]),
-        #         login=fake.user_name(),
-        #         password=fake.password(),
         #         language=fake.random_element(["ru", "en", "tt"]),
         #         score=fake.random_int(min=0, max=100),
         #     )
@@ -51,9 +29,19 @@ def create_test_data():
 
         # # Генерируем тестовые достижения
         # for _ in range(20):
+        #     # Создаем случайное изображение
+        #     image = Image.new("RGB", (100, 100))
+        #     draw = ImageDraw.Draw(image)
+        #     draw.rectangle([(0, 0), (100, 100)], fill=(255, 0, 0))
+        #     image_byte_array = io.BytesIO()
+        #     image.save(image_byte_array, format="PNG")
+        #     image_data = image_byte_array.getvalue()
+
         #     achievement = Achievement(
         #         name=fake.word(),
-        #         image=generate_fake_image_data(),
+        #         image=cast(
+        #             image_data, LargeBinary
+        #         ),  # Важно: преобразовываем в LargeBinary
         #         description=fake.text(max_nb_chars=255),
         #         instruction=fake.text(max_nb_chars=255),
         #         artifact_type=fake.random_element(["text", "image", "video"]),

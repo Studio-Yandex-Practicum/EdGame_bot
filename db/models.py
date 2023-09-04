@@ -1,8 +1,7 @@
-from sqlalchemy import TIMESTAMP, Column, ForeignKey, Integer, String, ARRAY
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import ARRAY, TIMESTAMP, Column, ForeignKey, Integer, String
+from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.schema import CheckConstraint
-
-from db.engine import engine
+from .engine import engine
 
 DeclarativeBase = declarative_base()
 
@@ -15,16 +14,18 @@ class User(DeclarativeBase):
     role = Column(
         String,
         CheckConstraint(r"role in ('methodist', 'councelor', 'kid')"),
-        nullable=False
+        nullable=False,
     )
     # login = Column(String(50), unique=True, nullable=False)
     # password = Column(String(50), nullable=False)
     language = Column(
         String,
         CheckConstraint(r"language in ('RU', 'EN', 'TT')"),
-        nullable=False
+        nullable=False,
     )
+
     score = Column("user_score", Integer, nullable=False)
+    group = Column(Integer, nullable=False)
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
@@ -60,10 +61,12 @@ class AchievementStatus(DeclarativeBase):
 
     id = Column(
         "user_achievement_id", Integer, nullable=False, primary_key=True
-        )
-    user_id = Column(Integer, ForeignKey(
-        "users.user_id", ondelete="CASCADE"
-        ), nullable=False)
+    )
+    user_id = Column(
+        Integer,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
+    )
     achievement_id = Column(
         Integer,
         ForeignKey("achievements.achievement_id", ondelete="CASCADE"),
@@ -74,13 +77,17 @@ class AchievementStatus(DeclarativeBase):
         CheckConstraint(
             r"status in ('pending', 'pending_methodist', 'approved', "
             r"'rejected')"
-            ),
+        ),
         nullable=False,
     )
     files_id = Column(ARRAY(String), nullable=True)
     message_text = Column(String, nullable=True)
     created_at = Column(TIMESTAMP, nullable=False)
     rejection_reason = Column(String(255), nullable=True)
+    user = relationship("User", foreign_keys="AchievementStatus.user_id", lazy="joined")
+    achievement = relationship(
+        "Achievement", foreign_keys="AchievementStatus.achievement_id", lazy="joined"
+    )
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)

@@ -1,5 +1,5 @@
-import logging
 import asyncio
+import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -12,12 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    '''Функция конфигурирования и запуска бота.'''
+    """Функция конфигурирования и запуска бота."""
     # Конфигурируем логирование
     logging.basicConfig(
         level=logging.INFO,
         format="%(filename)s:%(lineno)d #%(levelname)-8s "
-        "[%(asctime)s] - %(name)s - %(message)s"
+        "[%(asctime)s] - %(name)s - %(message)s",
     )
 
     # Выводим в консоль информацию о начале запуска бота
@@ -32,17 +32,17 @@ async def main():
     dp = Dispatcher()
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню
-    dp.include_router(user_handlers.router)
+    # dp.include_router(user_handlers.router)
     dp.include_router(counselor_handlers.router)
     # dp.startup.register(set_main_menu)
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
-    logger.info('Bot started!')
+    logger.info("Bot started!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info('Bot stopped!')
+        logger.info("Bot stopped!")

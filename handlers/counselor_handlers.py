@@ -1,150 +1,190 @@
-import base64
-
 from aiogram import F, Router, types
 from aiogram.filters import Command, Text
-from aiogram.types import (
-    BufferedInputFile,
-    KeyboardButton,
-    ReplyKeyboardMarkup,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    CallbackQuery,
-)
-from db.engine import session
-from db.models import AchievementStatus, User
-from utils.user_utils import (
-    get_achievement_description,
-    get_achievement_image,
-    get_achievement_instruction,
-    get_achievement_name,
-    change_achievement_status_by_id,
-)
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram import Dispatcher
+from db.engine import session
+from db.models import AchievementStatus, User
+from keyboards.keyboards import (
+    create_inline_keyboard,
+    create_profile_keyboard,
+    create_yes_no_keyboard,
+)
+from utils.db_commands import approve_task, reject_task, send_to_methdist
+from utils.user_utils import (
+    get_achievement_description,
+    get_achievement_file_id,
+    get_achievement_instruction,
+    get_achievement_name,
+    save_rejection_reason_in_db,
+    send_achievement_file,
+    get_achievement_file_type,
+)
 
 router = Router()
-dp = Dispatcher()
 
 
-# Войти в личный кабинет
-profile = KeyboardButton(text="Личный кабинет")
+class TaskState(StatesGroup):
+    """
+    Машина состояний для реализации сценариев диалогов с вожатым.
+    """
 
-# Получить список детей и список заданий, отправленных на проверку
-children_list = KeyboardButton(text="Список детей")
-requests_inspection = KeyboardButton(text="Проверить задания")
-
-# Кнопки в личном кабинете
-profile_keyboard = [[children_list], [requests_inspection]]
-inline_keyboard = InlineKeyboardMarkup(
-    inline_keyboard=[
-        [
-            InlineKeyboardButton(text="Принять", callback_data="accept", width=2),
-            InlineKeyboardButton(text="Отклонить", callback_data="reject", width=2),
-            InlineKeyboardButton(
-                text="Отправить на доп.проверку", callback_data="back", width=1
-            ),
-        ]
-    ]
-)
+    user_id = State()
+    task_id = State()
+    reject_message = State()
 
 
 @router.message(Command("lk"))
-async def children_list(message: types.Message):
-    keyboard = ReplyKeyboardMarkup(keyboard=profile_keyboard, resize_keyboard=True)
+async def enter_profile(message: types.Message):
+    keyboard = create_profile_keyboard()
     await message.answer("Теперь ты в личном кабинете!", reply_markup=keyboard)
 
 
 @router.message(Text("Список детей"))
-async def children_list(message: types.Message):
-    """Обработчик для команды получения списка детей."""
-    children = session.query(User).filter(User.role == "kid").all()
-    session.close()
-    children_text = "\n".join(
-        [f"Имя: {child.name} - Очки: {child.score}" for child in children]
-    )
+async def show_children_list(message: types.Message):
+    print(session.query(User).filter(User.role == "kid").all())
+    try:
+        children = session.query(User).filter(User.role == "kid").all()
 
-    await message.answer(f"Список детей:\n{children_text}")
+        children_text = "\n".join(
+            [f"Имя: {child.name} - Очки: {child.score}" for child in children]
+        )
+        await message.answer(f"Список детей:\n{children_text}")
+    except Exception as e:
+        await message.answer("Произошла ошибка при получении списка детей.")
+    finally:
+        session.close()
 
 
 @router.message(Text("Проверить задания"))
-async def requests_inspection(message: types.Message, state: FSMContext):
-    """Обработчик для команды получения списка заданий на проверку."""
-    children = session.query(User).filter(User.role == "kid").all()
+async def check_requests(message: types.Message):
+    try:
+        children = session.query(User).filter(User.role == "kid").all()
 
-    for child in children:
-        tasks = (
-            session.query(AchievementStatus)
-            .filter(
-                AchievementStatus.user_id == child.id,
-                AchievementStatus.status == "pending",
-            )
-            .all()
-        )
-
-        for task in tasks:
-            achievement_name = get_achievement_name(session, task.achievement_id)
-            achievement_description = get_achievement_description(
-                session, task.achievement_id
-            )
-            achievement_instruction = get_achievement_instruction(
-                session, task.achievement_id
-            )
-            achievement_image = get_achievement_image(session, task.achievement_id)
-            image_64_encode = base64.b64encode(achievement_image).decode("utf-8")
-            image_bytes = base64.b64decode(image_64_encode)
-            inline_keyboard = InlineKeyboardMarkup(
-                inline_keyboard=[
-                    [
-                        InlineKeyboardButton(
-                            text="Принять",
-                            callback_data=f"accept:{task.id}",
-                            width=2,
-                        ),
-                        InlineKeyboardButton(
-                            text="Отклонить",
-                            callback_data=f"reject:{task.id}",
-                            width=2,
-                        ),
-                        InlineKeyboardButton(
-                            text="Отправить на доп.проверку",
-                            callback_data=f"back:{task.id}",
-                            width=1,
-                        ),
-                    ]
-                ]
+        for child in children:
+            tasks = (
+                session.query(AchievementStatus)
+                .filter(
+                    AchievementStatus.user_id == child.id,
+                    AchievementStatus.status == "pending",
+                )
+                .all()
             )
 
-            await message.answer_photo(
-                photo=BufferedInputFile(image_bytes, filename="image.jpg"),
-                caption=f"Задание на проверку от {child.name}:\n{achievement_name} - {achievement_description} - {achievement_instruction}",
-                reply_markup=inline_keyboard,
-            )
-    session.close()
+            for task in tasks:
+                achievement_name = get_achievement_name(
+                    session, task.achievement_id
+                )
+                achievement_description = get_achievement_description(
+                    session, task.achievement_id
+                )
+                achievement_instruction = get_achievement_instruction(
+                    session, task.achievement_id
+                )
+
+                achievement_file_id = get_achievement_file_id(
+                    session, task.achievement_id
+                )
+                achievement_file_type = get_achievement_file_type(
+                    session, task.achievement_id
+                )
+
+                inline_keyboard = create_inline_keyboard(task.id)
+                await send_achievement_file(
+                    message,
+                    child,
+                    achievement_name,
+                    achievement_description,
+                    achievement_instruction,
+                    achievement_file_id,
+                    achievement_file_type,
+                    inline_keyboard,
+                )
+    except Exception as e:
+        await message.answer("Не удалось найти задания на проверку.")
+    finally:
+        session.close()
 
 
 @router.callback_query(lambda c: c.data.startswith("accept:"))
-async def accept_handler(callback_query: types.CallbackQuery):
+async def approve_handler(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
-    if change_achievement_status_by_id(session, task_id, "approved"):
-        await callback_query.message.answer(f"Задание с ID {task_id} принято!")
-    else:
-        await callback_query.message.answer(f"Не удалось найти задание с ID {task_id}.")
-    session.close()
+    try:
+        if approve_task(task_id):
+            await callback_query.message.answer(
+                f"Задание с ID {task_id} принято!"
+            )
+        else:
+            await callback_query.message.answer(
+                f"Не удалось найти задание с ID {task_id}."
+            )
+    except Exception as e:
+        await callback_query.message.answer(
+            "Произошла ошибка при подтверждении задания."
+        )
+    finally:
+        session.close()
 
 
 @router.callback_query(lambda c: c.data.startswith("reject:"))
-async def accept_handler(callback_query: types.CallbackQuery):
+async def reject_handler(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
-    if change_achievement_status_by_id(session, task_id, "rejected"):
-        await callback_query.message.answer(f"Задание с ID {task_id} отклонено!")
+    try:
+        if reject_task(task_id):
+            inline_keyboard = create_yes_no_keyboard(task_id)
+            await callback_query.message.answer(
+                f"Задание с ID {task_id} отклонено! Хотите указать причину отказа?",
+                reply_markup=inline_keyboard,
+            )
+        else:
+            await callback_query.message.answer(
+                f"Не удалось найти задание с ID {task_id}."
+            )
+    except Exception as e:
+        await callback_query.message.answer(
+            "Произошла ошибка при отклонении задания."
+        )
+    finally:
+        session.close()
+
+
+@router.callback_query(F.data == "yes_handler")
+@router.callback_query(lambda c: c.data.startswith("yes:"))
+async def yes_handler(callback_query: types.CallbackQuery, state: FSMContext):
+    task_id = int(callback_query.data.split(":")[1])
+    try:
+        await state.set_state(TaskState.reject_message)
+        await state.set_data({"task_id": task_id})
+        await callback_query.message.answer(
+            "Введите причину отказа следующим сообщением. Если передумаете - введите 'Отмена'"
+        )
+    except Exception as e:
+        await callback_query.message.answer(
+            "Произошла ошибка при обработке запроса."
+        )
+    finally:
+        session.close()
+
+
+@router.message(TaskState.reject_message)
+async def rejection_reason(message: types.Message, state: FSMContext):
+    task_data = await state.get_data()
+    task_id = task_data.get("task_id")
+
+    if message.text != "Отмена":
+        save_rejection_reason_in_db(session, task_id, message.text)
+        await message.answer("Причина отказа сохранена")
     else:
-        await callback_query.message.answer(f"Не удалось найти задание с ID {task_id}.")
-    session.close()
+        await message.answer(
+            "Хорошо! Сообщение об отмене будет доставлено без комментария"
+        )
+        await state.clear()
+        session.close()
 
 
-@router.callback_query(lambda c: c.data == "back")
-async def back_handler(
-    callback_query: types.CallbackQuery,
-):  # TODO: надо придумать логику и реализовать метод
-    await callback_query.message.answer("Работает!!!!!!")
+@router.callback_query(lambda c: c.data.startswith("back:"))
+async def send_to_methodist(callback_query: types.CallbackQuery):
+    task_id = int(callback_query.data.split(":")[1])
+    if send_to_methdist(task_id):
+        await callback_query.message.answer(
+            "Задание отправлено на проверку методисту"
+        )
