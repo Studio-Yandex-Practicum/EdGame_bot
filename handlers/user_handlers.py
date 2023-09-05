@@ -129,18 +129,18 @@ async def process_get_name(message: Message, state: FSMContext):
 @router.message(StateFilter(Profile.get_group))
 async def process_get_group(message: Message, state: FSMContext):
     await state.update_data(group=message.text)
-    user_language = await state.get_data()
-    if user_language['language'] == "RU":
+    user_data = await state.get_data()
+    language = user_data['language']
+    if language == "RU":
         text = LEXICON["RU"]["get_group"]
-    elif user_language['language'] == "TT":
+    elif language == "TT":
         text = LEXICON["TT"]["get_group"]
     else:
         text = LEXICON["EN"]["get_group"]
-    await message.answer(text=text)
+    await message.answer(text=text, reply_markup=menu_keyboard(language))
     # Вносим данные пользователь в БД
     user_data = await state.get_data()
     name = user_data['name']
-    language = user_data['language']
     group = user_data['group']
     user = User(
         id=int(message.chat.id),
@@ -158,30 +158,6 @@ async def process_get_group(message: Message, state: FSMContext):
     except IntegrityError:
         session.rollback()  # откатываем session.add(user)
         return False
-
-
-# Этот хэндлер получает и сохраняет имя пользователя
-@child_router.message(Data.name)
-async def process_name(message: Message, state: FSMContext):
-    """Обработчик после авторизации."""
-    try:
-        user = select_user(message.chat.id)
-        language = user.language
-        lexicon = LEXICON[language]
-        set_user_param(user, name=message.text)
-        await state.clear()
-        await message.answer(
-            f'{lexicon["hello"]}, {user.name}! ' f'{lexicon["hello_message"]}',
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=menu_keyboard(language),
-                resize_keyboard=True,
-                one_time_keyboard=True,
-            ),
-        )
-    except KeyError as err:
-        logger.error(f"Проверь правильность ключевых слов: {err}")
-    except Exception as err:
-        logger.error(f"Ошибка при отправке сообщения с меню. {err}")
 
 
 # Обработчики обычных кнопок
