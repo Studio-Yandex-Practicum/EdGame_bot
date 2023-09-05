@@ -7,20 +7,21 @@ from db.engine import session
 from db.models import Achievement, AchievementStatus, User
 
 
-def register_user(message):
-    name = message.chat.first_name if message.chat.first_name else None
-    user = User(
-        id=int(message.chat.id), name=name, role="kid", language="RU", score=0
-    )
-
-    session.add(user)
-
-    try:
-        session.commit()
-        return True
-    except IntegrityError:
-        session.rollback()  # откатываем session.add(user)
-        return False
+# def register_user(message):
+#     name = message.chat.first_name if message.chat.first_name else None
+#     user = User(
+#         id=int(message.chat.id), name=name, role="kid", language="RU", score=0,
+#         group=0
+#     )
+#
+#     session.add(user)
+#
+#     try:
+#         session.commit()
+#         return True
+#     except IntegrityError:
+#         session.rollback()  # откатываем session.add(user)
+#         return False
 
 
 def select_user(user_id) -> User:
@@ -105,7 +106,8 @@ def available_achievements(user_id, user_score) -> list:
 def get_achievement(achievement_id: int) -> Achievement:
     """Достаем ачивку из базы по ее id."""
     achievement = (
-        session.query(Achievement).filter(Achievement.id == achievement_id).first()
+        session.query(Achievement).filter(
+            Achievement.id == achievement_id).first()
     )
     return achievement if achievement else "Unknown Achievement"
 

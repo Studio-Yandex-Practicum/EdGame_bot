@@ -8,9 +8,9 @@ from aiogram.types import (
     CallbackQuery,
     ReplyKeyboardRemove,
 )
-from aiogram.filters import CommandStart, Command, Text
+from aiogram.filters import CommandStart, Command, Text, StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.state import default_state
 
 from keyboards.keyboards import (
     menu_keyboard,
@@ -23,7 +23,6 @@ from keyboards.keyboards import (
     contacts_keyboard,
     help_keyboard,
 )
-from keyboards.set_menu import set_main_menu
 from keyboards.methodist_keyboards import (
     art_list_keyboard,
     methodist_profile_keyboard,
@@ -31,7 +30,6 @@ from keyboards.methodist_keyboards import (
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
 from .artifact_handlers import process_artifact
 from utils.db_commands import (
-    register_user,
     select_user,
     set_user_param,
     available_achievements,
@@ -40,11 +38,14 @@ from utils.db_commands import (
     get_users_by_role,
     user_achievements,
 )
+from utils.states_form import Data, Profile
 from utils.utils import (
     process_next_achievements,
     process_previous_achievements,
 )
 from db.engine import session
+from db.models import User
+from sqlalchemy.exc import IntegrityError
 from .methodist_handlers import methodist_router
 
 logger = logging.getLogger(__name__)
@@ -57,22 +58,6 @@ router.include_routers(child_router, methodist_router)
 PAGE_SIZE = 2
 # Количество возможных кнопок
 ACHIEVEMENTS_NUM = len(get_all_achievements())
-
-
-class Data(StatesGroup):
-    """
-    Машина состояний для реализации сценариев диалогов с пользователем.
-    """
-
-    name = State()
-    language = State()
-    change_name = State()
-    change_bio = State()
-    change_language = State()
-    task_id = State()
-    tasks = State()
-    tasks_info = State()
-    artifact = State()
 
 
 # Этот хэндлер срабатывает на кодовое слово и присваивает роль методиста
@@ -108,36 +93,73 @@ async def process_councelor_command(message):
 
 
 # Этот хэндлер срабатывает на команду /start
-@router.message(CommandStart())
-async def process_start_command(message):
-    # Сохраняем пользователя в БД, роль по умолчанию 'kid'
-    register_user(message)
+@router.message(CommandStart(), StateFilter(default_state))
+async def process_start_command(message: Message, state: FSMContext):
+    # Анкетируем и сохраняем пользователя в БД, роль по умолчанию 'kid'
     await message.answer(
         text=f"{LEXICON_COMMANDS['/start']}",
         reply_markup=create_welcome_keyboard(),
     )
+    await state.set_state(Profile.choose_language)
 
 
-# Этот хендлер срабатывает на апдейт CallbackQuery с выбором языка
-@router.callback_query(Text(text=["ru_pressed", "tt_pressed", "en_pressed"]))
-async def process_buttons_press(callback):
-    user = select_user(callback.from_user.id)
-    if callback.data == "ru_pressed":
-        user.language = "RU"
-        session.add(user)
-        session.commit()
+# Этот хендлер срабатывает на выбор языка
+@router.callback_query(StateFilter(Profile.choose_language), F.data.in_(["RU", "TT", "EN"]))
+async def process_select_language(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(language=callback.data)
+    if callback.data == "RU":
         text = LEXICON["RU"]["ru_pressed"]
-    elif callback.data == "tt_pressed":
-        user.language = "tt"
-        session.add(user)
-        session.commit()
+    elif callback.data == "TT":
         text = LEXICON["TT"]["tt_pressed"]
     else:
-        user.language = "en"
-        session.add(user)
-        session.commit()
         text = LEXICON["EN"]["en_pressed"]
-    await callback.answer(text=text)
+    await callback.message.delete()
+    await callback.message.answer(text=text)
+    await state.set_state(Profile.get_name)
+
+
+@router.message(StateFilter(Profile.get_name))
+async def process_get_name(message: Message, state: FSMContext):
+    await state.update_data(name=message.text)
+    user_language = await state.get_data()
+    if user_language['language'] == "RU":
+        text = LEXICON["RU"]["get_name"]
+    elif user_language['language'] == "TT":
+        text = LEXICON["TT"]["get_name"]
+    else:
+        text = LEXICON["EN"]["get_name"]
+    await message.answer(text=text)
+    await state.set_state(Profile.get_group)
+
+
+@router.message(StateFilter(Profile.get_group))
+async def process_get_name(message: Message, state: FSMContext):
+    await state.update_data(group=message.text)
+    user_language = await state.get_data()
+    if user_language['language'] == "RU":
+        text = LEXICON["RU"]["get_group"]
+    elif user_language['language'] == "TT":
+        text = LEXICON["TT"]["get_group"]
+    else:
+        text = LEXICON["EN"]["get_group"]
+    await message.answer(text=text)
+    # Вносим данные пользователь в БД
+    user_data = await state.get_data()
+    name = user_data['name']
+    language = user_data['language']
+    group = user_data['group']
+    user = User(
+        id=int(message.chat.id), name=name, role="kid", language=language, score=0,
+        group=group
+    )
+    session.add(user)
+    await state.clear()
+    try:
+        session.commit()
+        return True
+    except IntegrityError:
+        session.rollback()  # откатываем session.add(user)
+        return False
 
 
 # Этот хэндлер получает и сохраняет имя пользователя

@@ -1,7 +1,8 @@
 from sqlalchemy import ARRAY, TIMESTAMP, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.schema import CheckConstraint
-from .engine import engine
+
+from db.engine import engine
 
 DeclarativeBase = declarative_base()
 
@@ -16,8 +17,6 @@ class User(DeclarativeBase):
         CheckConstraint(r"role in ('methodist', 'councelor', 'kid')"),
         nullable=False,
     )
-    # login = Column(String(50), unique=True, nullable=False)
-    # password = Column(String(50), nullable=False)
     language = Column(
         String,
         CheckConstraint(r"language in ('RU', 'EN', 'TT')"),
