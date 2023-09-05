@@ -396,7 +396,7 @@ async def process_saving_task_to_db(query: CallbackQuery, state: FSMContext):
 
 
 # Обработчики редактирования задания
-@methodist_router.message(F.text.regexp(r'^Посмотреть/редактировать ачивки'))
+@methodist_router.message(F.text.regexp(r'^Посмотреть/Редактировать ачивки'))
 async def show_task_list(message: Message, state: FSMContext):
     '''
     Обарботчик кнопки Посмотреть/редактировать ачивки.
@@ -422,7 +422,7 @@ async def show_task_list(message: Message, state: FSMContext):
             f'{text}',
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_list_keyboard(
-                    len(tasks), end=final_item, methodist=True)))
+                    len(tasks), end=final_item)))
     except KeyError as err:
         logger.error(
             f'Ошибка в ключе при просмотре списка заданий: {err}')
@@ -458,8 +458,7 @@ async def process_next_task_list(query: CallbackQuery, state: FSMContext):
                 f'{text}',
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=task_list_keyboard(
-                        len(tasks), previous_final_item, final_item,
-                        methodist=True)))
+                        len(tasks), previous_final_item, final_item)))
     except KeyError as err:
         logger.error(
             'Проверь правильность ключевых слов в обработке '
@@ -477,7 +476,7 @@ async def process_previous_task_list(query: CallbackQuery, state: FSMContext):
     try:
         await query.answer()
         data = await state.get_data()
-        language = data['language']
+        language = data['user_language']
         lexicon = LEXICON[language]
         tasks = data['task_info']['tasks']
         count = data['task_info']['count']
@@ -497,8 +496,7 @@ async def process_previous_task_list(query: CallbackQuery, state: FSMContext):
                 f'{text}',
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=task_list_keyboard(
-                        len(tasks), first_item, final_item,
-                        methodist=True)))
+                        len(tasks), first_item, final_item)))
     except KeyError as err:
         logger.error('Проверь правильность ключевых слов в обработке '
                      f'previous методиста: {err}')
@@ -659,7 +657,7 @@ async def process_change_image(message: Message, state: FSMContext):
             await message.answer(lexicon["ask_image_again"])
             return
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], image=message.photo[0].file_id)
+            achievement_id=data["task_id"], image=message.photo[-1].file_id)
         if not task_saved:
             await message.answer(
                 lexicon["error_adding_task"],

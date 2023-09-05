@@ -90,16 +90,13 @@ def edit_profile_keyboard(language: str):
 
 
 # Список ачивок
-def task_list_keyboard(buttons_count: int, start: int = 0, end: int = 5,
-                       methodist: bool = False):
+def task_list_keyboard(buttons_count: int, start: int = 0, end: int = 5):
     '''Функция для генерации кнопок с номерами ачивок.'''
     keyboard = []
     buttons = []
     nav_buttons = []
-    next_data = 'next_methodist' if methodist else 'next'
-    prev_data = 'previous_methodist' if methodist else 'previous'
-    button_next = InlineKeyboardButton(text='>>', callback_data=next_data)
-    button_prev = InlineKeyboardButton(text='<<', callback_data=prev_data)
+    button_next = InlineKeyboardButton(text='>>', callback_data='next')
+    button_prev = InlineKeyboardButton(text='<<', callback_data='previous')
     info_button = InlineKeyboardButton(
         text=f'{end}/{buttons_count}', callback_data='info')
     for i in range(buttons_count):

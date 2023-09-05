@@ -82,6 +82,8 @@ def edit_task_keyboard(language: str):
     buttons = BUTTONS[language]
     name = InlineKeyboardButton(
         text=buttons["edit_name"], callback_data='edit_name')
+    image = InlineKeyboardButton(
+        text=buttons["edit_image"], callback_data='edit_image')
     description = InlineKeyboardButton(
         text=buttons["edit_description"], callback_data='edit_description')
     instruction = InlineKeyboardButton(
@@ -98,8 +100,8 @@ def edit_task_keyboard(language: str):
         text=buttons["complete_editing_task"],
         callback_data='complete_editing')
     keyboard = [
-        [name, description],
-        [instruction],
+        [name, image],
+        [description, instruction],
         [task_type, artifact_type],
         [score, price],
         [complete]
