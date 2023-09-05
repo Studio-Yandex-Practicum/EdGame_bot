@@ -1,6 +1,8 @@
 LEXICON = {
     'RU': {
-        'ru_pressed': 'Вы выбрали русский язык',
+        'ru_pressed': 'Вы выбрали русский язык. Спасибо, теперь введите ваше имя:',
+        'get_name': 'Спасибо, теперь введите номер отряда:',
+        'get_group': 'Анкетирование завершено. Добро пожаловать в ваш личный кабинет.',
         'methodist': 'Вы получили права доступа методиста',
         'councelor': 'Вы получили права доступа вожатого',
         # Отдельные фразы или слова
@@ -70,7 +72,9 @@ LEXICON = {
     },
 
     'TT': {
-        'tt_pressed': 'Сез татар телен сайладыгыз',
+        'tt_pressed': 'Сез татар телен сайладыгыз. Рәхмәт, хәзер исемегезне языгыз:',
+        'get_name': 'Рәхмәт, хәзер отряд номерын кертегез:',
+        'get_group': 'Анкета тәмамланды. Шәхси кабинетыгызга рәхим итегез.',
         'methodist': 'Сез методистка керү хокукын алдыгызмы',
         'councelor': 'Сез башлыкның керү хокукын алдыгызмы',
         # Отдельные фразы или слова
@@ -139,7 +143,9 @@ LEXICON = {
     },
 
     'EN': {
-        'en_pressed': 'You have chosen English',
+        'en_pressed': 'You have chosen English. Thank you, now enter your name:',
+        'get_name': 'Thank you, now enter your group number:',
+        'get_group': 'The survey is completed. Welcome to your personal account.',
         'methodist': 'You have received the access rights of a methodologist',
         'councelor': 'You have received the access rights of a counselor',
         # Отдельные фразы или слова

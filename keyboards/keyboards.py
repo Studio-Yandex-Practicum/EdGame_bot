@@ -5,20 +5,18 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
 )
 
-from lexicon.lexicon import BUTTONS
-
 
 # Функция, генерирующая клавиатуру для выбора языка
 def create_welcome_keyboard():
     # Создаем объекты инлайн-кнопок
     rus_lang: InlineKeyboardButton = InlineKeyboardButton(
-        text="Русский язык", callback_data="ru_pressed"
+        text="Русский язык", callback_data="RU"
     )
     tatar_lang: InlineKeyboardButton = InlineKeyboardButton(
-        text="Татар теле", callback_data="tt_pressed"
+        text="Татар теле", callback_data="TT"
     )
     eng_lang: InlineKeyboardButton = InlineKeyboardButton(
-        text="English language", callback_data="en_pressed"
+        text="English language", callback_data="EN"
     )
     # Создаем объект инлайн-клавиатуры
     welcome_keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup(

@@ -6,7 +6,6 @@ from aiogram.enums import ParseMode
 
 from config_data.config import load_config
 from handlers import counselor_handlers, user_handlers
-from keyboards.set_menu import set_main_menu
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +31,10 @@ async def main():
     dp = Dispatcher()
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню
-    # dp.include_router(user_handlers.router)
+    dp.include_router(user_handlers.router)
     dp.include_router(counselor_handlers.router)
-    # dp.startup.register(set_main_menu)
     # Пропускаем накопившиеся апдейты и запускаем polling
+    await bot.delete_my_commands()
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
     logger.info("Bot started!")
