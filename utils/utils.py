@@ -8,11 +8,14 @@ from db.models import Achievement, User
 logger = logging.getLogger(__name__)
 
 
-def process_next_achievements(tasks: list[Achievement], count: int = 0,
-                              previous_final_item: int = 0, page_size: int = 5
-                              ) -> tuple:
+def process_next_achievements(tasks: list[Achievement],
+                              lexicon: dict,
+                              count: int = 0,
+                              previous_final_item: int = 0,
+                              page_size: int = 5,
+                              methodist=False) -> dict:
     '''
-    Обрабатывает список доступных ачивок и выдает кортеж с текстом для
+    Обрабатывает список доступных ачивок и выдает словарь с текстом для
     сообщения, словарем id ачивок, информацию для пагинатора,
     если ачивок много, и номер последнего элемента для клавиатуры.
     '''
@@ -28,15 +31,26 @@ def process_next_achievements(tasks: list[Achievement], count: int = 0,
         task_list.append(f'{count}: {tasks[i].name}.')
         task_ids[count] = tasks[i].id
     text = '\n\n'.join(task_list)
+    msg = (
+        f'{lexicon["available_achievements"]}:\n\n'
+        f'{text}\n\n'
+        f'{lexicon["choose_achievement"]}:')
+    if methodist:
+        msg = (
+            f'{lexicon["available_achievements"]}:\n\n'
+            f'{text}\n\n')
     task_info = {'count': count, 'final_item': final_item, 'tasks': tasks}
-    return (text, task_ids, task_info)
+    return {'msg': msg, 'task_ids': task_ids, 'task_info': task_info}
 
 
-def process_previous_achievements(tasks: list[Achievement], count: int = 0,
+def process_previous_achievements(tasks: list[Achievement],
+                                  lexicon: dict,
+                                  count: int = 0,
                                   previous_final_item: int = 0,
-                                  page_size: int = 5) -> tuple:
+                                  page_size: int = 5,
+                                  methodist=False) -> dict:
     '''
-    Обрабатывает список доступных ачивок и выдает кортеж с текстом для
+    Обрабатывает список доступных ачивок и выдает словарь с текстом для
     сообщения, словарем id ачивок, информацию для пагинатора,
     если ачивок много, и номер последнего элемента для клавиатуры.
     '''
@@ -58,13 +72,21 @@ def process_previous_achievements(tasks: list[Achievement], count: int = 0,
         task_list.append(f'{count}: {tasks[i].name}.')
         task_ids[count] = tasks[i].id
     text = '\n\n'.join(task_list)
+    msg = (
+        f'{lexicon["available_achievements"]}:\n\n'
+        f'{text}\n\n'
+        f'{lexicon["choose_achievement"]}:')
+    if methodist:
+        msg = (
+            f'{lexicon["available_achievements"]}:\n\n'
+            f'{text}\n\n')
     task_info = {
         'count': count,
         'first_item': first_item,
         'final_item': final_item,
         'tasks': tasks
     }
-    return (text, task_ids, task_info)
+    return {'msg': msg, 'task_ids': task_ids, 'task_info': task_info}
 
 
 async def process_artifact(message: Message, achievement_id: int,
@@ -128,10 +150,10 @@ def get_achievement_info(task_id: type(int | str),
     return {'info': info, 'image': image, 'id': task.id}
 
 
-def generate_text_with_available_tasks(user_id: int, lexicon: dict[str, str]):
+def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
     '''
     Принимает id пользователя и возвращает текст
-    с инфой о доступных ачивках для сообщения.
+    с инфой об ачивках на проверке для сообщения.
     '''
     achievements = user_achievements(user_id)
     in_review = []
@@ -154,7 +176,13 @@ def generate_text_with_available_tasks(user_id: int, lexicon: dict[str, str]):
                 f'{lexicon["task_name"]}: {task.name}\n'
                 f'{lexicon["task_description"]}: {task.description}')
             in_review.append(task_info)
-    return '\n\n'.join(in_review) if in_review else False
+    text = '\n\n'.join(in_review)
+    msg = (
+        f'{lexicon["achievements_completed"]}\n\n'
+        f'{text}\n\n'
+        f'{lexicon["cheer_up"]}'
+    ) if in_review else lexicon["no_achievement_completed"]
+    return msg
 
 
 def generate_text_with_reviewed_tasks(user_id: int, lexicon: dict[str, str]):
@@ -186,7 +214,13 @@ def generate_text_with_reviewed_tasks(user_id: int, lexicon: dict[str, str]):
                 f'{lexicon["task_description"]}: {task.description}'
                 f'{lexicon["score_added"]}: {task.score}')
             reviewed.append(task_info)
-    return '\n\n'.join(reviewed) if reviewed else False
+    text = '\n\n'.join(reviewed)
+    msg = (
+        f'{lexicon["achievements_completed"]}\n\n'
+        f'{text}\n\n'
+        f'{lexicon["cheer_up"]}'
+    ) if reviewed else lexicon["no_achievement_reviewed"]
+    return msg
 
 
 def generate_profile_info(user: User, lexicon: dict):

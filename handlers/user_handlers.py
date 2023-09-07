@@ -8,7 +8,7 @@ from aiogram.types import (
     CallbackQuery,
     ReplyKeyboardRemove,
 )
-from aiogram.filters import CommandStart, Command, Text, StateFilter
+from aiogram.filters import CommandStart, Text, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 
@@ -27,7 +27,7 @@ from keyboards.methodist_keyboards import (
     art_list_keyboard,
     methodist_profile_keyboard,
 )
-from lexicon.lexicon import LEXICON, LEXICON_COMMANDS
+from lexicon.lexicon import LEXICON, LEXICON_COMMANDS, BUTTONS
 from utils.db_commands import (
     select_user,
     set_user_param,
@@ -36,7 +36,7 @@ from utils.db_commands import (
 from utils.states_form import Data, Profile
 from utils.utils import (
     process_next_achievements, process_previous_achievements, process_artifact,
-    generate_text_with_available_tasks, generate_text_with_reviewed_tasks,
+    generate_text_with_tasks_in_review, generate_text_with_reviewed_tasks,
     generate_profile_info, get_achievement_info)
 from db.engine import session
 from db.models import User
@@ -50,7 +50,8 @@ logger = logging.getLogger(__name__)
 router = Router()
 child_router = Router()
 child_router.message.filter(IsStudent())
-router.include_routers(child_router, methodist_router)
+child_router.callback_query.filter(IsStudent())
+router.include_routers(methodist_router, child_router)
 
 
 # Этот хэндлер срабатывает на кодовое слово и присваивает роль методиста
@@ -161,9 +162,10 @@ async def process_get_group(message: Message, state: FSMContext):
 
 
 # Обработчики обычных кнопок
-@child_router.message(Command(commands='current_achievements'))
-@child_router.message(F.text.regexp(r'^Текущие задания$'))
-@child_router.message(F.text.regexp(r'^Current achievements$'))
+@child_router.message(F.text.in_([
+    BUTTONS["RU"]["current_achievements"],
+    BUTTONS["TT"]["current_achievements"],
+    BUTTONS["EN"]["current_achievements"]]))
 async def show_current_tasks(message: Message):
     '''
     Показывам ачивки в статусе на проверке либо предлагаем
@@ -174,12 +176,7 @@ async def show_current_tasks(message: Message):
         user = select_user(message.from_user.id)
         lexicon = LEXICON[user.language]
         # Генерируем текст с инфой об ачивках
-        text = generate_text_with_available_tasks(user.id, lexicon)
-        msg = (f'{lexicon["achievements_completed"]}\n\n'
-               f'{text}\n\n'
-               f'{lexicon["cheer_up"]}')
-        if not text:
-            msg = lexicon["no_achievement_completed"]
+        msg = generate_text_with_tasks_in_review(user.id, lexicon)
         await message.answer(
             msg,
             reply_markup=InlineKeyboardMarkup(
@@ -190,9 +187,10 @@ async def show_current_tasks(message: Message):
         logger.error(f'Ошибка при получении текущих ачивок: {err}')
 
 
-@child_router.message(Command(commands='reviewed_achievements'))
-@child_router.message(F.text.regexp(r'^Проверенные задания$'))
-@child_router.message(F.text.regexp(r'^Reviewed achievements$'))
+@child_router.message(F.text.in_([
+    BUTTONS["RU"]["reviewed_achievements"],
+    BUTTONS["TT"]["reviewed_achievements"],
+    BUTTONS["EN"]["reviewed_achievements"]]))
 async def show_reviewed_tasks(message: Message):
     '''
     Показывам ачивки в статусе на проверке либо предлагаем
@@ -203,12 +201,7 @@ async def show_reviewed_tasks(message: Message):
         user = select_user(message.from_user.id)
         lexicon = LEXICON[user.language]
         # Генерируем текст с инфой об ачивках
-        text = generate_text_with_reviewed_tasks(user.id, lexicon)
-        msg = (f'{lexicon["achievements_completed"]}\n\n'
-               f'{text}\n\n'
-               f'{lexicon["cheer_up"]}')
-        if not text:
-            msg = lexicon["no_achievement_reviewed"]
+        msg = generate_text_with_reviewed_tasks(user.id, lexicon)
         await message.answer(
             msg,
             reply_markup=InlineKeyboardMarkup(
@@ -219,9 +212,10 @@ async def show_reviewed_tasks(message: Message):
         logger.error(f'Ошибка при получении проверенных ачивок: {err}')
 
 
-@child_router.message(
-    (F.text.regexp(r'^Личный кабинет$') | F.text.regexp(r'^Profile$')))
-@child_router.message(Command(commands='lk'))
+@child_router.message(F.text.in_([
+    BUTTONS["RU"]["lk"],
+    BUTTONS["TT"]["lk"],
+    BUTTONS["EN"]["lk"]]))
 async def profile_info(message: Message, state: FSMContext):
     '''Обработчик показывает главное меню профиля студента.'''
     try:
@@ -268,8 +262,10 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
         logger.error(f'Ошибка при открытии личного кабинета: {err}')
 
 
-@child_router.message(F.text.regexp(r'^Написать вожатому$'))
-@child_router.message(F.text.regexp(r'^Write to councelor$'))
+@child_router.message(F.text.in_([
+    BUTTONS["RU"]["write_to_councelor"],
+    BUTTONS["TT"]["write_to_councelor"],
+    BUTTONS["EN"]["write_to_councelor"]]))
 async def write_to_councelor(message: Message):
     '''
     Обработчик кнопки Написать вожатому.
@@ -291,10 +287,10 @@ async def write_to_councelor(message: Message):
         logger.error(f'Ошибка при отправке контакта вожатого: {err}')
 
 
-@child_router.message(Command(commands='help'))
-@child_router.message(
-    F.text.regexp(r'^Справка по работе бота$')
-    | F.text.regexp(r'^Instructions on how to use the bot$'))
+@child_router.message(F.text.in_([
+    BUTTONS["RU"]["help"],
+    BUTTONS["TT"]["help"],
+    BUTTONS["EN"]["help"]]))
 async def help_command(message: Message):
     try:
         user = select_user(message.from_user.id)
@@ -311,9 +307,10 @@ async def help_command(message: Message):
 
 
 # Обработчики списка ачивок и пагинации
-@child_router.message(F.text.regexp(r'^Доступные задания$'))
-@child_router.message(F.text.regexp(r'^Available achievements$'))
-@child_router.message(Command(commands='achievements'))
+@child_router.message(F.text.in_([
+    BUTTONS["RU"]["available_achievements"],
+    BUTTONS["TT"]["available_achievements"],
+    BUTTONS["EN"]["available_achievements"]]))
 async def show_tasks_list(message: Message, state: FSMContext):
     '''
     Обработчик кнопки Посмотреть доступные ачивки.
@@ -326,18 +323,18 @@ async def show_tasks_list(message: Message, state: FSMContext):
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
         info = process_next_achievements(
-            tasks=tasks, page_size=Pagination.page_size)
-        text = info[0]
-        task_ids = info[1]
-        task_info = info[2]
+            tasks=tasks,
+            lexicon=lexicon,
+            page_size=Pagination.page_size)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
         final_item = task_info['final_item']
         await state.update_data(
             tasks=task_ids, task_info=task_info, language=language)
         await state.set_state(Data.tasks)
         await message.answer(
-            f'{lexicon["available_achievements"]}:\n\n'
-            f'{text}\n\n'
-            f'{lexicon["choose_achievement"]}:',
+            msg,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_list_keyboard(
                     len(tasks), end=final_item)))
@@ -361,18 +358,18 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
         info = process_next_achievements(
-            tasks=tasks, page_size=Pagination.page_size)
-        text = info[0]
-        task_ids = info[1]
-        task_info = info[2]
+            tasks=tasks,
+            lexicon=lexicon,
+            page_size=Pagination.page_size)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
         final_item = task_info['final_item']
         await state.update_data(
             tasks=task_ids, task_info=task_info, language=language)
         await state.set_state(Data.tasks)
         await query.message.edit_text(
-            f'{lexicon["available_achievements"]}:\n\n'
-            f'{text}\n\n'
-            f'{lexicon["choose_achievement"]}:',
+            msg,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_list_keyboard(
                     len(tasks), end=final_item)))
@@ -397,18 +394,19 @@ async def process_next_tasks(query: CallbackQuery, state: FSMContext):
         count = data['task_info']['count']
         previous_final_item = data['task_info']['final_item']
         info = process_next_achievements(
-            tasks=tasks, count=count, previous_final_item=previous_final_item,
+            tasks=tasks,
+            lexicon=lexicon,
+            count=count,
+            previous_final_item=previous_final_item,
             page_size=Pagination.page_size)
-        text = info[0]
-        task_ids = info[1]
-        task_info = info[2]
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
         final_item = task_info['final_item']
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(Data.tasks)
         await query.message.edit_text(
-                f'{lexicon["available_achievements"]}:\n\n'
-                f'{text}\n\n'
-                f'{lexicon["choose_achievement"]}:',
+                msg,
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=task_list_keyboard(
                         len(tasks), previous_final_item, final_item)))
@@ -433,19 +431,20 @@ async def process_previous_tasks(query: CallbackQuery, state: FSMContext):
         count = data['task_info']['count']
         previous_final_item = data['task_info']['final_item']
         info = process_previous_achievements(
-            tasks=tasks, count=count, previous_final_item=previous_final_item,
+            tasks=tasks,
+            lexicon=lexicon,
+            count=count,
+            previous_final_item=previous_final_item,
             page_size=Pagination.page_size)
-        text = info[0]
-        task_ids = info[1]
-        task_info = info[2]
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
         first_item = task_info['first_item']
         final_item = task_info['final_item']
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(Data.tasks)
         await query.message.edit_text(
-                f'{lexicon["available_achievements"]}:\n\n'
-                f'{text}\n\n'
-                f'{lexicon["choose_achievement"]}:',
+                msg,
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=task_list_keyboard(
                         len(tasks), first_item, final_item)))
@@ -545,8 +544,10 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
 
 
 # Обработчики редактирования профиля
-@child_router.message(F.text.regexp(r'^Редактировать профиль$'))
-@child_router.message(F.text.regexp(r'^Edit profile$'))
+@child_router.message(F.text.in_([
+    BUTTONS["RU"]["edit_profile"],
+    BUTTONS["TT"]["edit_profile"],
+    BUTTONS["EN"]["edit_profile"]]))
 async def edit_profile(message: Message, state: FSMContext):
     '''Обработчик для редактирования профиля ребенка.'''
     try:

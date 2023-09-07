@@ -6,8 +6,8 @@ from aiogram.types import (
     Message, CallbackQuery, ReplyKeyboardMarkup, InlineKeyboardMarkup)
 from aiogram.fsm.context import FSMContext
 
-from lexicon.lexicon import LEXICON
-from keyboards.keyboards import task_list_keyboard
+from lexicon.lexicon import LEXICON, BUTTONS
+from keyboards.keyboards import task_list_keyboard, help_keyboard
 from keyboards.methodist_keyboards import (
     methodist_profile_keyboard, add_task_keyboard, task_type_keyboard,
     artifact_type_keyboard, confirm_task_keyboard, edit_task_keyboard,
@@ -33,8 +33,10 @@ ARTIFACT_TYPES = ['text', 'image', 'video']
 
 
 # Обработчики обычных кнопок
-@methodist_router.message(
-    F.text.regexp(r'^Личный кабинет$') | F.text.regexp(r'^Profile$'))
+@methodist_router.message(F.text.in_([
+    BUTTONS["RU"]["lk"],
+    BUTTONS["TT"]["lk"],
+    BUTTONS["EN"]["lk"]]))
 async def profile_info(message: Message, state: FSMContext):
     '''Обработчик показывает главное меню профиля методиста.'''
     try:
@@ -82,7 +84,30 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
         logger.error(f'Ошибка при открытии личного кабинета: {err}')
 
 
-@methodist_router.message(F.text.regexp(r'^Задания на проверку$'))
+@methodist_router.message(F.text.in_([
+    BUTTONS["RU"]["help"],
+    BUTTONS["TT"]["help"],
+    BUTTONS["EN"]["help"]]))
+async def help_command(message: Message):
+    try:
+        user = select_user(message.from_user.id)
+        language = user.language
+        await message.answer(
+            LEXICON[language]["help_info"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=help_keyboard(language)))
+    except KeyError as err:
+        logger.error(
+            'Ошибка в ключевом слове при обработке команды help у методиста:'
+            f' {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при обработке команды help у методиста: {err}')
+
+
+@methodist_router.message(F.text.in_([
+    BUTTONS["RU"]["tasks_for_review"],
+    BUTTONS["TT"]["tasks_for_review"],
+    BUTTONS["EN"]["tasks_for_review"]]))
 async def show_tasks_for_review(message: Message, state: FSMContext):
     '''
     Обработчик кнопки Задания на проверку. Показывает ачивки,
@@ -127,7 +152,10 @@ async def show_tasks_for_review(message: Message, state: FSMContext):
 
 
 # Обработчики добавления задания
-@methodist_router.message(F.text.regexp(r'^Добавить задание$'))
+@methodist_router.message(F.text.in_([
+    BUTTONS["RU"]["add_task"],
+    BUTTONS["TT"]["add_task"],
+    BUTTONS["EN"]["add_task"]]))
 async def add_task(message: Message):
     '''Обработчик кнопки Добавить задание.'''
     try:
@@ -360,7 +388,10 @@ async def process_saving_task_to_db(query: CallbackQuery, state: FSMContext):
 
 
 # Обработчики редактирования задания
-@methodist_router.message(F.text.regexp(r'^Посмотреть/Редактировать ачивки'))
+@methodist_router.message(F.text.in_([
+    BUTTONS["RU"]["achievement_list"],
+    BUTTONS["TT"]["achievement_list"],
+    BUTTONS["EN"]["achievement_list"]]))
 async def show_task_list(message: Message, state: FSMContext):
     '''
     Обарботчик кнопки Посмотреть/редактировать ачивки.
@@ -373,17 +404,19 @@ async def show_task_list(message: Message, state: FSMContext):
         lexicon = LEXICON[language]
         tasks = get_all_achievements()
         info = process_next_achievements(
-            tasks=tasks, page_size=Pagination.page_size)
-        text = info[0]
-        task_ids = info[1]
-        task_info = info[2]
+            tasks=tasks,
+            lexicon=lexicon,
+            page_size=Pagination.page_size,
+            methodist=True)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
         final_item = task_info['final_item']
         await state.set_state(TaskList.tasks)
         await state.update_data(
             tasks=task_ids, task_info=task_info, user_language=language)
         await message.answer(
-            f'{lexicon["achievement_list"]}:\n\n'
-            f'{text}',
+            msg,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_list_keyboard(
                     len(tasks), end=final_item)))
@@ -409,17 +442,20 @@ async def process_next_task_list(query: CallbackQuery, state: FSMContext):
         count = data['task_info']['count']
         previous_final_item = data['task_info']['final_item']
         info = process_next_achievements(
-            tasks=tasks, count=count, previous_final_item=previous_final_item,
-            page_size=Pagination.page_size)
-        text = info[0]
-        task_ids = info[1]
-        task_info = info[2]
+            tasks=tasks,
+            lexicon=lexicon,
+            count=count,
+            previous_final_item=previous_final_item,
+            page_size=Pagination.page_size,
+            methodist=True)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
         final_item = task_info['final_item']
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(TaskList.tasks)
         await query.message.edit_text(
-                f'{lexicon["achievement_list"]}:\n\n'
-                f'{text}',
+                msg,
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=task_list_keyboard(
                         len(tasks), previous_final_item, final_item)))
@@ -446,18 +482,21 @@ async def process_previous_task_list(query: CallbackQuery, state: FSMContext):
         count = data['task_info']['count']
         previous_final_item = data['task_info']['final_item']
         info = process_previous_achievements(
-            tasks=tasks, count=count, previous_final_item=previous_final_item,
-            page_size=Pagination.page_size)
-        text = info[0]
-        task_ids = info[1]
-        task_info = info[2]
+            tasks=tasks,
+            lexicon=lexicon,
+            count=count,
+            previous_final_item=previous_final_item,
+            page_size=Pagination.page_size,
+            methodist=True)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
         first_item = task_info['first_item']
         final_item = task_info['final_item']
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(TaskList.tasks)
         await query.message.edit_text(
-                f'{lexicon["achievement_list"]}:\n\n'
-                f'{text}',
+                msg,
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=task_list_keyboard(
                         len(tasks), first_item, final_item)))
