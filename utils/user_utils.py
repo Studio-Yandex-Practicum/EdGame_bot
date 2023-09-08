@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from db.models import Achievement, AchievementStatus, User
+from aiogram import types
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -170,42 +171,25 @@ def save_rejection_reason_in_db(session: Session, id: int, message_text: str):
     return True
 
 
-async def send_achievement_file(
-    message,
-    child,
-    achievement_name,
-    achievement_description,
-    achievement_instruction,
-    achievement_file_id,
-    achievement_file_type,
+async def send_task(
+    message: types.Message,
+    file_type,
+    file_id,
+    caption,
+    message_text,
     inline_keyboard,
 ):
-    "Отправляет задание на проверку вожатому с файлом из БД."
-    if achievement_file_type in [
-        "image"
-    ]:  # TODO: надо переписать через match/case
+    if file_type == "image":
         await message.answer_photo(
-            photo=achievement_file_id[0],
-            caption=(
-                f"Задание на проверку от {child.name}:\n{achievement_name} - \
-            {achievement_description} - {achievement_instruction}"
-            ),
-            reply_markup=inline_keyboard,
+            photo=file_id[0], caption=caption, reply_markup=inline_keyboard
         )
-    elif achievement_file_type == "video":
+    elif file_type == "video":
         await message.answer_video(
-            video=achievement_file_id[0],
-            caption=(
-                f"Задание на проверку от {child.name}:\n{achievement_name} - \
-                {achievement_description} - {achievement_instruction}"
-            ),
-            reply_markup=inline_keyboard,
+            video=file_id[0], caption=caption, reply_markup=inline_keyboard
         )
-    elif achievement_file_type == "text":
+    elif file_type == "text":
         await message.answer(
-            f"Задание на проверку от {child.name}:\n{achievement_name} - \
-                {achievement_description} - {achievement_instruction}",
-            reply_markup=inline_keyboard,
+            f"{caption}\n\n{message_text}", reply_markup=inline_keyboard
         )
     else:
         await message.answer("Не удалось получить файл по id")

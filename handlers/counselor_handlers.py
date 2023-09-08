@@ -11,25 +11,26 @@ from keyboards.counselor_keyboard import (
 )
 from utils.db_commands import (
     approve_task,
+    available_achievements,
     reject_task,
     send_to_methdist,
-    available_achievements,
 )
 from utils.user_utils import (
     get_achievement_description,
     get_achievement_file_id,
+    get_achievement_file_type,
     get_achievement_instruction,
     get_achievement_name,
-    save_rejection_reason_in_db,
-    send_achievement_file,
-    get_achievement_file_type,
-    get_achievements_by_name,
-    get_user_name,
     get_achievement_status_by_id,
-    get_all_children_from_group,
-    get_all_children,
-    get_child_by_name_and_group,
+    get_achievements_by_name,
     get_all_child_achievements,
+    get_all_children,
+    get_all_children_from_group,
+    get_child_by_name_and_group,
+    get_message_text,
+    get_user_name,
+    save_rejection_reason_in_db,
+    send_task,
 )
 
 router = Router()
@@ -88,34 +89,36 @@ async def check_requests(message: types.Message):
             )
 
             for task in tasks:
-                achievement_name = get_achievement_name(
+                name = get_achievement_name(session, task.achievement_id)
+                description = get_achievement_description(
                     session, task.achievement_id
                 )
-                achievement_description = get_achievement_description(
-                    session, task.achievement_id
-                )
-                achievement_instruction = get_achievement_instruction(
-                    session, task.achievement_id
-                )
-
-                achievement_file_id = get_achievement_file_id(
-                    session, task.achievement_id
-                )
-                achievement_file_type = get_achievement_file_type(
+                instruction = get_achievement_instruction(
                     session, task.achievement_id
                 )
 
+                file_id = get_achievement_file_id(session, task.achievement_id)
+                file_type = get_achievement_file_type(
+                    session, task.achievement_id
+                )
+                message_text = get_message_text(session, task.achievement_id)
                 inline_keyboard = create_inline_keyboard(task.id)
-                await send_achievement_file(
+
+                caption = (
+                    f"Задание на проверку от {child.name}\n\n"
+                    f"Название задания: {name}\n\n"
+                    f"Описание задания: {description}\n\n"
+                    f"Инструкция: {instruction}"
+                )
+                await send_task(
                     message,
-                    child,
-                    achievement_name,
-                    achievement_description,
-                    achievement_instruction,
-                    achievement_file_id,
-                    achievement_file_type,
+                    file_type,
+                    file_id,
+                    caption,
+                    message_text,
                     inline_keyboard,
                 )
+
     except Exception as e:
         await message.answer("Не удалось найти задания на проверку.")
     finally:
@@ -233,23 +236,8 @@ async def display_task(message: types.Message):
         file_id = get_achievement_file_id(session, achievement.achievement_id)
         message_text = achievement.message_text
         child = get_user_name(session, user_id)
-
-        if file_type in ["image"]:
-            await message.answer_photo(
-                photo=file_id[0],
-                caption=(f"Задание на проверку от {child}"),
-            )
-        elif file_type in ["video"]:
-            await message.answer_video(
-                video=file_id[0],
-                caption=(f"Задание на проверку от {child}"),
-            )
-        elif file_type in ["text"]:
-            await message.answer(
-                f"Задание на проверку от {child}:{message_text}",
-            )
-        else:
-            await message.answer("Не удалось получить файл по id")
+        caption = f"Задание на проверку от {child}\n\n"
+        await send_task(message, file_type, file_id, caption, message_text)
 
 
 @router.message(Text("Узнать общий прогресс отряда"))
@@ -300,7 +288,8 @@ async def check_child(message: types.Message):
         "Доступные ачивки для ребенка:\n",
     ]
     message_text.extend(
-        f"Название: {achievement.name}\nНеобходимо баллов: {achievement.price}\nВид: {achievement.achievement_type}\nБаллы за ачивку: {achievement.score}\n\n"
+        f"Название: {achievement.name}\n\nНеобходимо баллов: {achievement.price}\n\n"
+        f"Вид: {achievement.achievement_type}\n\nБаллы за ачивку: {achievement.score}\n\n"
         for achievement in achievements
     )
     await message.answer("\n".join(message_text))
@@ -333,27 +322,15 @@ async def display_child_task_review(message: types.Message, state: FSMContext):
         description = get_achievement_description(session, ac_id)
         instruction = get_achievement_instruction(session, ac_id)
         file_type = get_achievement_file_type(session, ac_id)
-
-        if file_type == "image":
-            await message.answer_photo(
-                photo=file_id[0],
-                caption=(
-                    f"Название задания: {ac_name}\n\nОписание задания: {description}\n\nИнструкция: {instruction}"
-                ),
-            )
-        elif file_type in ["video"]:
-            await message.answer_video(
-                video=file_id[0],
-                caption=(
-                    f"Название задания: {ac_name}\n\nОписание задания: {description}\n\nИнструкция: {instruction}"
-                ),
-            )
-        elif file_type in ["text"]:
-            await message.answer(
-                f"Название задания: {ac_name}\n\nОписание задания: {description}\n\nИнструкция: {instruction}\n\n {message_text}",
-            )
-        else:
-            await message.answer("Не удалось получить файл по id")
+        inline_keyboard = create_inline_keyboard(achievement.id)
+        caption = (
+            f"Название задания: {ac_name}\n\n"
+            f"Описание задания: {description}\n\n"
+            f"Инструкция: {instruction}"
+        )
+        await send_task(
+            message, file_type, file_id, caption, message_text, inline_keyboard
+        )
 
 
 @router.message(Text("Проверить задание всего отряда"))
@@ -380,23 +357,18 @@ async def display_troop_task_review(message: types.Message):
             description = get_achievement_description(session, ac_id)
             instruction = get_achievement_instruction(session, ac_id)
             file_type = get_achievement_file_type(session, ac_id)
-            if file_type == "image":
-                await message.answer_photo(
-                    photo=file_id[0],
-                    caption=(
-                        f"Задание на проверку от {child_name}\n\nНазвание задания: {name}\n\nОписание задания: {description}\n\nИнструкция: {instruction}"
-                    ),
-                )
-            elif file_type in ["video"]:
-                await message.answer_video(
-                    video=file_id[0],
-                    caption=(
-                        f"Задание на проверку от {child_name}\n\nНазвание задания: {name}\n\nОписание задания: {description}\n\nИнструкция: {instruction}"
-                    ),
-                )
-            elif file_type in ["text"]:
-                await message.answer(
-                    f"Задание на проверку от {child_name}\n\nНазвание задания: {name}\n\nОписание задания: {description}\n\nИнструкция: {instruction}\n\n {message_text}",
-                )
-            else:
-                await message.answer("Не удалось получить файл по id")
+            inline_keyboard = create_inline_keyboard(achievement.id)
+            caption = (
+                f"Задание на проверку от {child_name}\n\n"
+                f"Название задания: {name}\n\n"
+                f"Описание задания: {description}\n\n"
+                f"Инструкция: {instruction}"
+            )
+            await send_task(
+                message,
+                file_type,
+                file_id,
+                caption,
+                message_text,
+                inline_keyboard,
+            )
