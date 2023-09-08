@@ -29,6 +29,7 @@ from keyboards.methodist_keyboards import (
 )
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS, BUTTONS
 from utils.db_commands import (
+    register_user,
     select_user,
     set_user_param,
     available_achievements,
@@ -39,8 +40,6 @@ from utils.utils import (
     generate_text_with_tasks_in_review, generate_text_with_reviewed_tasks,
     generate_profile_info, get_achievement_info)
 from db.engine import session
-from db.models import User
-from sqlalchemy.exc import IntegrityError
 from config_data.config import Pagination
 from filters.custom_filters import IsStudent
 from .methodist_handlers import methodist_router
@@ -130,6 +129,7 @@ async def process_get_name(message: Message, state: FSMContext):
 @router.message(StateFilter(Profile.get_group))
 async def process_get_group(message: Message, state: FSMContext):
     await state.update_data(group=message.text)
+    await state.update_data(id=int(message.chat.id))
     user_data = await state.get_data()
     language = user_data['language']
     if language == "RU":
@@ -140,25 +140,8 @@ async def process_get_group(message: Message, state: FSMContext):
         text = LEXICON["EN"]["get_group"]
     await message.answer(text=text, reply_markup=menu_keyboard(language))
     # Вносим данные пользователь в БД
-    user_data = await state.get_data()
-    name = user_data['name']
-    group = user_data['group']
-    user = User(
-        id=int(message.chat.id),
-        name=name,
-        role="kid",
-        language=language,
-        score=0,
-        group=group
-    )
-    session.add(user)
+    register_user(user_data)
     await state.clear()
-    try:
-        session.commit()
-        return True
-    except IntegrityError:
-        session.rollback()  # откатываем session.add(user)
-        return False
 
 
 # Обработчики обычных кнопок
@@ -406,10 +389,10 @@ async def process_next_tasks(query: CallbackQuery, state: FSMContext):
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(Data.tasks)
         await query.message.edit_text(
-                msg,
-                reply_markup=InlineKeyboardMarkup(
-                    inline_keyboard=task_list_keyboard(
-                        len(tasks), previous_final_item, final_item)))
+            msg,
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=task_list_keyboard(
+                    len(tasks), previous_final_item, final_item)))
     except KeyError as err:
         logger.error(f'Проверь правильность ключевых слов: {err}')
     except Exception as err:
@@ -444,10 +427,10 @@ async def process_previous_tasks(query: CallbackQuery, state: FSMContext):
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(Data.tasks)
         await query.message.edit_text(
-                msg,
-                reply_markup=InlineKeyboardMarkup(
-                    inline_keyboard=task_list_keyboard(
-                        len(tasks), first_item, final_item)))
+            msg,
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=task_list_keyboard(
+                    len(tasks), first_item, final_item)))
     except KeyError as err:
         logger.error(f'Проверь правильность ключевых слов: {err}')
     except Exception as err:
@@ -522,7 +505,8 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
         language = data['language']
         lexicon = LEXICON[language]
         councelors = get_users_by_role('councelor')
-        councelor = councelors[0] if councelors else select_user(message.from_user.id)
+        councelor = councelors[0] if councelors else select_user(
+            message.from_user.id)
         await state.clear()
         status_changed = await process_artifact(message, task_id, lexicon)
         if status_changed:

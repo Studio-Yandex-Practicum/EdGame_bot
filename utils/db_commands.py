@@ -10,21 +10,19 @@ from db.models import Achievement, AchievementStatus, User
 logger = logging.getLogger(__name__)
 
 
-# def register_user(message):
-#     name = message.chat.first_name if message.chat.first_name else None
-#     user = User(
-#         id=int(message.chat.id), name=name, role="kid", language="RU", score=0,
-#         group=0
-#     )
-#
-#     session.add(user)
-#
-#     try:
-#         session.commit()
-#         return True
-#     except IntegrityError:
-#         session.rollback()  # откатываем session.add(user)
-#         return False
+def register_user(data):
+    user = User(
+        id=data['id'], name=data['name'], role="kid",
+        language=data['language'], score=0,
+        group=data['group']
+    )
+    session.add(user)
+    try:
+        session.commit()
+        return True
+    except IntegrityError:
+        session.rollback()  # откатываем session.add(user)
+        return False
 
 
 def select_user(user_id) -> User:
@@ -114,9 +112,9 @@ def get_achievement(achievement_id: int = None,
     achievement = (
         session.query(
             Achievement).filter(
-                Achievement.id == achievement_id if achievement_id
-                else Achievement.name == name
-            ).first())
+            Achievement.id == achievement_id if achievement_id
+            else Achievement.name == name
+        ).first())
     return achievement if achievement else "Unknown Achievement"
 
 
