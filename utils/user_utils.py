@@ -1,6 +1,3 @@
-import os
-
-import requests
 from sqlalchemy.orm import Session
 
 from db.models import Achievement, AchievementStatus, User
@@ -55,19 +52,6 @@ def get_achievement_file_type(session: Session, achievement_id: int) -> bytes:
     )
 
     return achievement.artifact_type if achievement else "Unknown Achievement"
-
-
-def get_message_text(session: Session, id: int):
-    achievement_status = (
-        session.query(AchievementStatus)
-        .filter(AchievementStatus.id == id)
-        .first()
-    )
-    return (
-        achievement_status.message_text
-        if achievement_status
-        else "Unknown Message"
-    )
 
 
 def get_message_text(session: Session, id: int):

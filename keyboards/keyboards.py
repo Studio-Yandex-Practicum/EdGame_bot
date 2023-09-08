@@ -68,6 +68,19 @@ def profile_keyboard(language):
 
 
 # Кнопки inline
+
+# Выбор языка
+russian = InlineKeyboardButton(text='Русский язык', callback_data='RU')
+tatar = InlineKeyboardButton(text='Татар теле', callback_data='TT')
+english = InlineKeyboardButton(text='English language', callback_data='EN')
+
+choose_language_keyboard = [
+    [russian],
+    [tatar],
+    [english]
+]
+
+
 # Редактирование профиля
 def edit_profile_keyboard(language: str):
     """Генерирует клавиатуру с кнопками в редактировании профиля."""
