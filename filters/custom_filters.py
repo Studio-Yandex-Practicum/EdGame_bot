@@ -7,7 +7,7 @@ from db.models import User
 
 
 class IsStudent(BaseFilter):
-    '''Проверяет id пользователя в базе методистов.'''
+    '''Проверяет id пользователя в базе детей.'''
     PERSONAL = [
         user.id for user in session.query(
             User).filter(User.role != 'kid').all()]
