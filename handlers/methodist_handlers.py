@@ -3,22 +3,25 @@ import time
 
 from aiogram import Router, F
 from aiogram.types import (
-    Message, CallbackQuery, ReplyKeyboardMarkup, InlineKeyboardMarkup)
+    Message, CallbackQuery, ReplyKeyboardMarkup, InlineKeyboardMarkup,
+    ReplyKeyboardRemove, InputMediaPhoto)
 from aiogram.fsm.context import FSMContext
 
 from lexicon.lexicon import LEXICON, BUTTONS
-from keyboards.keyboards import task_list_keyboard, help_keyboard
+from keyboards.keyboards import (
+    task_list_keyboard, help_keyboard, edit_profile_keyboard,
+    choose_language_keyboard)
 from keyboards.methodist_keyboards import (
     methodist_profile_keyboard, add_task_keyboard, task_type_keyboard,
     artifact_type_keyboard, confirm_task_keyboard, edit_task_keyboard,
     task_keyboard_methodist)
 from utils.db_commands import (
     get_all_achievements, select_user, create_achievement,
-    set_achievement_param)
+    set_achievement_param, set_user_param)
 from utils.utils import (
     process_next_achievements, process_previous_achievements,
     get_achievement_info, generate_profile_info)
-from utils.states_form import TaskList, AddTask, EditTask
+from utils.states_form import TaskList, AddTask, EditTask, Data
 from config_data.config import Pagination
 from filters.custom_filters import IsMethodist
 
@@ -30,6 +33,18 @@ methodist_router.callback_query.filter(IsMethodist())
 
 ACHIEVEMENT_TYPES = ['individual', 'teamwork']
 ARTIFACT_TYPES = ['text', 'image', 'video']
+
+
+@methodist_router.message(F.media_group_id)
+async def album_handler(message: Message, album: dict):
+    try:
+        media_group = [
+            InputMediaPhoto(media=m.photo[-1].file_id)
+            for m in album
+        ]
+        await message.answer_media_group(media_group)
+    except Exception as err:
+        print(err)
 
 
 # Обработчики обычных кнопок
@@ -427,6 +442,43 @@ async def show_task_list(message: Message, state: FSMContext):
         logger.error(f'Ошибка при просмотре списка заданий: {err}')
 
 
+@methodist_router.callback_query(F.data == 'achievement_list')
+async def show_task_list_callback(query: CallbackQuery, state: FSMContext):
+    '''
+    Обарботчик кнопки Посмотреть/редактировать ачивки.
+    Показывает все созданные ачивки с пагинацией.
+    '''
+    try:
+        await query.answer()
+        await state.clear()
+        user = select_user(query.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        tasks = get_all_achievements()
+        info = process_next_achievements(
+            tasks=tasks,
+            lexicon=lexicon,
+            page_size=Pagination.page_size,
+            methodist=True)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        task_info = info["task_info"]
+        final_item = task_info['final_item']
+        await state.set_state(TaskList.tasks)
+        await state.update_data(
+            tasks=task_ids, task_info=task_info, user_language=language)
+        await query.message.answer(
+            msg,
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=task_list_keyboard(
+                    len(tasks), end=final_item)))
+    except KeyError as err:
+        logger.error(
+            f'Ошибка в ключе при просмотре списка заданий: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при просмотре списка заданий: {err}')
+
+
 @methodist_router.callback_query(F.data == 'next')
 async def process_next_task_list(query: CallbackQuery, state: FSMContext):
     '''
@@ -557,6 +609,27 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         logger.error(f'Ошибка при получении ачивки: {err}')
 
 
+# Блок редактирования ачивки
+@methodist_router.callback_query(F.data == 'complete_editing')
+async def process_complete_editing(query: CallbackQuery, state: FSMContext):
+    '''Завершает сценарий редактирования задания.'''
+    try:
+        await query.answer()
+        data = await state.get_data()
+        await state.clear()
+        language = data['user_language']
+        lexicon = LEXICON[language]
+        await query.message.answer(
+            lexicon["editing_completed"],
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=methodist_profile_keyboard(language)))
+    except KeyError as err:
+        logger.error(
+            f'Ошибка в ключе при завершении редактирования ачивки: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при завершении редактирования ачивки: {err}')
+
+
 @methodist_router.callback_query(EditTask.task_id, F.data == 'edit_task')
 @methodist_router.callback_query(EditTask.confirm_task, F.data == 'edit_task')
 async def process_edit_task(query: CallbackQuery, state: FSMContext):
@@ -582,7 +655,7 @@ async def process_edit_task(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_router.callback_query(F.data == 'edit_name')
-async def change_name(query: CallbackQuery, state: FSMContext):
+async def edit_name(query: CallbackQuery, state: FSMContext):
     '''
     Обработчик создает состояние для смены названия ачивки, просит
     прислать сообщение.
@@ -602,7 +675,7 @@ async def change_name(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_router.message(EditTask.name)
-async def process_change_name(message: Message, state: FSMContext):
+async def process_edit_name(message: Message, state: FSMContext):
     '''Обрабатывает сообщение для изменения названия ачивки.'''
     try:
         data = await state.get_data()
@@ -976,20 +1049,97 @@ async def process_change_artifact_type(query: CallbackQuery,
         logger.error(f'Ошибка при сохранении типа артефакта: {err}')
 
 
-@methodist_router.callback_query(F.data == 'complete_editing')
-async def process_complete_editing(query: CallbackQuery, state: FSMContext):
-    '''Завершает сценарий редактирования задания.'''
+# Обработчики редактирования профиля
+@methodist_router.message(F.text.in_([
+    BUTTONS["RU"]["edit_profile"],
+    BUTTONS["TT"]["edit_profile"],
+    BUTTONS["EN"]["edit_profile"]]))
+async def edit_profile(message: Message, state: FSMContext):
+    '''Обработчик для редактирования профиля методиста.'''
     try:
-        data = await state.get_data()
         await state.clear()
-        language = data['user_language']
-        lexicon = LEXICON[language]
-        await query.message.answer(
-            lexicon["editing_completed"],
-            reply_markup=ReplyKeyboardMarkup(
-                keyboard=methodist_profile_keyboard(language)))
+        user = select_user(message.chat.id)
+        await message.answer(
+            LEXICON[user.language]["edit_profile"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=edit_profile_keyboard(user.language)))
     except KeyError as err:
-        logger.error(
-            f'Ошибка в ключе при завершении редактирования ачивки: {err}')
+        logger.error(f'Ошибка в ключевом слове при изменении профиля: {err}')
     except Exception as err:
-        logger.error(f'Ошибка при завершении редактирования ачивки: {err}')
+        logger.error(f'Ошибка при изменении профиля: {err}')
+
+
+@methodist_router.callback_query(F.data == 'change_name')
+async def change_name(query: CallbackQuery, state: FSMContext):
+    '''
+    Обработчик создает состояние для смены имени, просит
+    прислать сообщение.
+    '''
+    try:
+        await query.answer()
+        await state.set_state(Data.change_name)
+        user = select_user(query.from_user.id)
+        await query.message.answer(
+            LEXICON[user.language]["change_name"],
+            reply_markup=ReplyKeyboardRemove())
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при запросе имени: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при запросе имени: {err}')
+
+
+@methodist_router.message(Data.change_name)
+async def process_change_name(message: Message, state: FSMContext):
+    '''Обрабатывает сообщение для изменения имени.'''
+    try:
+        user = select_user(message.chat.id)
+        set_user_param(user, name=message.text)
+        await state.clear()
+        await message.answer(
+            LEXICON[user.language]["name_changed"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=edit_profile_keyboard(user.language)))
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при изменении имени: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при изменении имени: {err}')
+
+
+@methodist_router.callback_query(F.data == 'change_language')
+async def change_language(query: CallbackQuery, state: FSMContext):
+    '''
+    Обработчик создает состояние для смены языка, уточняет,
+    какой язык установить.
+    '''
+    try:
+        await query.answer()
+        await state.set_state(Data.change_language)
+        user = select_user(query.from_user.id)
+        await query.message.edit_text(
+            LEXICON[user.language]["change_language"],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=choose_language_keyboard))
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при запросе языка: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при запросе языка: {err}')
+
+
+@methodist_router.callback_query(Data.change_language)
+async def process_change_language(query: CallbackQuery, state: FSMContext):
+    '''Обработчик для изменения языка интерфейса.'''
+    try:
+        await query.answer()
+        await state.clear()
+        user = select_user(query.from_user.id)
+        # Изменяем язык бота на новый
+        language = query.data
+        set_user_param(user, language=language)
+        await query.message.answer(
+            LEXICON[language]['language_changed'],
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=edit_profile_keyboard(language)))
+    except KeyError as err:
+        logger.error(f'Ошибка в ключевом слове при изменении языка: {err}')
+    except Exception as err:
+        logger.error(f'Ошибка при изменении языка: {err}')

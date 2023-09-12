@@ -86,13 +86,12 @@ def edit_profile_keyboard(language: str):
     """Генерирует клавиатуру с кнопками в редактировании профиля."""
     buttons = BUTTONS[language]
     change_firstname = InlineKeyboardButton(
-        text=buttons["change_firstname"], callback_data="change_name"
-    )
+        text=buttons["change_firstname"], callback_data="change_name")
     change_language = InlineKeyboardButton(
-        text=buttons["change_language"], callback_data="change_language"
-    )
+        text=buttons["change_language"], callback_data="change_language")
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
 
-    keyboard = [[change_firstname], [change_language]]
+    keyboard = [[change_firstname], [change_language], [lk]]
     return keyboard
 
 

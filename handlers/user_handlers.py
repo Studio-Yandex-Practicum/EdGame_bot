@@ -38,10 +38,11 @@ from utils.states_form import Data, Profile
 from utils.utils import (
     process_next_achievements, process_previous_achievements, process_artifact,
     generate_text_with_tasks_in_review, generate_text_with_reviewed_tasks,
-    generate_profile_info, get_achievement_info)
+    generate_profile_info, get_achievement_info, process_artifact_group)
 from db.engine import session
 from config_data.config import Pagination
 from filters.custom_filters import IsStudent
+from middlewares.custom_middlewares import AcceptMediaGroupMiddleware
 from .methodist_handlers import methodist_router
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ router = Router()
 child_router = Router()
 child_router.message.filter(IsStudent())
 child_router.callback_query.filter(IsStudent())
+child_router.message.middleware(AcceptMediaGroupMiddleware())
 router.include_routers(methodist_router, child_router)
 
 
@@ -439,6 +441,7 @@ async def process_previous_tasks(query: CallbackQuery, state: FSMContext):
 
 @child_router.callback_query(F.data == 'info')
 async def process_info_button(query: CallbackQuery):
+    await query.answer()
     pass
 
 
@@ -494,7 +497,12 @@ async def show_task(query: CallbackQuery, state: FSMContext):
 
 
 @child_router.message(Data.artifact)
-async def process_artefact(message: Message, state: FSMContext, bot: Bot):
+@child_router.message(Data.artifact, F.media_group_id)
+async def process_artefact(message: Message,
+                           state: FSMContext,
+                           bot: Bot,
+                           album: dict,
+                           media_group):
     '''
     Обработчик артефактов, файлов, которые отправляет ребенок.
     '''
@@ -507,9 +515,15 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
         councelors = get_users_by_role('councelor')
         councelor = councelors[0] if councelors else select_user(
             message.from_user.id)
-        await state.clear()
-        status_changed = await process_artifact(message, task_id, lexicon)
-        if status_changed:
+        if media_group:
+            status_changed = await process_artifact_group(
+                album, task_id, lexicon)
+        else:
+            status_changed = await process_artifact(message, task_id, lexicon)
+        if not status_changed:
+            await state.set_state(Data.artifact)
+            return
+        elif status_changed:
             await bot.send_message(
                 chat_id=councelor.id,
                 text=LEXICON[councelor.language]["new_artifact"],
@@ -521,6 +535,7 @@ async def process_artefact(message: Message, state: FSMContext, bot: Bot):
             lexicon["artifact_sent"],
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_keyboard(language)))
+        await state.clear()
     except KeyError as err:
         logger.error(f'Проверь правильность ключевых слов: {err}')
     except Exception as err:
@@ -604,8 +619,7 @@ async def change_language(query: CallbackQuery, state: FSMContext):
 
 
 @child_router.callback_query(Data.change_language)
-async def process_change_language(query: CallbackQuery, state: FSMContext,
-                                  bot: Bot):
+async def process_change_language(query: CallbackQuery, state: FSMContext):
     '''Обработчик для изменения языка интерфейса.'''
     try:
         await query.answer()
@@ -614,7 +628,6 @@ async def process_change_language(query: CallbackQuery, state: FSMContext,
         # Изменяем язык бота на новый
         language = query.data
         set_user_param(user, language=language)
-        # await set_main_menu(bot, language) меню удаляем в итоге
         await query.message.answer(
             LEXICON[language]['language_changed'],
             reply_markup=InlineKeyboardMarkup(

@@ -89,32 +89,71 @@ def process_previous_achievements(tasks: list[Achievement],
     return {'msg': msg, 'task_ids': task_ids, 'task_info': task_info}
 
 
+async def _check_artifact_type(message: Message,
+                               artifact_type: str,
+                               lexicon: dict):
+    """Проверяет типа артифакта на соответствие заданию."""
+    artifact_types = {
+        'image': message.photo,
+        'video': message.video,
+        'document': message.document,
+        'audio': message.audio,
+        'voice': message.voice
+    }
+    artifact = artifact_types[artifact_type]
+    if not artifact:
+        await message.answer(
+            f'{lexicon["ask_artifact_again"]}: {lexicon[artifact_type]}')
+        return False
+    return artifact
+
+
 async def process_artifact(message: Message, achievement_id: int,
                            lexicon: dict):
     '''
     Достает id из возможных типов сообщения и сохраняет в базе
     информацию об ачивке с новым статусом.
     '''
-    artifact_types = {
-        'photo': message.photo,
-        'video': message.video,
-        'document': message.document,
-        'audio': message.audio,
-        'voice': message.voice
-    }
     achievement = get_achievement(achievement_id)
     art_type = achievement.artifact_type
-    artifact = artifact_types[art_type]
+    artifact = await _check_artifact_type(message, art_type, lexicon)
     if not artifact:
-        await message.answer(
-            f'{lexicon["ask_artifact_again"]}: {lexicon[art_type]}')
-    user_id = message.from_user.id
+        return
     files_id = []
-    if art_type == 'photo':
-        files_id.append(artifact[0].file_id)
+    if art_type == 'image':
+        files_id.append(artifact[-1].file_id)
     else:
         files_id.append(artifact.file_id)
+    user_id = message.from_user.id
     text = message.text if message.text else message.caption
+    try:
+        send_task(user_id, achievement_id, files_id, text)
+        return True
+    except Exception as err:
+        logger.error(f'Ошибка при сохранении статуса ачивки в базе: {err}')
+        return False
+
+
+async def process_artifact_group(messages: list[Message],
+                                 achievement_id: int,
+                                 lexicon: dict):
+    '''
+    Достает id из возможных типов сообщения и сохраняет в базе
+    информацию об ачивке с новым статусом.
+    '''
+    achievement = get_achievement(achievement_id)
+    art_type = achievement.artifact_type
+    files_id = []
+    for message in messages:
+        artifact = await _check_artifact_type(message, art_type, lexicon)
+        if not artifact:
+            return
+        if art_type == 'image':
+            files_id.append(artifact[-1].file_id)
+        else:
+            files_id.append(artifact.file_id)
+    user_id = messages[0].from_user.id
+    text = messages[0].text if messages[0].text else messages[0].caption
     try:
         send_task(user_id, achievement_id, files_id, text)
         return True
