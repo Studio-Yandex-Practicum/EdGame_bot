@@ -37,9 +37,15 @@ from utils.db_commands import (
 )
 from utils.states_form import Data, Profile
 from utils.utils import (
-    process_next_achievements, process_previous_achievements, process_artifact,
-    generate_text_with_tasks_in_review, generate_text_with_reviewed_tasks,
-    generate_profile_info, get_achievement_info, process_artifact_group)
+    process_next_achievements,
+    process_previous_achievements,
+    process_artifact,
+    generate_text_with_tasks_in_review,
+    generate_text_with_reviewed_tasks,
+    generate_profile_info,
+    get_achievement_info,
+    process_artifact_group,
+)
 from db.engine import session
 from config_data.config import Pagination
 from filters.custom_filters import IsStudent
@@ -149,10 +155,15 @@ async def process_get_group(message: Message, state: FSMContext):
 
 
 # Обработчики обычных кнопок
-@child_router.message(F.text.in_([
-    BUTTONS["RU"]["current_achievements"],
-    BUTTONS["TT"]["current_achievements"],
-    BUTTONS["EN"]["current_achievements"]]))
+@child_router.message(
+    F.text.in_(
+        [
+            BUTTONS["RU"]["current_achievements"],
+            BUTTONS["TT"]["current_achievements"],
+            BUTTONS["EN"]["current_achievements"],
+        ]
+    )
+)
 async def show_current_tasks(message: Message):
     """
     Показывам ачивки в статусе на проверке либо предлагаем
@@ -176,10 +187,15 @@ async def show_current_tasks(message: Message):
         logger.error(f"Ошибка при получении текущих ачивок: {err}")
 
 
-@child_router.message(F.text.in_([
-    BUTTONS["RU"]["reviewed_achievements"],
-    BUTTONS["TT"]["reviewed_achievements"],
-    BUTTONS["EN"]["reviewed_achievements"]]))
+@child_router.message(
+    F.text.in_(
+        [
+            BUTTONS["RU"]["reviewed_achievements"],
+            BUTTONS["TT"]["reviewed_achievements"],
+            BUTTONS["EN"]["reviewed_achievements"],
+        ]
+    )
+)
 async def show_reviewed_tasks(message: Message):
     """
     Показывам ачивки в статусе на проверке либо предлагаем
@@ -203,10 +219,9 @@ async def show_reviewed_tasks(message: Message):
         logger.error(f"Ошибка при получении проверенных ачивок: {err}")
 
 
-@child_router.message(F.text.in_([
-    BUTTONS["RU"]["lk"],
-    BUTTONS["TT"]["lk"],
-    BUTTONS["EN"]["lk"]]))
+@child_router.message(
+    F.text.in_([BUTTONS["RU"]["lk"], BUTTONS["TT"]["lk"], BUTTONS["EN"]["lk"]])
+)
 async def profile_info(message: Message, state: FSMContext):
     """Обработчик показывает главное меню профиля студента."""
     try:
@@ -259,10 +274,15 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
         logger.error(f"Ошибка при открытии личного кабинета: {err}")
 
 
-@child_router.message(F.text.in_([
-    BUTTONS["RU"]["write_to_councelor"],
-    BUTTONS["TT"]["write_to_councelor"],
-    BUTTONS["EN"]["write_to_councelor"]]))
+@child_router.message(
+    F.text.in_(
+        [
+            BUTTONS["RU"]["write_to_councelor"],
+            BUTTONS["TT"]["write_to_councelor"],
+            BUTTONS["EN"]["write_to_councelor"],
+        ]
+    )
+)
 async def write_to_councelor(message: Message):
     """
     Обработчик кнопки Написать вожатому.
@@ -287,10 +307,11 @@ async def write_to_councelor(message: Message):
         logger.error(f"Ошибка при отправке контакта вожатого: {err}")
 
 
-@child_router.message(F.text.in_([
-    BUTTONS["RU"]["help"],
-    BUTTONS["TT"]["help"],
-    BUTTONS["EN"]["help"]]))
+@child_router.message(
+    F.text.in_(
+        [BUTTONS["RU"]["help"], BUTTONS["TT"]["help"], BUTTONS["EN"]["help"]]
+    )
+)
 async def help_command(message: Message):
     try:
         user = select_user(message.from_user.id)
@@ -310,10 +331,15 @@ async def help_command(message: Message):
 
 
 # Обработчики списка ачивок и пагинации
-@child_router.message(F.text.in_([
-    BUTTONS["RU"]["available_achievements"],
-    BUTTONS["TT"]["available_achievements"],
-    BUTTONS["EN"]["available_achievements"]]))
+@child_router.message(
+    F.text.in_(
+        [
+            BUTTONS["RU"]["available_achievements"],
+            BUTTONS["TT"]["available_achievements"],
+            BUTTONS["EN"]["available_achievements"],
+        ]
+    )
+)
 async def show_tasks_list(message: Message, state: FSMContext):
     """
     Обработчик кнопки Посмотреть доступные ачивки.
@@ -326,13 +352,12 @@ async def show_tasks_list(message: Message, state: FSMContext):
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
         info = process_next_achievements(
-            tasks=tasks,
-            lexicon=lexicon,
-            page_size=Pagination.page_size)
+            tasks=tasks, lexicon=lexicon, page_size=Pagination.page_size
+        )
         msg = info["msg"]
         task_ids = info["task_ids"]
         task_info = info["task_info"]
-        final_item = task_info['final_item']
+        final_item = task_info["final_item"]
         await state.update_data(
             tasks=task_ids, task_info=task_info, language=language
         )
@@ -363,13 +388,12 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
         info = process_next_achievements(
-            tasks=tasks,
-            lexicon=lexicon,
-            page_size=Pagination.page_size)
+            tasks=tasks, lexicon=lexicon, page_size=Pagination.page_size
+        )
         msg = info["msg"]
         task_ids = info["task_ids"]
         task_info = info["task_info"]
-        final_item = task_info['final_item']
+        final_item = task_info["final_item"]
         await state.update_data(
             tasks=task_ids, task_info=task_info, language=language
         )
@@ -405,18 +429,22 @@ async def process_next_tasks(query: CallbackQuery, state: FSMContext):
             lexicon=lexicon,
             count=count,
             previous_final_item=previous_final_item,
-            page_size=Pagination.page_size)
+            page_size=Pagination.page_size,
+        )
         msg = info["msg"]
         task_ids = info["task_ids"]
         task_info = info["task_info"]
-        final_item = task_info['final_item']
+        final_item = task_info["final_item"]
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(Data.tasks)
         await query.message.edit_text(
             msg,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_list_keyboard(
-                    len(tasks), previous_final_item, final_item)))
+                    len(tasks), previous_final_item, final_item
+                )
+            ),
+        )
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:
@@ -442,19 +470,23 @@ async def process_previous_tasks(query: CallbackQuery, state: FSMContext):
             lexicon=lexicon,
             count=count,
             previous_final_item=previous_final_item,
-            page_size=Pagination.page_size)
+            page_size=Pagination.page_size,
+        )
         msg = info["msg"]
         task_ids = info["task_ids"]
         task_info = info["task_info"]
-        first_item = task_info['first_item']
-        final_item = task_info['final_item']
+        first_item = task_info["first_item"]
+        final_item = task_info["final_item"]
         await state.update_data(tasks=task_ids, task_info=task_info)
         await state.set_state(Data.tasks)
         await query.message.edit_text(
             msg,
             reply_markup=InlineKeyboardMarkup(
                 inline_keyboard=task_list_keyboard(
-                    len(tasks), first_item, final_item)))
+                    len(tasks), first_item, final_item
+                )
+            ),
+        )
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:
@@ -528,12 +560,10 @@ async def show_task(query: CallbackQuery, state: FSMContext):
 
 @child_router.message(Data.artifact)
 @child_router.message(Data.artifact, F.media_group_id)
-async def process_artefact(message: Message,
-                           state: FSMContext,
-                           bot: Bot,
-                           album: dict,
-                           media_group):
-    '''
+async def process_artefact(
+    message: Message, state: FSMContext, bot: Bot, album: dict, media_group
+):
+    """
     Обработчик артефактов, файлов, которые отправляет ребенок.
     """
     try:
@@ -542,12 +572,14 @@ async def process_artefact(message: Message,
         task_id = data["task_id"]
         language = data["language"]
         lexicon = LEXICON[language]
-        councelors = get_users_by_role('councelor')
-        councelor = councelors[0] if councelors else select_user(
-            message.from_user.id)
+        councelors = get_users_by_role("councelor")
+        councelor = (
+            councelors[0] if councelors else select_user(message.from_user.id)
+        )
         if media_group:
             status_changed = await process_artifact_group(
-                album, task_id, lexicon)
+                album, task_id, lexicon
+            )
         else:
             status_changed = await process_artifact(message, task_id, lexicon)
         if not status_changed:
@@ -566,7 +598,9 @@ async def process_artefact(message: Message,
         await message.answer(
             lexicon["artifact_sent"],
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=task_keyboard(language)))
+                inline_keyboard=task_keyboard(language)
+            ),
+        )
         await state.clear()
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
@@ -575,10 +609,15 @@ async def process_artefact(message: Message,
 
 
 # Обработчики редактирования профиля
-@child_router.message(F.text.in_([
-    BUTTONS["RU"]["edit_profile"],
-    BUTTONS["TT"]["edit_profile"],
-    BUTTONS["EN"]["edit_profile"]]))
+@child_router.message(
+    F.text.in_(
+        [
+            BUTTONS["RU"]["edit_profile"],
+            BUTTONS["TT"]["edit_profile"],
+            BUTTONS["EN"]["edit_profile"],
+        ]
+    )
+)
 async def edit_profile(message: Message, state: FSMContext):
     """Обработчик для редактирования профиля ребенка."""
     try:
@@ -659,7 +698,7 @@ async def change_language(query: CallbackQuery, state: FSMContext):
 
 @child_router.callback_query(Data.change_language)
 async def process_change_language(query: CallbackQuery, state: FSMContext):
-    '''Обработчик для изменения языка интерфейса.'''
+    """Обработчик для изменения языка интерфейса."""
     try:
         await query.answer()
         await state.clear()
