@@ -4,20 +4,33 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from db.engine import session
 from db.models import AchievementStatus, User
-from keyboards.keyboards import (
+from keyboards.counselor_keyboard import (
     create_inline_keyboard,
     create_profile_keyboard,
     create_yes_no_keyboard,
 )
-from utils.db_commands import approve_task, reject_task, send_to_methdist
+from utils.db_commands import (
+    approve_task,
+    available_achievements,
+    reject_task,
+    send_to_methdist,
+)
 from utils.user_utils import (
     get_achievement_description,
     get_achievement_file_id,
+    get_achievement_file_type,
     get_achievement_instruction,
     get_achievement_name,
+    get_achievement_status_by_id,
+    get_achievements_by_name,
+    get_all_child_achievements,
+    get_all_children,
+    get_all_children_from_group,
+    get_child_by_name_and_group,
+    get_message_text,
+    get_user_name,
     save_rejection_reason_in_db,
-    send_achievement_file,
-    get_achievement_file_type,
+    send_task,
 )
 
 router = Router()
@@ -28,9 +41,15 @@ class TaskState(StatesGroup):
     Машина состояний для реализации сценариев диалогов с вожатым.
     """
 
+    group = State()
     user_id = State()
     task_id = State()
+    child_id = State()
+    child_info = State()
+    child_name = State()
     reject_message = State()
+    children_group = State()
+    achievement_name = State()
 
 
 @router.message(Command("lk"))
@@ -41,9 +60,8 @@ async def enter_profile(message: types.Message):
 
 @router.message(Text("Список детей"))
 async def show_children_list(message: types.Message):
-    print(session.query(User).filter(User.role == "kid").all())
     try:
-        children = session.query(User).filter(User.role == "kid").all()
+        children = get_all_children(session)
 
         children_text = "\n".join(
             [f"Имя: {child.name} - Очки: {child.score}" for child in children]
@@ -71,34 +89,36 @@ async def check_requests(message: types.Message):
             )
 
             for task in tasks:
-                achievement_name = get_achievement_name(
+                name = get_achievement_name(session, task.achievement_id)
+                description = get_achievement_description(
                     session, task.achievement_id
                 )
-                achievement_description = get_achievement_description(
-                    session, task.achievement_id
-                )
-                achievement_instruction = get_achievement_instruction(
-                    session, task.achievement_id
-                )
-
-                achievement_file_id = get_achievement_file_id(
-                    session, task.achievement_id
-                )
-                achievement_file_type = get_achievement_file_type(
+                instruction = get_achievement_instruction(
                     session, task.achievement_id
                 )
 
+                file_id = get_achievement_file_id(session, task.achievement_id)
+                file_type = get_achievement_file_type(
+                    session, task.achievement_id
+                )
+                message_text = get_message_text(session, task.achievement_id)
                 inline_keyboard = create_inline_keyboard(task.id)
-                await send_achievement_file(
+
+                caption = (
+                    f"Задание на проверку от {child.name}\n\n"
+                    f"Название задания: {name}\n\n"
+                    f"Описание задания: {description}\n\n"
+                    f"Инструкция: {instruction}"
+                )
+                await send_task(
                     message,
-                    child,
-                    achievement_name,
-                    achievement_description,
-                    achievement_instruction,
-                    achievement_file_id,
-                    achievement_file_type,
+                    file_type,
+                    file_id,
+                    caption,
+                    message_text,
                     inline_keyboard,
                 )
+
     except Exception as e:
         await message.answer("Не удалось найти задания на проверку.")
     finally:
@@ -188,3 +208,167 @@ async def send_to_methodist(callback_query: types.CallbackQuery):
         await callback_query.message.answer(
             "Задание отправлено на проверку методисту"
         )
+
+
+@router.message(Text("Проверить конкретное задание"))
+async def display_task_review_requests(
+    message: types.Message, state: FSMContext
+):
+    """Отображение всех входящих заявок на проверку одного задания"""
+    await state.set_state(TaskState.achievement_name)
+    await message.answer("Введите название задания, которое хотите проверить")
+
+
+@router.message(TaskState.achievement_name)
+async def display_task(message: types.Message):
+    achievement_name = message.text
+    achievement_id = get_achievements_by_name(session, achievement_name)
+    name = get_achievement_name(session, achievement_id)
+    description = get_achievement_description(session, achievement_id)
+    instruction = get_achievement_instruction(session, achievement_id)
+    file_type = get_achievement_file_type(session, achievement_id)
+    await message.answer(
+        f"Название задания: {name}\n\nОписание задания: {description}\n\nИнструкция к заданию: {instruction}"
+    )
+    achievements = get_achievement_status_by_id(session, achievement_id)
+    for achievement in achievements:
+        user_id = achievement.user_id
+        file_id = get_achievement_file_id(session, achievement.achievement_id)
+        message_text = achievement.message_text
+        child = get_user_name(session, user_id)
+        caption = f"Задание на проверку от {child}\n\n"
+        await send_task(message, file_type, file_id, caption, message_text)
+
+
+@router.message(Text("Узнать общий прогресс отряда"))
+async def display_troop_progress(message: types.Message, state: FSMContext):
+    """Возможность отображения общего прогресса отряда"""
+    await state.set_state(TaskState.children_group)
+    await message.answer(
+        "Введите номер группы по которой хотите получить информацию"
+    )
+
+
+@router.message(TaskState.children_group)
+async def display_troop(message: types.Message):
+    children = get_all_children_from_group(session, message.text)
+    message_text = f"Общая численно отряда номер {message.text} составляет {len(children)} детей."
+    score = sum(child.score for child in children)
+    message_text += f"\n\nОбщий прогресс отряда - {score} баллов.\n"
+    message_text += (
+        "Вот имена детей из этого отряда и их персональный прогресс:\n"
+    )
+    children_info_list = [
+        f"Имя: {child.name} - Очки: {child.score}" for child in children
+    ]
+    message_text += "\n\n".join(children_info_list)
+
+    await message.answer(message_text)
+
+
+@router.message(Text("Получить информацию о ребенке"))
+async def check_child_info(message: types.Message, state: FSMContext):
+    """Возможность проверки инфы о выбранном ребенке"""
+    await state.set_state(TaskState.child_info)
+    await message.answer(
+        "Введите имя ребенка и номер группы. Например: Иван Иванов 1"
+    )
+
+
+@router.message(TaskState.child_info)
+async def check_child(message: types.Message):
+    search_child = message.text.split(" ")
+    name = f"{search_child[0]} {search_child[1]}"
+    group = int(search_child[2])
+    child = get_child_by_name_and_group(session, name, group)
+    achievements = available_achievements(child.id, child.score)
+
+    message_text = [
+        f"Информация о ребенке по имени {name}:\n\nОчки: {child.score} Группа: {child.group}",
+        "Доступные ачивки для ребенка:\n",
+    ]
+    message_text.extend(
+        f"Название: {achievement.name}\n\nНеобходимо баллов: {achievement.price}\n\n"
+        f"Вид: {achievement.achievement_type}\n\nБаллы за ачивку: {achievement.score}\n\n"
+        for achievement in achievements
+    )
+    await message.answer("\n".join(message_text))
+
+
+@router.message(Text("Проверить задание конкретного ребенка"))
+async def display_child_task_review_requests(
+    message: types.Message, state: FSMContext
+):
+    """Отображение всех входящих заявок на проверку заданий одного ребёнка"""
+    await state.set_state(TaskState.child_name)
+    await message.answer(
+        "Введите имя ребенка и номер группы для проверки его заданий. Например: Иван Иванов 1"
+    )
+
+
+@router.message(TaskState.child_name)
+async def display_child_task_review(message: types.Message, state: FSMContext):
+    search_child = message.text.split(" ")
+    name = f"{search_child[0]} {search_child[1]}"
+    group = int(search_child[2])
+    child_id = get_child_by_name_and_group(session, name, group).id
+    achievements = get_all_child_achievements(session, child_id)
+
+    for achievement in achievements:
+        ac_id = achievement.achievement_id
+        file_id = get_achievement_file_id(session, ac_id)
+        message_text = achievement.message_text
+        ac_name = get_achievement_name(session, ac_id)
+        description = get_achievement_description(session, ac_id)
+        instruction = get_achievement_instruction(session, ac_id)
+        file_type = get_achievement_file_type(session, ac_id)
+        inline_keyboard = create_inline_keyboard(achievement.id)
+        caption = (
+            f"Название задания: {ac_name}\n\n"
+            f"Описание задания: {description}\n\n"
+            f"Инструкция: {instruction}"
+        )
+        await send_task(
+            message, file_type, file_id, caption, message_text, inline_keyboard
+        )
+
+
+@router.message(Text("Проверить задание всего отряда"))
+async def display_troop_task_review_requests(
+    message: types.Message, state: FSMContext
+):
+    """Отображение всех входящих заявок на проверку заданий всего отряда"""
+    await state.set_state(TaskState.group)
+    await message.answer("Введите номер группы для проверки всех заданий")
+
+
+@router.message(TaskState.group)
+async def display_troop_task_review(message: types.Message):
+    user_ids = get_all_children_from_group(session, message.text)
+    for user in user_ids:
+        child_id = user.id
+        achievements = get_all_child_achievements(session, child_id)
+        child_name = get_user_name(session, child_id)
+        for achievement in achievements:
+            ac_id = achievement.achievement_id
+            file_id = achievement.files_id
+            message_text = achievement.message_text
+            name = get_achievement_name(session, ac_id)
+            description = get_achievement_description(session, ac_id)
+            instruction = get_achievement_instruction(session, ac_id)
+            file_type = get_achievement_file_type(session, ac_id)
+            inline_keyboard = create_inline_keyboard(achievement.id)
+            caption = (
+                f"Задание на проверку от {child_name}\n\n"
+                f"Название задания: {name}\n\n"
+                f"Описание задания: {description}\n\n"
+                f"Инструкция: {instruction}"
+            )
+            await send_task(
+                message,
+                file_type,
+                file_id,
+                caption,
+                message_text,
+                inline_keyboard,
+            )

@@ -29,7 +29,7 @@ class AcceptMediaGroupMiddleware(BaseMiddleware):
         media_group_id: str,
         handler: Callable[Message, Dict[str, Any]],
         event: Message,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ):
         data["album"] = self.media_group[media_group_id]
         data["media_group"] = media_group_id
@@ -40,7 +40,7 @@ class AcceptMediaGroupMiddleware(BaseMiddleware):
         self,
         handler: Callable[Message, Dict[str, Any]],
         event: Message,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ) -> Any:
         try:
             loop = asyncio.get_running_loop()
@@ -50,9 +50,11 @@ class AcceptMediaGroupMiddleware(BaseMiddleware):
                     self.latency,
                     asyncio.create_task,
                     self._get_media_group(
-                        media_group_id, handler, event, data)
+                        media_group_id, handler, event, data
+                    ),
                 )
             self.media_group[media_group_id].append(event)
         except Exception as err:
             logger.error(
-                f'Ошибка в мидлваре при обработке группы медиа: {err}')
+                f"Ошибка в мидлваре при обработке группы медиа: {err}"
+            )
