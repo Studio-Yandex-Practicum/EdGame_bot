@@ -292,3 +292,13 @@ def create_achievement(data: dict):
         session.rollback()  # откатываем session.add(user)
         logger.error(f'Ошибка при сохранении ачивки: {err}')
         return False
+
+
+def get_user_achievement(user_achievement_id: int) -> AchievementStatus:
+    '''Достаем ачивку из базы по ее id.'''
+    user_achievement = (
+        session.query(
+            AchievementStatus).filter(
+            AchievementStatus.id == user_achievement_id
+        ).first())
+    return user_achievement

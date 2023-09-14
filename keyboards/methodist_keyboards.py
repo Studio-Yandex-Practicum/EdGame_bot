@@ -124,3 +124,23 @@ def task_keyboard_methodist(language: str):
         [achievement_list],
         [lk]]
     return keyboard
+
+
+def review_keyboard_methodist(language: str):
+    '''Генерирует клавиатуру с кнопками проверки ачивки.'''
+    buttons = BUTTONS[language]
+    lk = InlineKeyboardButton(
+        text=buttons["lk"], callback_data='profile')
+    tasks_for_review = InlineKeyboardButton(
+        text=buttons["tasks_for_review"],
+        callback_data='tasks_for_review')
+    approve = InlineKeyboardButton(
+        text=buttons["approve"], callback_data='approve')
+    reject = InlineKeyboardButton(
+        text=buttons["reject"], callback_data='reject')
+    keyboard = [
+        [approve],
+        [reject],
+        [tasks_for_review],
+        [lk]]
+    return keyboard
