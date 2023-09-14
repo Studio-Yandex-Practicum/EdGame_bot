@@ -31,7 +31,7 @@ async def main():
     dp = Dispatcher()
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню
-    # dp.include_router(user_handlers.router)
+    dp.include_router(user_handlers.router)
     dp.include_router(counselor_handlers.router)
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_my_commands()

@@ -5,13 +5,11 @@ from aiogram import types
 
 def get_user_name(session: Session, user_id: int) -> str:
     user = session.query(User).filter(User.id == user_id).first()
-    return user.name if user else "Unknown User"
+    return user.name
 
 
 def get_all_children(session: Session):
-    return (
-        session.query(User).filter(User.role == "kid").all() or "Unknown User"
-    )
+    return session.query(User).filter(User.role == "kid").all()
 
 
 def get_all_children_from_group(session: Session, group_id: int):
@@ -19,7 +17,7 @@ def get_all_children_from_group(session: Session, group_id: int):
         session.query(User)
         .filter(User.group == group_id, User.role == "kid")
         .all()
-    ) or "Unknown User"
+    )
 
 
 def get_all_child_achievements(session: Session, child_id):
@@ -38,7 +36,7 @@ def get_child_by_name_and_group(session: Session, name, group):
         session.query(User)
         .filter(User.name == name, User.group == group, User.role == "kid")
         .first()
-    ) or "Unknown User"
+    )
 
 
 def get_achievement_name(session: Session, achievement_id: int) -> str:
@@ -47,7 +45,7 @@ def get_achievement_name(session: Session, achievement_id: int) -> str:
         .filter(Achievement.id == achievement_id)
         .first()
     )
-    return achievement.name if achievement else "Unknown Achievement"
+    return achievement.name
 
 
 def get_achievement_description(session: Session, achievement_id: int) -> str:
@@ -56,7 +54,7 @@ def get_achievement_description(session: Session, achievement_id: int) -> str:
         .filter(Achievement.id == achievement_id)
         .first()
     )
-    return achievement.description if achievement else "Unknown Achievement"
+    return achievement.description
 
 
 def get_achievement_instruction(session: Session, achievement_id: int) -> str:
@@ -65,7 +63,7 @@ def get_achievement_instruction(session: Session, achievement_id: int) -> str:
         .filter(Achievement.id == achievement_id)
         .first()
     )
-    return achievement.instruction if achievement else "Unknown Achievement"
+    return achievement.instruction
 
 
 def get_achievement_file_id(session: Session, achievement_id: int) -> bytes:
@@ -74,7 +72,7 @@ def get_achievement_file_id(session: Session, achievement_id: int) -> bytes:
         .filter(AchievementStatus.achievement_id == achievement_id)
         .first()
     )
-    return achievement.files_id if achievement else "Unknown File"
+    return achievement.files_id
 
 
 def get_achievement_file_type(session: Session, achievement_id: int) -> bytes:
@@ -84,7 +82,7 @@ def get_achievement_file_type(session: Session, achievement_id: int) -> bytes:
         .first()
     )
 
-    return achievement.artifact_type if achievement else "Unknown Achievement"
+    return achievement.artifact_type
 
 
 def get_message_text(session: Session, id: int):
@@ -93,11 +91,7 @@ def get_message_text(session: Session, id: int):
         .filter(AchievementStatus.id == id)
         .first()
     )
-    return (
-        achievement_status.message_text
-        if achievement_status
-        else "Unknown Message"
-    )
+    return achievement_status.message_text
 
 
 def get_achievements_by_name(session: Session, achievement_name: str):
@@ -111,16 +105,15 @@ def get_achievements_by_name(session: Session, achievement_name: str):
         )
         .first()
     )
-    return achievements.id or "Unknown Achievement"
+    return achievements.id
 
 
 def get_achievement_status_by_id(session: Session, achievement_id):
-    achievements = (
+    return (
         session.query(AchievementStatus)
         .filter(AchievementStatus.achievement_id == achievement_id)
         .all()
     )
-    return achievements or "Unknown Achievement"
 
 
 def get_achievement_status(session: Session, achievement_id: int):
@@ -142,16 +135,15 @@ def get_achievements_by_name(session: Session, achievement_name: str):
         )
         .first()
     )
-    return achievements.id or "Unknown Achievement"
+    return achievements.id
 
 
 def get_achievement_status_by_id(session: Session, achievement_id):
-    achievements = (
+    return (
         session.query(AchievementStatus)
         .filter(AchievementStatus.achievement_id == achievement_id)
         .all()
     )
-    return achievements or "Unknown Achievement"
 
 
 def get_achievement_status(session: Session, achievement_id: int):

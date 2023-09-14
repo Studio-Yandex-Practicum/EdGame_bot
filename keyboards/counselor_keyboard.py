@@ -21,16 +21,17 @@ def create_profile_keyboard():
 
 
 # Создание инлайн клавиатуры для проверки задания вожатым
-def create_inline_keyboard(task_id):
+def create_inline_keyboard(task_id, name):
     accept_button = InlineKeyboardButton(
-        text="✔️ Принять", callback_data=f"accept:{task_id}"
+        text="✔️ Принять", callback_data=f"accept:{task_id}:{name}"
     )
 
     reject_button = InlineKeyboardButton(
-        text="❌ Отклонить", callback_data=f"reject:{task_id}"
+        text="❌ Отклонить", callback_data=f"reject:{task_id}:{name}"
     )
     send_back_button = InlineKeyboardButton(
-        text="🔄 Отправить на доп.проверку", callback_data=f"back:{task_id}"
+        text="🔄 Отправить на доп.проверку",
+        callback_data=f"back:{task_id}:{name}",
     )
     return InlineKeyboardMarkup(
         inline_keyboard=[[accept_button], [reject_button], [send_back_button]]
