@@ -282,64 +282,64 @@ async def approve_methodist_handler(query: CallbackQuery, state: FSMContext):
         )
 
 
-@methodist_router.callback_query(ReviewTask.pending)
-@methodist_router.callback_query(lambda c: c.data.startswith("reject"))
-async def reject_methodist_handler(query: CallbackQuery, state: FSMContext):
-    try:
-        await query.answer()
-        data = await state.get_data()
-        language = data['user_language']
-        lexicon = LEXICON[language]
-        task_id = data['task_id']
-        if reject_task(task_id):
-            inline_keyboard = create_yes_no_keyboard(task_id)
-            await query.message.answer(
-                f"Задание с ID {task_id} отклонено! Хотите указать причину отказа?",
-                reply_markup=inline_keyboard,
-            )
-        else:
-            await query.message.answer(
-                f"Не удалось найти задание с ID {task_id}."
-            )
-    except Exception:
-        await query.message.answer(
-            "Произошла ошибка при отклонении задания."
-        )
+#@methodist_router.callback_query(ReviewTask.pending)
+#@methodist_router.callback_query(lambda c: c.data.startswith("reject"))
+#async def reject_methodist_handler(query: CallbackQuery, state: FSMContext):
+#    try:
+#        await query.answer()
+#        data = await state.get_data()
+#        language = data['user_language']
+#        lexicon = LEXICON[language]
+#        task_id = data['task_id']
+#        if reject_task(task_id):
+#            inline_keyboard = create_yes_no_keyboard(task_id)
+#            await query.message.answer(
+#                f"Задание с ID {task_id} отклонено! Хотите указать причину отказа?",
+#                reply_markup=inline_keyboard,
+#            )
+#        else:
+#            await query.message.answer(
+#                f"Не удалось найти задание с ID {task_id}."
+#            )
+#    except Exception:
+#        await query.message.answer(
+#            "Произошла ошибка при отклонении задания."
+#        )
 
 
-@methodist_router.callback_query(F.data == "yes_handler")
-@methodist_router.callback_query(lambda c: c.data.startswith("yes:"))
-async def yes_methodist_handler(query: CallbackQuery, state: FSMContext):
-    try:
-        await query.answer()
-        data = await state.get_data()
-        language = data['user_language']
-        lexicon = LEXICON[language]
-        task_id = data['task_id']
-        await state.set_state(ReviewTask.reject_message)
-        await state.set_data({"task_id": task_id})
-        await query.message.answer(
-            "Введите причину отказа следующим сообщением. Если передумаете - введите 'Отмена'"
-        )
-    except Exception:
-        await query.message.answer(
-            "Произошла ошибка при обработке запроса."
-        )
+#@methodist_router.callback_query(F.data == "yes_handler")
+#@methodist_router.callback_query(lambda c: c.data.startswith("yes:"))
+#async def yes_methodist_handler(query: CallbackQuery, state: FSMContext):
+#    try:
+#        await query.answer()
+#        data = await state.get_data()
+#        language = data['user_language']
+#        lexicon = LEXICON[language]
+#        task_id = data['task_id']
+#        await state.set_state(ReviewTask.reject_message)
+#        await state.set_data({"task_id": task_id})
+#        await query.message.answer(
+#            "Введите причину отказа следующим сообщением. Если передумаете - введите 'Отмена'"
+#        )
+#    except Exception:
+#        await query.message.answer(
+#            "Произошла ошибка при обработке запроса."
+#        )
 
 
-@methodist_router.message(ReviewTask.reject_message)
-async def rejection_reason(message: types.Message, state: FSMContext):
-    task_data = await state.get_data()
-    task_id = task_data.get("task_id")
-
-    if message.text != "Отмена":
-        save_rejection_reason_in_db(session, task_id, message.text)
-        await message.answer("Причина отказа сохранена")
-    else:
-        await message.answer(
-            "Хорошо! Сообщение об отмене будет доставлено без комментария"
-        )
-        await state.clear()
+#@methodist_router.message(ReviewTask.reject_message)
+#async def rejection_reason(message: types.Message, state: FSMContext):
+#    task_data = await state.get_data()
+#    task_id = task_data.get("task_id")
+#
+#    if message.text != "Отмена":
+#        save_rejection_reason_in_db(session, task_id, message.text)
+#        await message.answer("Причина отказа сохранена")
+#    else:
+#        await message.answer(
+#            "Хорошо! Сообщение об отмене будет доставлено без комментария"
+#        )
+#        await state.clear()
 
 
 # Обработчики добавления задания
