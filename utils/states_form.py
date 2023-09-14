@@ -68,3 +68,13 @@ class EditTask(StatesGroup):
     artifact_type = State()
     achievement_type = State()
     confirm_task = State()
+
+
+class ReviewTask(StatesGroup):
+    """
+    Машина состояний для проверки ачивки методистом.
+    """
+    pending = State()
+    task_id = State()
+    user_language = State()
+    reject_message = State()
