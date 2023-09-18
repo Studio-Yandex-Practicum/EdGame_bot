@@ -31,6 +31,7 @@ from lexicon.lexicon import LEXICON, LEXICON_COMMANDS, BUTTONS
 from utils.db_commands import (
     register_user,
     select_user,
+    is_user_in_db,
     set_user_param,
     available_achievements,
     get_users_by_role,
@@ -97,12 +98,19 @@ async def process_councelor_command(message):
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message, state: FSMContext):
-    # Анкетируем и сохраняем пользователя в БД, роль по умолчанию 'kid'
-    await message.answer(
-        text=f"{LEXICON_COMMANDS['/start']}",
-        reply_markup=create_welcome_keyboard(),
-    )
-    await state.set_state(Profile.choose_language)
+    # Проверяем есть ли юзер в базе
+    user = select_user(message.chat.id)
+    if is_user_in_db(message.chat.id):
+        await state.clear()
+        await message.answer(f'Добро пожаловать, {user.name}',
+                             reply_markup=menu_keyboard(user.language))
+    else:
+        # Анкетируем и сохраняем пользователя в БД, роль по умолчанию 'kid'
+        await message.answer(
+            text=f"{LEXICON_COMMANDS['/start']}",
+            reply_markup=create_welcome_keyboard(),
+        )
+        await state.set_state(Profile.choose_language)
 
 
 # Этот хендлер срабатывает на выбор языка
@@ -687,7 +695,7 @@ async def change_language(query: CallbackQuery, state: FSMContext):
         await query.message.edit_text(
             LEXICON[user.language]["change_language"],
             reply_markup=InlineKeyboardMarkup(
-                inline_keyboard=choose_language_keyboard
+                inline_keyboard=create_welcome_keyboard
             ),
         )
     except KeyError as err:
