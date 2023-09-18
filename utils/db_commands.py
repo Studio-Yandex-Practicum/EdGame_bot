@@ -31,6 +31,12 @@ def select_user(user_id) -> User:
     return user
 
 
+def is_user_in_db(user_id):
+    '''Проверяем наличие пользователя в базе данных.'''
+    return session.query(
+        session.query(User).filter(User.id == user_id).exists()).scalar()
+
+
 def get_users_by_role(role: str):
     """Получаем пользователей по статусу."""
     users = session.query(User).filter(User.role == role).all()
