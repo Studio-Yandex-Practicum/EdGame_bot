@@ -26,6 +26,9 @@ class User(DeclarativeBase):
     score = Column("user_score", Integer, nullable=False)
     group = Column(Integer, nullable=False)
 
+    team_id = Column(Integer, ForeignKey("team.id", ondelete="SET NULL"))
+    team = relationship("Team", back_populates="users")
+
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
 
@@ -50,6 +53,11 @@ class Achievement(DeclarativeBase):
     )
     score = Column("achievement_score", Integer, nullable=False)
     price = Column(Integer, nullable=False)
+
+    category_id = Column(
+        Integer,
+        ForeignKey("category.id", ondelete="SET NULL"))
+    category = relationship("Category", back_populates="achievements")
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
@@ -92,6 +100,34 @@ class AchievementStatus(DeclarativeBase):
         foreign_keys='AchievementStatus.achievement_id',
         lazy='joined'
         )
+
+    def __repr__(self):
+        return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
+
+
+class Team(DeclarativeBase):
+    """Модель для команд. Связь с User."""
+    __tablename__ = "team"
+
+    id = Column(Integer, nullable=False, primary_key=True)
+    name = Column(String(50), nullable=False)
+    team_size = Column(Integer, nullable=False)
+    users = relationship(User, order_by=User.id, back_populates="team")
+
+    def __repr__(self):
+        return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
+
+
+class Category(DeclarativeBase):
+    """Модель для категорий. Связь с Achievement."""
+    __tablename__ = "category"
+
+    id = Column(Integer, nullable=False, primary_key=True)
+    name = Column(String(50), nullable=False)
+    achievements = relationship(
+        Achievement,
+        order_by=Achievement.id,
+        back_populates="category")
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
