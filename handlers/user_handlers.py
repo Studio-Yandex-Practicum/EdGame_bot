@@ -27,6 +27,7 @@ from keyboards.methodist_keyboards import (
     art_list_keyboard,
     methodist_profile_keyboard,
 )
+from keyboards.counselor_keyboard import create_profile_keyboard
 from lexicon.lexicon import LEXICON, LEXICON_COMMANDS, BUTTONS
 from utils.db_commands import (
     register_user,
@@ -91,7 +92,9 @@ async def process_councelor_command(message):
     elif user.language == "tt":
         await message.answer(text=LEXICON["TT"]["councelor"])
     else:
-        await message.answer(text=LEXICON["EN"]["councelor"])
+        await message.answer(
+            text=LEXICON[user.language]["councelor"],
+            reply_markup=create_profile_keyboard())
 
 
 # Этот хэндлер срабатывает на команду /start

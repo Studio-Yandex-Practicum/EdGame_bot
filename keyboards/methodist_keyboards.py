@@ -7,7 +7,7 @@ from lexicon.lexicon import BUTTONS, LEXICON
 def art_list_keyboard(language: str):
     '''Кнопки при входящем уведомлении методисту.'''
     buttons = BUTTONS[language]
-    show_art_list = KeyboardButton(text=buttons["tasks_for_review"])
+    show_art_list = KeyboardButton(text="Проверить задания")  # buttons["tasks_for_review"])
     lk = KeyboardButton(text=buttons["lk"])
 
     keyboard = [[show_art_list], [lk]]
