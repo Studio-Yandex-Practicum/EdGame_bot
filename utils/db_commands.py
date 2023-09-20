@@ -46,15 +46,14 @@ def get_users_by_role(role: str):
 def set_user_param(
     user: User,
     name: str = None,
-    role: str = None,
     language: str = None,
     score: int = None,
 ):
     """Сеттер для обновления свойств объекта User."""
     if name:
         user.name = name
-    if role:
-        user.role = role
+    # if role:
+    #     user.role = role
     if language:
         user.language = language
     if score:
