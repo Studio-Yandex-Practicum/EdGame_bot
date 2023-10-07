@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, User
+from db.models import Achievement, AchievementStatus, User, Category, Team
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,8 @@ def set_user_param(
     role: str = None,
     language: str = None,
     score: int = None,
+    team: Team = None,
+    delete_team: bool = None
 ):
     """Сеттер для обновления свойств объекта User."""
     if name:
@@ -59,6 +61,10 @@ def set_user_param(
         user.language = language
     if score:
         user.score = score
+    if team:
+        user.team = team
+    if delete_team:
+        user.team = None
     try:
         session.commit()
         logger.info('Пользователь обновлен')
@@ -308,3 +314,51 @@ def get_user_achievement(user_achievement_id: int) -> AchievementStatus:
             AchievementStatus.id == user_achievement_id
         ).first())
     return user_achievement
+
+
+def create_team(name: str, size: int):
+    """Создает новую команду."""
+    new_team = Team(
+        name=name,
+        team_size=size
+    )
+    session.add(new_team)
+    try:
+        session.commit()
+        return new_team
+        logger.info('Новая команда создана.')
+    except IntegrityError as err:
+        session.rollback()
+        logger.error(f'Ошибка при создании команды: {err}')
+
+
+def set_team_param(team: Team,
+                   name: str = None,
+                   size: int = None,
+                   users: list[User] = None):
+    """Сеттер для объекта Команды."""
+    if name:
+        team.name = name
+    if size:
+        team.team_size = size
+    if users:
+        team.users = users
+    try:
+        session.commit()
+        logger.info(f'Команда {team.name} обновлена.')
+    except IntegrityError as err:
+        session.rollback()
+        logger.error(f'Ошибка при редактировании команды: {err}')
+
+
+def get_all_teams():
+    """Возвращает список всех команд."""
+    return session.query(Team).all()
+
+
+def get_team(team_id: int = None, name: str = None):
+    """Возвращает объект команды по имени."""
+    if team_id:
+        return session.query(Team).filter(Team.id == team_id).first()
+    elif name:
+        return session.query(Team).filter(Team.name == name).first()

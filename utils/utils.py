@@ -3,17 +3,18 @@ import logging
 from aiogram.types import Message
 
 from utils.db_commands import send_task, get_achievement, user_achievements
-from db.models import Achievement, User
+from db.models import Achievement, User, Team
+from .pagination import pagination_static
 
 logger = logging.getLogger(__name__)
 
 
-def process_next_achievements(
+def generate_achievements_list(
     tasks: list[Achievement],
     lexicon: dict,
-    count: int = 0,
-    previous_final_item: int = 0,
+    current_page: int = 1,
     page_size: int = 5,
+    pages: dict = None,
     methodist=False,
 ) -> dict:
     """
@@ -23,17 +24,21 @@ def process_next_achievements(
     """
     task_list = []
     task_ids = {}
-    # Устанавливаем номер последнего элемента
-    new_final_item = previous_final_item + page_size
-    # Размер страницы
-    final_item = (
-        len(tasks) if len(tasks) < (new_final_item + 1) else new_final_item
-    )
-    for i in range(previous_final_item, final_item):
-        count += 1
-        task_list.append(f"{count}: {tasks[i].name}.")
-        task_ids[count] = tasks[i].id
-    text = "\n\n".join(task_list)
+    count = 0
+    if not pages:
+        for i in range(len(tasks)):
+            count += 1
+            task_info = f"{count}: {tasks[i].name}"
+            task_list.append(task_info)
+            task_ids[count] = tasks[i].id
+            # Список описаний, разбитый по страницам
+            pages = pagination_static(page_size, task_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
     msg = (
         f'{lexicon["available_achievements"]}:\n\n'
         f"{text}\n\n"
@@ -41,58 +46,15 @@ def process_next_achievements(
     )
     if methodist:
         msg = f'{lexicon["available_achievements"]}:\n\n' f"{text}\n\n"
-    task_info = {"count": count, "final_item": final_item, "tasks": tasks}
-    return {"msg": msg, "task_ids": task_ids, "task_info": task_info}
-
-
-def process_previous_achievements(
-    tasks: list[Achievement],
-    lexicon: dict,
-    count: int = 0,
-    previous_final_item: int = 0,
-    page_size: int = 5,
-    methodist=False,
-) -> dict:
-    """
-    Обрабатывает список доступных ачивок и выдает словарь с текстом для
-    сообщения, словарем id ачивок, информацию для пагинатора,
-        если ачивок много, и номер последнего элемента для клавиатуры.
-    """
-    task_list = []
-    task_ids = {}
-    # Счетчик id
-    count = count - page_size * 2 if count > page_size * 2 else 0
-    # Устанавливаем номер последнего элемента
-    new_final_item = previous_final_item - page_size
-    # Устанавливаем номер первого элемента
-    first_item = (
-        previous_final_item - page_size * 2
-        if previous_final_item > page_size * 2
-        else 0
-    )
-    # Размер страницы
-    final_item = (
-        len(tasks) if len(tasks) < (new_final_item + 1) else new_final_item
-    )
-    for i in range(first_item, final_item):
-        count += 1
-        task_list.append(f"{count}: {tasks[i].name}.")
-        task_ids[count] = tasks[i].id
-    text = "\n\n".join(task_list)
-    msg = (
-        f'{lexicon["available_achievements"]}:\n\n'
-        f"{text}\n\n"
-        f'{lexicon["choose_achievement"]}:'
-    )
-    if methodist:
-        msg = f'{lexicon["available_achievements"]}:\n\n' f"{text}\n\n"
-    task_info = {
-        "count": count,
-        "first_item": first_item,
-        "final_item": final_item,
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
         "tasks": tasks,
-    }
-    return {"msg": msg, "task_ids": task_ids, "task_info": task_info}
+        "task_ids": task_ids,
+        "msg": msg}
+    return page_info
 
 
 async def _check_artifact_type(
@@ -105,6 +67,7 @@ async def _check_artifact_type(
         "document": message.document,
         "audio": message.audio,
         "voice": message.voice,
+        "text": message.text
     }
     artifact = artifact_types[artifact_type]
     if not artifact:
@@ -130,38 +93,10 @@ async def process_artifact(
     files_id = []
     if art_type == "image":
         files_id.append(artifact[-1].file_id)
-    else:
+    elif art_type != "text" and art_type != "image":
         files_id.append(artifact.file_id)
     user_id = message.from_user.id
     text = message.text if message.text else message.caption
-    try:
-        send_task(user_id, achievement_id, files_id, text)
-        return True
-    except Exception as err:
-        logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
-        return False
-
-
-async def process_artifact_group(
-    messages: list[Message], achievement_id: int, lexicon: dict
-):
-    """
-    Достает id из возможных типов сообщения и сохраняет в базе
-    информацию об ачивке с новым статусом.
-    """
-    achievement = get_achievement(achievement_id)
-    art_type = achievement.artifact_type
-    files_id = []
-    for message in messages:
-        artifact = await _check_artifact_type(message, art_type, lexicon)
-        if not artifact:
-            return
-        if art_type == "image":
-            files_id.append(artifact[-1].file_id)
-        else:
-            files_id.append(artifact.file_id)
-    user_id = messages[0].from_user.id
-    text = messages[0].text if messages[0].text else messages[0].caption
     try:
         send_task(user_id, achievement_id, files_id, text)
         return True
@@ -322,6 +257,111 @@ def generate_profile_info(user: User, lexicon: dict):
         f'{lexicon["lk_info"]}:\n'
         f'{lexicon["name"]} - {user.name}\n'
         f'{lexicon["score"]} - {user.score}\n'
-        f"Роль - {user.role}"
+        f'Роль - {user.role}\n'
+        f'Номер отряда - {user.group}\n'
     )
+    if user.team:
+        text += f'Команда - {user.team.name}'
     return text
+
+
+def generate_users_list(
+    users: list[User],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None
+) -> dict:
+    """
+    Обрабатывает список объектов и выдает словарь с текстом для
+    сообщения, словарем id объектов, информацию для пагинатора,
+    если объектов много, и номер последнего элемента для клавиатуры.
+    """
+    user_list = []
+    user_ids = {}
+    count = 0
+    if not pages:
+        for i in range(len(users)):
+            count += 1
+            user_info = f"{count}: {users[i].name}"
+            if users[i].team:
+                user_info += f"\n{lexicon['team_name']} - {users[i].team.name}"
+            user_list.append(user_info)
+            user_ids[count] = users[i].id
+            # Список описаний, разбитый по страницам
+            pages = pagination_static(page_size, user_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
+    msg = f'{lexicon["choose_team_member"]}:\n\n{text}\n\n'
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "users": users,
+        "user_ids": user_ids,
+        "msg": msg}
+    return page_info
+
+
+def generate_team_info(team: Team, lexicon: dict):
+    """Генерирует информацию о команде."""
+    members = []
+    if team.users:
+        for user in team.users:
+            user_info = (f'{lexicon["name"]} - {user.name}\n'
+                         f'{lexicon["group_number"]} - {user.group}\n\n')
+            members.append(user_info)
+    text = (f'{lexicon["team_name"]} - {team.name}\n\n'
+            f'{lexicon["team_size"]} - {team.team_size}\n\n')
+    if members:
+        members_info = '\n'.join(members)
+        text += members_info
+    return text
+
+
+def generate_teams_list(
+    teams: list[Team],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None
+) -> dict:
+    """
+    Обрабатывает список команд и выдает словарь с текстом для
+    сообщения, словарем id объектов, информацию для пагинатора,
+    если объектов много, и номер последнего элемента для клавиатуры.
+    """
+    team_list = []
+    team_ids = {}
+    count = 0
+    if not pages:
+        for i in range(len(teams)):
+            count += 1
+            team_list.append(
+                f"{count}: {teams[i].name} - (Занято "
+                f"{len(teams[i].users)}/{teams[i].team_size})."
+            )
+            team_ids[count] = teams[i].id
+        # Список описаний, разбитый по страницам
+        pages = pagination_static(page_size, team_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
+    msg = f'{lexicon["show_teams_list"]}:\n\n{text}\n\n'
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "teams": teams,
+        "team_ids": team_ids,
+        "msg": msg}
+    return page_info
