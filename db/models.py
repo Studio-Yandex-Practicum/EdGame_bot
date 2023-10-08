@@ -1,4 +1,5 @@
-from sqlalchemy import ARRAY, TIMESTAMP, Column, ForeignKey, Integer, String
+from sqlalchemy import ARRAY, TIMESTAMP, Column, ForeignKey, Integer, String, \
+    BigInteger
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.schema import CheckConstraint
 
@@ -10,7 +11,7 @@ DeclarativeBase = declarative_base()
 class User(DeclarativeBase):
     __tablename__ = "users"
 
-    id = Column("user_id", Integer, nullable=False, primary_key=True)
+    id = Column("user_id", BigInteger, nullable=False, primary_key=True)
     name = Column(String(50), nullable=False)
     role = Column(
         String,

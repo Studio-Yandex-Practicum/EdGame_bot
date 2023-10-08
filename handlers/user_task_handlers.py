@@ -91,36 +91,42 @@ async def show_tasks_list(message: Message, state: FSMContext):
         language = user.language
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
-        info = generate_achievements_list(
-            tasks=tasks,
-            lexicon=lexicon,
-            current_page=1,
-            page_size=PAGE_SIZE)
-        msg = info["msg"]
-        task_ids = info["task_ids"]
-        first_item = info["first_item"]
-        final_item = info["final_item"]
-        lk_button = {
-            "text": BUTTONS[language]["lk"],
-            "callback_data": "profile"
-        }
-        await state.set_state(Data.tasks)
-        await state.update_data(
-            tasks=tasks,
-            task_ids=task_ids,
-            pagination_info=info,
-            language=language
-        )
-        await message.answer(
-            msg,
-            reply_markup=pagination_keyboard(
-                buttons_count=len(tasks),
-                start=first_item,
-                end=final_item,
-                cd='task',
-                page_size=PAGE_SIZE,
-                extra_button=lk_button)
-        )
+        if not tasks:
+            await message.answer(text='Нет доступных заданий.',
+                                 reply_markup=task_keyboard(user.language,
+                                                            show_tasks=True))
+        else:
+            info = generate_achievements_list(
+                tasks=tasks,
+                lexicon=lexicon,
+                current_page=1,
+                page_size=PAGE_SIZE)
+            msg = info["msg"]
+            task_ids = info["task_ids"]
+            first_item = info["first_item"]
+            final_item = info["final_item"]
+            lk_button = {
+                "text": BUTTONS[language]["lk"],
+                "callback_data": "profile"
+            }
+            await state.set_state(Data.tasks)
+            await state.update_data(
+                tasks=tasks,
+                task_ids=task_ids,
+                pagination_info=info,
+                language=language
+            )
+
+            await message.answer(
+                msg,
+                reply_markup=pagination_keyboard(
+                    buttons_count=len(tasks),
+                    start=first_item,
+                    end=final_item,
+                    cd='task',
+                    page_size=PAGE_SIZE,
+                    extra_button=lk_button)
+            )
     except KeyError as err:
         logger.error(
             f"Ошибка в ключевом слове в списке ачивок ребенка: {err}")
@@ -141,36 +147,41 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         language = user.language
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
-        info = generate_achievements_list(
-            tasks=tasks,
-            lexicon=lexicon,
-            current_page=1,
-            page_size=PAGE_SIZE)
-        msg = info["msg"]
-        task_ids = info["task_ids"]
-        first_item = info["first_item"]
-        final_item = info["final_item"]
-        lk_button = {
-            "text": BUTTONS[language]["lk"],
-            "callback_data": "profile"
-        }
-        await state.set_state(Data.tasks)
-        await state.update_data(
-            tasks=tasks,
-            task_ids=task_ids,
-            pagination_info=info,
-            language=language
-        )
-        await query.message.edit_text(
-            msg,
-            reply_markup=pagination_keyboard(
-                buttons_count=len(tasks),
-                start=first_item,
-                end=final_item,
-                cd='task',
-                page_size=PAGE_SIZE,
-                extra_button=lk_button)
-        )
+        if not tasks:
+            await query.message.answer(text='Нет доступных заданий.',
+                                       reply_markup=task_keyboard(user.language,
+                                                                  show_tasks=True))
+        else:
+            info = generate_achievements_list(
+                tasks=tasks,
+                lexicon=lexicon,
+                current_page=1,
+                page_size=PAGE_SIZE)
+            msg = info["msg"]
+            task_ids = info["task_ids"]
+            first_item = info["first_item"]
+            final_item = info["final_item"]
+            lk_button = {
+                "text": BUTTONS[language]["lk"],
+                "callback_data": "profile"
+            }
+            await state.set_state(Data.tasks)
+            await state.update_data(
+                tasks=tasks,
+                task_ids=task_ids,
+                pagination_info=info,
+                language=language
+            )
+            await query.message.edit_text(
+                msg,
+                reply_markup=pagination_keyboard(
+                    buttons_count=len(tasks),
+                    start=first_item,
+                    end=final_item,
+                    cd='task',
+                    page_size=PAGE_SIZE,
+                    extra_button=lk_button)
+            )
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:

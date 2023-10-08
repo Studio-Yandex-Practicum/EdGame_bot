@@ -54,8 +54,6 @@ def set_user_param(
     """Сеттер для обновления свойств объекта User."""
     if name:
         user.name = name
-    # if role:
-    #     user.role = role
     if language:
         user.language = language
     if score:
@@ -97,8 +95,8 @@ def user_achievements(user_id):
 def available_achievements(user_id, user_score) -> list:
     """
     Присылаем id пользователя, получаем список доступных ему по количеству
-    баллов ачивок, среди который нет находящихся в проверке или уже
-    выполненных, из которых вынимаем нужные данные.
+    баллов ачивок, среди которых нет находящихся на проверке или уже
+    выполненных. Из них вынимаем нужные данные.
     """
     user_achievements = session.query(AchievementStatus).filter(
         AchievementStatus.user_id == user_id,
