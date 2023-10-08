@@ -19,9 +19,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
-    op.add_column("users", sa.Column("group", sa.Integer(), nullable=True))
-    op.execute("UPDATE users SET group_id = 0 WHERE group IS NULL")
-    op.alter_column("users", "group", nullable=False)
+    op.add_column(
+        "users",
+        sa.Column("group", sa.Integer(), nullable=False, server_default="1"),
+    )
 
 
 def downgrade():
