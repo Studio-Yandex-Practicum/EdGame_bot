@@ -14,6 +14,7 @@ POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 DB_HOST = os.getenv("DB_HOST")
 POSTGRES_DB = os.getenv("POSTGRES_DB")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 
 url_object = URL.create(
     DB_ENGINE,
@@ -21,6 +22,7 @@ url_object = URL.create(
     password=POSTGRES_PASSWORD,
     host=DB_HOST,
     database=POSTGRES_DB,
+    port=POSTGRES_PORT,
 )
 # docker run --name postgres-container -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=qwerty -e POSTGRES_DB=EdGame_bot -p 5432:5432 -d postgres
 # Cоздать первую миграцию - alembic revision --autogenerate -m "Initial migration"
