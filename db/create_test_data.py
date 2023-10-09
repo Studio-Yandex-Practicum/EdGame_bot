@@ -3,6 +3,8 @@ import factory
 from db import models
 from db.engine import session
 
+IMAGE = "AgACAgIAAxkBAAIBmWUjyluFrC9AGFaDNVpzCXTh0QIWAAK0zDEbfS0hSVTOFTUi9GogAQADAgADeQADMAQ"
+
 
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
@@ -43,7 +45,7 @@ class AchievementFactory(BaseSQLAlchemyModelFactory):
         model = models.Achievement
 
     name = factory.Faker("word")
-    image = "AgACAgIAAxkBAAIBmWUjyluFrC9AGFaDNVpzCXTh0QIWAAK0zDEbfS0hSVTOFTUi9GogAQADAgADeQADMAQ"
+    image = IMAGE
     description = factory.Faker("paragraph")
     instruction = factory.Faker("paragraph")
     artifact_type = factory.Iterator(("text", "image", "video"))
@@ -62,7 +64,7 @@ class AchievementStatusFactory(BaseSQLAlchemyModelFactory):
     status = factory.Iterator(
         ("pending", "pending_methodist", "approved", "rejected")
     )
-    files_id = "AgACAgIAAxkBAAIBmWUjyluFrC9AGFaDNVpzCXTh0QIWAAK0zDEbfS0hSVTOFTUi9GogAQADAgADeQADMAQ"
+    files_id = IMAGE, IMAGE
     message_text = factory.Faker("paragraph")
     created_at = factory.Faker("date_time")
     rejection_reason = factory.Faker("paragraph")
