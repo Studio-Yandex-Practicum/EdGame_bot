@@ -12,7 +12,8 @@ class Data(StatesGroup):
     change_language = State()
     task_id = State()
     tasks = State()
-    tasks_info = State()
+    task_ids = State()
+    pagination_info = State()
     artifact = State()
 
 
@@ -29,18 +30,20 @@ class TaskList(StatesGroup):
     """
     Машина состояний для отображения списка ачивок у методиста.
     """
-    user_language = State()
+    language = State()
     tasks = State()
     tasks_for_review = State()
     task_ids = State()
     task_info = State()
+    current_page = State()
+    query_id = State()
 
 
 class AddTask(StatesGroup):
     """
     Машина состояний для добавления ачивки в базу методистом.
     """
-    user_language = State()
+    language = State()
     task_id = State()
     image = State()
     name = State()
@@ -57,7 +60,7 @@ class EditTask(StatesGroup):
     """
     Машина состояний для редактирования ачивки методистом.
     """
-    user_language = State()
+    language = State()
     task_id = State()
     image = State()
     name = State()
@@ -68,6 +71,7 @@ class EditTask(StatesGroup):
     artifact_type = State()
     achievement_type = State()
     confirm_task = State()
+    query_id = State()
 
 
 class ReviewTask(StatesGroup):
@@ -76,5 +80,40 @@ class ReviewTask(StatesGroup):
     """
     pending = State()
     task_id = State()
-    user_language = State()
+    language = State()
     reject_message = State()
+
+
+class CreateTeam(StatesGroup):
+    """Машина состояний для создания команды."""
+    name = State()
+    size = State()
+    team = State()
+    add_members = State()
+    choose_member = State()
+    language = State()
+    ready = State()
+    child = State()
+    children = State()
+    children_ids = State()
+    pagination_info = State()
+
+
+class EditTeam(StatesGroup):
+    """Машина состояний для создания команды."""
+    name = State()
+    size = State()
+    team = State()
+    query_id = State()
+    teams = State()
+    team_ids = State()
+    add_members = State()
+    choose_member = State()
+    language = State()
+    ready = State()
+    child = State()
+    children = State()
+    children_ids = State()
+    pagination_info = State()
+    current_page = State()
+    current_page_children = State()

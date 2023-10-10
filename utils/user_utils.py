@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from db.models import Achievement, AchievementStatus, User
 from aiogram import types
 
+from db.engine import session
+
 
 def get_user_name(session: Session, user_id: int) -> str:
     user = session.query(User).filter(User.id == user_id).first()
@@ -124,36 +126,6 @@ def get_achievement_status(session: Session, achievement_id: int):
     )
 
 
-def get_achievements_by_name(session: Session, achievement_name: str):
-    """Возвращает все запросы на проверку одного задания"""
-    achievements = (
-        session.query(Achievement)
-        .join(AchievementStatus)
-        .filter(
-            Achievement.name == achievement_name,
-            AchievementStatus.status == "pending",
-        )
-        .first()
-    )
-    return achievements.id
-
-
-def get_achievement_status_by_id(session: Session, achievement_id):
-    return (
-        session.query(AchievementStatus)
-        .filter(AchievementStatus.achievement_id == achievement_id)
-        .all()
-    )
-
-
-def get_achievement_status(session: Session, achievement_id: int):
-    return (
-        session.query(AchievementStatus)
-        .filter_by(achievement_id=achievement_id)
-        .all()
-    )
-
-
 def change_achievement_status_by_id(
     session: Session, id: int, new_status: str
 ) -> bool:
@@ -169,7 +141,7 @@ def change_achievement_status_by_id(
     return False
 
 
-def save_rejection_reason_in_db(session: Session, id: int, message_text: str):
+def save_rejection_reason_in_db(id: int, message_text: str):
     """Сохраняет причину отказа принять задание."""
     user_achievement = (
         session.query(AchievementStatus)

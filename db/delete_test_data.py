@@ -1,13 +1,20 @@
-from models import Achievement, AchievementStatus, User, engine
+from models import Achievement, AchievementStatus, User, engine, Category, Team
 from sqlalchemy.orm import sessionmaker
 
 Session = sessionmaker(bind=engine)
 session = Session()
 
 
-session.query(AchievementStatus).delete()
-session.query(Achievement).delete()
-session.query(User).delete()
+def delete_test_data():
+    session.query(AchievementStatus).delete()
+    session.query(Achievement).delete()
+    session.query(User).delete()
+    session.query(Team).delete()
+    session.query(Category).delete()
 
-session.commit()
-session.close()
+    session.commit()
+    session.close()
+
+
+if __name__ == "__main__":
+    delete_test_data()
