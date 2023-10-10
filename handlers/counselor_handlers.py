@@ -2,6 +2,11 @@ from aiogram import F, Router, types
 from aiogram.filters import Command, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+from aiogram_inline_paginations.paginator import Paginator
 from db.engine import session
 from db.models import AchievementStatus, User
 from keyboards.counselor_keyboard import (
@@ -32,7 +37,7 @@ from utils.user_utils import (
     save_rejection_reason_in_db,
     send_task,
 )
-
+from .edgame import dp
 router = Router()
 
 
@@ -50,6 +55,7 @@ class TaskState(StatesGroup):
     reject_message = State()
     children_group = State()
     achievement_name = State()
+    group_buttons = State()
 
 
 @router.message(Command("lk"))
@@ -444,5 +450,47 @@ async def display_troop_task_review(message: types.Message, state: FSMContext):
     except Exception:
         await message.answer("Произошла ошибка при поиске отряда")
         await state.clear()
+    finally:
+        session.close()
+
+@router.message(Text("Список детей в группе"))
+async def show_children_group(message: types.Message):
+    try:
+        user_ids = get_all_children_from_group(session, message.text)
+        if len(user_ids) == 0:
+            await message.answer("Такого отряда не существует")
+        markup = InlineKeyboardMarkup()
+        for i in  user_ids:
+            markup.add(InlineKeyboardButton(f'{i[1]}', callback_data=f'name {i[0]}, {message.text}'))
+            paginator = Paginator(data=markup, size=5)
+            await TaskState.group_buttons
+        await message.answer("Выбирайте ребенка",  reply_markup=paginator())
+    except Exception:
+        await message.answer("Произошла ошибка при поиске отряда")
+    finally:
+        session.close()
+    
+@router.callback_query(Text(startswith="name"))
+async def check_child_buttons(call: types.CallbackQuery):
+    try:
+        action = call.data.split(",")
+        name = action[0]
+        group = action[1]
+        child = get_child_by_name_and_group(session, name, group)
+        achievements = available_achievements(child.id, child.score)
+
+        message_text = [
+            f"Информация о ребенке по имени {name}:\n\nОчки: {child.score} Группа: {child.group}",
+            "Доступные ачивки для ребенка:\n",
+        ]
+        message_text.extend(
+            f"Название: {achievement.name}\nНеобходимо баллов: {achievement.price}\n"
+            f"Вид: {achievement.achievement_type}\nБаллы за ачивку: {achievement.score}\n\n"
+            for achievement in achievements
+        )
+        await call.answer("\n".join(message_text))
+    except Exception:
+        await call.answer("Произошла ошибка при поиске ребенка")
+       
     finally:
         session.close()

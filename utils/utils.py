@@ -289,7 +289,7 @@ def generate_users_list(
             user_list.append(user_info)
             user_ids[count] = users[i].id
             # Список описаний, разбитый по страницам
-            pages = pagination_static(page_size, user_list)
+            pages = (page_size, user_list)
     if current_page < 1:
         current_page = len(pages)
     elif current_page > len(pages):

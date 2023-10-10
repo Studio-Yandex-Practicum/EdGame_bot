@@ -4,8 +4,6 @@ from aiogram.types import (
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
-
-
 # Создание клавиатуры для ЛК вожатого
 def create_profile_keyboard():
     profile_keyboard = [
@@ -45,3 +43,4 @@ def create_yes_no_keyboard(task_id):
     )
     no_button = InlineKeyboardButton(text="Нет", callback_data=f"no:{task_id}")
     return InlineKeyboardMarkup(inline_keyboard=[[yes_button], [no_button]])
+
