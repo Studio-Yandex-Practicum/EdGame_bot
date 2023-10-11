@@ -37,7 +37,7 @@ from utils.user_utils import (
     save_rejection_reason_in_db,
     send_task,
 )
-from .edgame import dp
+
 router = Router()
 
 
@@ -453,6 +453,7 @@ async def display_troop_task_review(message: types.Message, state: FSMContext):
     finally:
         session.close()
 
+
 @router.message(Text("Список детей в группе"))
 async def show_children_group(message: types.Message):
     try:
@@ -460,8 +461,10 @@ async def show_children_group(message: types.Message):
         if len(user_ids) == 0:
             await message.answer("Такого отряда не существует")
         markup = InlineKeyboardMarkup()
-        for i in  user_ids:
-            markup.add(InlineKeyboardButton(f'{i[1]}', callback_data=f'name {i[0]}, {message.text}'))
+        for i in user_ids:
+            markup.add(InlineKeyboardButton(f'{i[1]}',
+                                            callback_data=
+                                            f'name {i[0]}, {message.text}'))
             paginator = Paginator(data=markup, size=5)
             await TaskState.group_buttons
         await message.answer("Выбирайте ребенка",  reply_markup=paginator())
@@ -469,7 +472,8 @@ async def show_children_group(message: types.Message):
         await message.answer("Произошла ошибка при поиске отряда")
     finally:
         session.close()
-    
+
+
 @router.callback_query(Text(startswith="name"))
 async def check_child_buttons(call: types.CallbackQuery):
     try:
@@ -480,17 +484,19 @@ async def check_child_buttons(call: types.CallbackQuery):
         achievements = available_achievements(child.id, child.score)
 
         message_text = [
-            f"Информация о ребенке по имени {name}:\n\nОчки: {child.score} Группа: {child.group}",
-            "Доступные ачивки для ребенка:\n",
+            (f"Информация о ребенке по имени {name}:\n\nОчки:"
+             f'{child.score} Группа: {child.group}"',
+             "Доступные ачивки для ребенка:\n")
         ]
         message_text.extend(
-            f"Название: {achievement.name}\nНеобходимо баллов: {achievement.price}\n"
-            f"Вид: {achievement.achievement_type}\nБаллы за ачивку: {achievement.score}\n\n"
+            f"Название: {achievement.name}\nНеобходимо баллов: "
+            f'{achievement.price}\n'
+            f'Вид: {achievement.achievement_type}\nБаллы за ачивку:'
+            f'{achievement.score}\n\n"'
             for achievement in achievements
         )
         await call.answer("\n".join(message_text))
     except Exception:
         await call.answer("Произошла ошибка при поиске ребенка")
-       
     finally:
         session.close()
