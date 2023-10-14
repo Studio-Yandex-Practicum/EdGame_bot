@@ -3,7 +3,7 @@ from sqlalchemy import ARRAY, TIMESTAMP, Column, ForeignKey, Integer, String, \
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.schema import CheckConstraint
 
-from db.engine import engine
+from engine import engine
 
 DeclarativeBase = declarative_base()
 
