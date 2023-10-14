@@ -1,0 +1,289 @@
+edgame.py:31 #INFO     [2023-10-14 13:24:11,626] - __main__ - Starting bot
+dispatcher.py:493 #INFO     [2023-10-14 13:24:12,018] - aiogram.dispatcher - Start polling
+dispatcher.py:329 #INFO     [2023-10-14 13:24:12,097] - aiogram.dispatcher - Run polling for bot @A60874022bot id=6595664152 - '60874022'
+dispatcher.py:160 #INFO     [2023-10-14 13:24:36,765] - aiogram.event - Update id=699317275 is handled. Duration 282 ms by bot id=6595664152
+dispatcher.py:160 #INFO     [2023-10-14 13:25:43,474] - aiogram.event - Update id=699317276 is not handled. Duration 0 ms by bot id=6595664152
+dispatcher.py:303 #ERROR    [2023-10-14 13:25:43,474] - aiogram.event - Cause exception while process update id=699317276 by bot id=6595664152
+AttributeError: 'NoneType' object has no attribute 'role'
+Traceback (most recent call last):
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 297, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 146, in feed_update
+    response = await self.update.wrap_outer_middleware(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 23, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\fsm\middleware.py", line 39, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 264, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 131, in _propagate_event
+    response = await router.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 124, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\handlers\user_handlers.py", line 41, in process_methodist_command
+    user.role = "methodist"
+AttributeError: 'NoneType' object has no attribute 'role'
+dispatcher.py:160 #INFO     [2023-10-14 13:25:53,259] - aiogram.event - Update id=699317277 is handled. Duration 266 ms by bot id=6595664152
+dispatcher.py:160 #INFO     [2023-10-14 13:25:55,466] - aiogram.event - Update id=699317278 is not handled. Duration 0 ms by bot id=6595664152
+dispatcher.py:303 #ERROR    [2023-10-14 13:25:55,467] - aiogram.event - Cause exception while process update id=699317278 by bot id=6595664152
+AttributeError: 'NoneType' object has no attribute 'role'
+Traceback (most recent call last):
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 297, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 146, in feed_update
+    response = await self.update.wrap_outer_middleware(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 23, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\fsm\middleware.py", line 39, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 264, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 131, in _propagate_event
+    response = await router.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 124, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\handlers\user_handlers.py", line 41, in process_methodist_command
+    user.role = "methodist"
+AttributeError: 'NoneType' object has no attribute 'role'
+dispatcher.py:160 #INFO     [2023-10-14 13:25:59,512] - aiogram.event - Update id=699317279 is not handled. Duration 0 ms by bot id=6595664152
+dispatcher.py:303 #ERROR    [2023-10-14 13:25:59,512] - aiogram.event - Cause exception while process update id=699317279 by bot id=6595664152
+AttributeError: 'NoneType' object has no attribute 'role'
+Traceback (most recent call last):
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 297, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 146, in feed_update
+    response = await self.update.wrap_outer_middleware(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 23, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\fsm\middleware.py", line 39, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 264, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 131, in _propagate_event
+    response = await router.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 124, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\handlers\user_handlers.py", line 41, in process_methodist_command
+    user.role = "methodist"
+AttributeError: 'NoneType' object has no attribute 'role'
+dispatcher.py:160 #INFO     [2023-10-14 13:26:09,826] - aiogram.event - Update id=699317280 is not handled. Duration 0 ms by bot id=6595664152
+dispatcher.py:303 #ERROR    [2023-10-14 13:26:09,827] - aiogram.event - Cause exception while process update id=699317280 by bot id=6595664152
+AttributeError: 'NoneType' object has no attribute 'role'
+Traceback (most recent call last):
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 297, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 146, in feed_update
+    response = await self.update.wrap_outer_middleware(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 23, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\fsm\middleware.py", line 39, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 264, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 131, in _propagate_event
+    response = await router.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 124, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\handlers\user_handlers.py", line 55, in process_councelor_command
+    user.role = "councelor"
+AttributeError: 'NoneType' object has no attribute 'role'
+dispatcher.py:160 #INFO     [2023-10-14 13:26:53,889] - aiogram.event - Update id=699317281 is not handled. Duration 0 ms by bot id=6595664152
+dispatcher.py:303 #ERROR    [2023-10-14 13:26:53,889] - aiogram.event - Cause exception while process update id=699317281 by bot id=6595664152
+AttributeError: 'NoneType' object has no attribute 'role'
+Traceback (most recent call last):
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 297, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 146, in feed_update
+    response = await self.update.wrap_outer_middleware(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 23, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\fsm\middleware.py", line 39, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 264, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 131, in _propagate_event
+    response = await router.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 124, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\handlers\user_handlers.py", line 55, in process_councelor_command
+    user.role = "councelor"
+AttributeError: 'NoneType' object has no attribute 'role'
+dispatcher.py:160 #INFO     [2023-10-14 13:27:04,797] - aiogram.event - Update id=699317282 is handled. Duration 265 ms by bot id=6595664152
+dispatcher.py:160 #INFO     [2023-10-14 13:27:06,710] - aiogram.event - Update id=699317283 is not handled. Duration 0 ms by bot id=6595664152
+dispatcher.py:303 #ERROR    [2023-10-14 13:27:06,710] - aiogram.event - Cause exception while process update id=699317283 by bot id=6595664152
+AttributeError: 'NoneType' object has no attribute 'role'
+Traceback (most recent call last):
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 297, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 146, in feed_update
+    response = await self.update.wrap_outer_middleware(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 23, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\fsm\middleware.py", line 39, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 264, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 131, in _propagate_event
+    response = await router.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 124, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\handlers\user_handlers.py", line 55, in process_councelor_command
+    user.role = "councelor"
+AttributeError: 'NoneType' object has no attribute 'role'
+dispatcher.py:160 #INFO     [2023-10-14 13:28:04,434] - aiogram.event - Update id=699317284 is not handled. Duration 0 ms by bot id=6595664152
+dispatcher.py:303 #ERROR    [2023-10-14 13:28:04,434] - aiogram.event - Cause exception while process update id=699317284 by bot id=6595664152
+AttributeError: 'NoneType' object has no attribute 'role'
+Traceback (most recent call last):
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 297, in _process_update
+    response = await self.feed_update(bot, update, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 146, in feed_update
+    response = await self.update.wrap_outer_middleware(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\error.py", line 25, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\middlewares\user_context.py", line 23, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\fsm\middleware.py", line 39, in __call__
+    return await handler(event, data)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\dispatcher.py", line 264, in _listen_update
+    return await self.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 131, in _propagate_event
+    response = await router.propagate_event(update_type=update_type, event=event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 115, in propagate_event
+    return await observer.wrap_outer_middleware(_wrapped, event=event, data=kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 111, in _wrapped
+    return await self._propagate_event(
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\router.py", line 124, in _propagate_event
+    response = await observer.trigger(event, **kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\telegram.py", line 123, in trigger
+    return await wrapped_inner(event, kwargs)
+  File "C:\бот\EdGame_bot\venv\lib\site-packages\aiogram\dispatcher\event\handler.py", line 42, in call
+    return await wrapped()
+  File "C:\бот\EdGame_bot\handlers\user_handlers.py", line 55, in process_councelor_command
+    user.role = "councelor"
+AttributeError: 'NoneType' object has no attribute 'role'
+dispatcher.py:520 #INFO     [2023-10-14 13:34:19,335] - aiogram.dispatcher - Polling stopped
+dispatcher.py:345 #INFO     [2023-10-14 13:34:19,336] - aiogram.dispatcher - Polling stopped for bot @A60874022bot id=6595664152 - '60874022'
+edgame.py:55 #INFO     [2023-10-14 13:34:19,337] - __main__ - Bot stopped!
+edgame.py:31 #INFO     [2023-10-14 13:34:35,903] - __main__ - Starting bot
+dispatcher.py:493 #INFO     [2023-10-14 13:34:36,290] - aiogram.dispatcher - Start polling
+dispatcher.py:329 #INFO     [2023-10-14 13:34:36,374] - aiogram.dispatcher - Run polling for bot @A60874022bot id=6595664152 - '60874022'
+dispatcher.py:160 #INFO     [2023-10-14 13:34:46,188] - aiogram.event - Update id=699317285 is handled. Duration 265 ms by bot id=6595664152
+dispatcher.py:520 #INFO     [2023-10-14 13:35:03,321] - aiogram.dispatcher - Polling stopped
+dispatcher.py:345 #INFO     [2023-10-14 13:35:03,323] - aiogram.dispatcher - Polling stopped for bot @A60874022bot id=6595664152 - '60874022'
+edgame.py:55 #INFO     [2023-10-14 13:35:03,323] - __main__ - Bot stopped!

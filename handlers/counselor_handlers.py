@@ -37,6 +37,7 @@ from utils.user_utils import (
     save_rejection_reason_in_db,
     send_task,
 )
+from lexicon.lexicon import LEXICON, BUTTONS
 
 router = Router()
 
@@ -459,7 +460,7 @@ async def show_children_group(message: types.Message):
     try:
         user_ids = get_all_children_from_group(session, message.text)
         if len(user_ids) == 0:
-            await message.answer("Такого отряда не существует")
+            await message.answer(LEXICON["RU"]["no_group"])
         markup = InlineKeyboardMarkup()
         for i in user_ids:
             markup.add(InlineKeyboardButton(f'{i[1]}',
@@ -467,9 +468,9 @@ async def show_children_group(message: types.Message):
                                             f'name {i[0]}, {message.text}'))
             paginator = Paginator(data=markup, size=5)
             await TaskState.group_buttons
-        await message.answer("Выбирайте ребенка",  reply_markup=paginator())
+        await message.answer(LEXICON["RU"]["choose_child"],  reply_markup=paginator())
     except Exception:
-        await message.answer("Произошла ошибка при поиске отряда")
+        await message.answer(LEXICON["RU"]["error_group"])
     finally:
         session.close()
 
@@ -497,6 +498,6 @@ async def check_child_buttons(call: types.CallbackQuery):
         )
         await call.answer("\n".join(message_text))
     except Exception:
-        await call.answer("Произошла ошибка при поиске ребенка")
+        await call.answer(LEXICON["RU"]["error_child"])
     finally:
         session.close()
