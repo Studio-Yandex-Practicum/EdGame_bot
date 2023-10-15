@@ -365,3 +365,54 @@ def generate_teams_list(
         "team_ids": team_ids,
         "msg": msg}
     return page_info
+
+
+def generate_tasks_list(
+        tasks: list[tuple],
+        lexicon: dict,
+        current_page: int = 1,
+        page_size: int = 5,
+        pages: dict = None,
+) -> dict:
+    """
+    """
+
+    task_list = []
+    task_ids = {}
+    count = 0
+
+    if not pages:
+        for i in range(len(tasks)):
+            count += 1
+            kid, achievement, task = tasks[i]
+            task_info = (
+                f"{count}: {achievement.name}\n"
+                f"{lexicon['sender']}: {kid.name}\n"
+            )
+            task_list.append(task_info)
+            task_ids[count] = task.id
+
+        pages = pagination_static(page_size, task_list)
+
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+
+    text = '\n\n'.join(new_page["objects"])
+    msg = (
+        f'{lexicon["children_tasks"]}:\n\n'
+        f'{text}\n\n'
+        f'{lexicon["checkout_artifacts"]}:')
+
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "tasks": tasks,
+        "task_ids": task_ids,
+        "msg": msg}
+
+    return page_info

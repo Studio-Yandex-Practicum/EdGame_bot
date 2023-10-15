@@ -1,11 +1,11 @@
-import time
 import logging
+import time
 from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, User, Category, Team
+from db.models import Achievement, AchievementStatus, User, Team
 
 logger = logging.getLogger(__name__)
 
@@ -127,20 +127,9 @@ def get_achievement(achievement_id: int = None,
     return achievement if achievement else "Unknown Achievement"
 
 
-def get_all_achievements(status: str = None):
+def get_all_achievements():
     """Возвращает все ачивки из базы."""
     achievements = session.query(Achievement).all()
-    if status:
-        achievement_statuses = (
-            session.query(AchievementStatus)
-            .filter(AchievementStatus.status == status)
-            .all()
-        )
-        achievements = []
-        for achievement_status in achievement_statuses:
-            user = select_user(achievement_status.user_id)
-            task = get_achievement(achievement_status.achievement_id)
-            achievements.append((user, task, achievement_status))
     return achievements
 
 
@@ -359,3 +348,22 @@ def get_team(team_id: int = None, name: str = None):
         return session.query(Team).filter(Team.id == team_id).first()
     elif name:
         return session.query(Team).filter(Team.name == name).first()
+
+
+def get_all_tasks(status: str) -> list:
+    """Получаем все задачи по статусу."""
+
+    all_tasks = (
+        session.query(AchievementStatus)
+        .filter(AchievementStatus.status == status)
+        .all()
+    )
+
+    tasks = []
+
+    for task in all_tasks:
+        user = select_user(task.user_id)
+        achievement = get_achievement(task.achievement_id)
+        tasks.append((user, achievement, task))
+
+    return tasks
