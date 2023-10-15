@@ -21,12 +21,13 @@ from filters.custom_filters import IsStudent
 from middlewares.custom_middlewares import AcceptMediaGroupMiddleware
 from .methodist_handlers import methodist_router
 from .user_task_handlers import child_task_router
+from .user_team_handlers import child_team_router
 
 logger = logging.getLogger(__name__)
 
 router = Router()
 child_router = Router()
-child_router.include_router(child_task_router)
+child_router.include_routers(child_task_router, child_team_router)
 child_router.message.filter(IsStudent())
 child_router.callback_query.filter(IsStudent())
 child_router.message.middleware(AcceptMediaGroupMiddleware())

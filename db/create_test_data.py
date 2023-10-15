@@ -3,7 +3,7 @@ import factory
 from db import models
 from db.engine import session
 
-IMAGE = "AgACAgIAAxkBAAICRWUk24JzSwrQNimyH_Sc8W5DL44hAAK-zjEbdikpSUYKQGP_2OPLAQADAgADeAADMAQ"
+IMAGE = "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmAC2RrAQADAgADcwADMAQ"
 
 
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):

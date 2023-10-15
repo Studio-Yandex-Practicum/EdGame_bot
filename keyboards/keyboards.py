@@ -58,9 +58,10 @@ def profile_keyboard(language) -> ReplyKeyboardMarkup:
     )
     write_to_councelor = KeyboardButton(text=buttons["write_to_councelor"])
     help_button = KeyboardButton(text=buttons["help"])
+    join_team = KeyboardButton(text=buttons["join_team"])
     keyboard = [
         [available_achievements, current_achievements],
-        [reviewed_achievements],
+        [reviewed_achievements, join_team],
         [edit_profile],
         [help_button, write_to_councelor],
     ]
@@ -151,7 +152,8 @@ def contacts_keyboard(language, username) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру для связи с вожатым."""
     buttons = BUTTONS[language]
     councelor_chat = InlineKeyboardButton(
-        text=buttons["councelor_chat"], url=f"https://t.me/{username}"
+        text=buttons["councelor_chat"],
+        url=f"https://t.me/{username}"
     )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
 
@@ -166,5 +168,83 @@ def help_keyboard(language) -> InlineKeyboardMarkup:
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     keyboard = [[lk]]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def join_team_keyboard(language: str) -> InlineKeyboardMarkup:
+    """Клавиатура ребенка для присоединения к команде."""
+    buttons = BUTTONS[language]
+    join = InlineKeyboardButton(
+        text=buttons["join_team"],
+        callback_data="join_team"
+    )
+    back_to_team_list = InlineKeyboardButton(
+        text=buttons["back"],
+        callback_data="back_to_team_list"
+    )
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    keyboard = [[join], [back_to_team_list], [lk]]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def become_cap_or_leave_team_keyboard(language: str,
+                                      cap_pos_available: bool = False
+                                      ) -> InlineKeyboardMarkup:
+    """
+    Клавиатура ребенка для удаления из команды или выбора стать капитаном.
+    """
+    buttons = BUTTONS[language]
+    leave = InlineKeyboardButton(
+        text=buttons["leave_team"],
+        callback_data="leave_team"
+    )
+    back_to_team_list = InlineKeyboardButton(
+        text=buttons["back"],
+        callback_data="back_to_team_list"
+    )
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    keyboard = [[leave], [back_to_team_list], [lk]]
+    if cap_pos_available:
+        become_captain = InlineKeyboardButton(
+            text=buttons["become_captain"],
+            callback_data="become_captain"
+        )
+        keyboard[0].append(become_captain)
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def leave_captain_position_keyboard(language: str) -> InlineKeyboardMarkup:
+    """Клавиатура ребенка для удаления c поста капитана команды."""
+    buttons = BUTTONS[language]
+    leave = InlineKeyboardButton(
+        text=buttons["leave_team"],
+        callback_data="leave_team"
+    )
+    leave_cap_pos = InlineKeyboardButton(
+        text=buttons["leave_captain_position"],
+        callback_data="leave_captain_position"
+    )
+    back_to_team_list = InlineKeyboardButton(
+        text=buttons["back"],
+        callback_data="back_to_team_list"
+    )
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    keyboard = [[leave], [leave_cap_pos], [back_to_team_list], [lk]]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def team_full_keyboard(language: str) -> InlineKeyboardMarkup:
+    """Клавиатура ребенка, если в команде нет мест."""
+    buttons = BUTTONS[language]
+    back_to_team_list = InlineKeyboardButton(
+        text=buttons["back"],
+        callback_data="back_to_team_list"
+    )
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    keyboard = [[back_to_team_list], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
