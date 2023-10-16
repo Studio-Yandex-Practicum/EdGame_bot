@@ -44,12 +44,12 @@ def get_users_by_role(role: str):
 
 
 def set_user_param(
-    user: User,
-    name: str = None,
-    language: str = None,
-    score: int = None,
-    team: Team = None,
-    delete_team: bool = None
+        user: User,
+        name: str = None,
+        language: str = None,
+        score: int = None,
+        team: Team = None,
+        delete_team: bool = None
 ):
     """Сеттер для обновления свойств объекта User."""
     if name:
@@ -350,14 +350,33 @@ def get_team(team_id: int = None, name: str = None):
         return session.query(Team).filter(Team.name == name).first()
 
 
-def get_all_tasks(status: str) -> list:
-    """Получаем все задачи по статусу."""
+def get_all_tasks(
+        status: str = None,
+        achievement_id: int = None,
+        category_id: int = None,
+) -> list:
+    """Получаем все задачи по статусу, по номеру ачивки, по категории."""
 
-    all_tasks = (
-        session.query(AchievementStatus)
-        .filter(AchievementStatus.status == status)
-        .all()
-    )
+    match status, achievement_id, category_id:
+        case str(), None, None:
+            all_tasks = (
+                session.query(AchievementStatus)
+                .filter(AchievementStatus.status == status)
+                .all()
+            )
+
+        case str(), int(), None:
+            all_tasks = (
+                session.query(AchievementStatus)
+                .filter(
+                    AchievementStatus.status == status,
+                    AchievementStatus.achievement_id == achievement_id,
+                )
+                .all()
+            )
+
+        case _:
+            all_tasks = session.query(AchievementStatus).all()
 
     tasks = []
 

@@ -283,10 +283,12 @@ def choice_tasks_for_review_keyboard(
         text=buttons["all_tasks"], callback_data="all_tasks")
     achievement_category = InlineKeyboardButton(
         text=buttons["achievement_category"],
-        callback_data="achievement_category",
+        callback_data="choice_category",
     )
     all_achievements = InlineKeyboardButton(
-        text=buttons["all_achievements"], callback_data="all_achievements")
+        text=buttons["all_achievements"],
+        callback_data="choice_achievement",
+    )
     keyboard = [
         [all_tasks],
         [achievement_category],
