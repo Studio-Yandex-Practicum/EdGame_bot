@@ -55,6 +55,8 @@ class TaskState(StatesGroup):
     reject_message = State()
     children_group = State()
     achievement_name = State()
+    group_buttons = State()
+    buttons_child_info = State()
 
 
 @router.message(Command("lk"))
@@ -65,6 +67,7 @@ async def enter_profile(message: types.Message):
 
 @router.message(Text("Список детей"))
 async def show_children_list(message: types.Message):
+    print(201)
     try:
         children = get_all_children(session)
 
@@ -281,6 +284,7 @@ async def display_task(message: types.Message, state: FSMContext):
 @router.message(Text("Узнать общий прогресс отряда"))
 async def display_troop_progress(message: types.Message, state: FSMContext):
     """Возможность отображения общего прогресса отряда"""
+    print(1)
     await state.set_state(TaskState.children_group)
     await message.answer(
         "Введите номер отряда по которому хотите получить информацию"
@@ -453,46 +457,45 @@ async def display_troop_task_review(message: types.Message, state: FSMContext):
         session.close()
 
 @router.message(Text("Список детей в группе"))
-async def show_children_group(message: types.Message):
+async def group_children(message: types.Message, state: FSMContext):
+    """Возможность jnj,hf;t"""
+    await state.set_state(TaskState.group_buttons)
+    await message.answer(
+        "Введите номер отряда по которому хотите получить информацию"
+    )
+
+
+@router.message(TaskState.group_buttons)
+async def show_children_group(message: types.Message, state: FSMContext):
     try:
         user_ids = get_all_children_from_group(session, message.text)
         if len(user_ids) == 0:
             await message.answer(LEXICON["RU"]["no_group"])
-        markup = InlineKeyboardMarkup()
-        for i in user_ids:
-            markup.add(InlineKeyboardButton(f'{i[1]}',
-                                            callback_data=
-                                            f'name {i[0]}, {message.text}'))
-            paginator = Paginator(data=markup, size=5)
-            await message.answer(LEXICON["RU"]["choose_child"],  reply_markup=paginator())
+        buttons = []
+        for i in range(len(user_ids)):
+            t=user_ids[i]
+            button = InlineKeyboardButton(
+                text=t.name, callback_data=f'{t.name}, {t.group}, {t.score}')
+            buttons.append([button])
+            reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+        paginator = Paginator(data=reply_markup, size=1)
+        await state.set_state(TaskState.buttons_child_info)
+        await message.answer(LEXICON["RU"]["choose_child"],  reply_markup=paginator())
     except Exception:
         await message.answer(LEXICON["RU"]["error_group"])
     finally:
         session.close()
-
-
-@router.callback_query(Text(startswith="name"))
+       
+    
+@router.callback_query(TaskState.buttons_child_info)
 async def check_child_buttons(call: types.CallbackQuery):
     try:
         action = call.data.split(",")
         name = action[0]
-        group = action[1]
-        child = get_child_by_name_and_group(session, name, group)
-        achievements = available_achievements(child.id, child.score)
-
-        message_text = [
-            (f"Информация о ребенке по имени {name}:\n\nОчки:"
-             f'{child.score} Группа: {child.group}"',
-             "Доступные ачивки для ребенка:\n")
-        ]
-        message_text.extend(
-            f"Название: {achievement.name}\nНеобходимо баллов: "
-            f'{achievement.price}\n'
-            f'Вид: {achievement.achievement_type}\nБаллы за ачивку:'
-            f'{achievement.score}\n\n"'
-            for achievement in achievements
-        )
-        await call.answer("\n".join(message_text))
+        group = int(action[1])
+        score = int(action[2])
+        #child_id= get_child_by_name_and_group(session, name, group)
+        await call.answer(f'Ребенок Имя:{name}, группа: {group}, Очки:{score},')    
     except Exception:
         await call.answer(LEXICON["RU"]["error_child"])
     finally:
