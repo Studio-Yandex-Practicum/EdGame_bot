@@ -45,7 +45,6 @@ async def main():
     await bot.delete_my_commands()
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
-    print(100)
     logger.info("Bot started!")
 
 
