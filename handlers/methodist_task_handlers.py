@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Callable, Any
+from typing import Any
 
 from aiogram import Router, F
 from aiogram import handlers
@@ -36,6 +36,8 @@ methodist_task_router = Router()
 
 
 class BasePaginatedHandler(handlers.CallbackQueryHandler):
+    """Базовый класс с пагинацией."""
+
     cd: str
     query_id: int = None
     language: str = None
@@ -121,97 +123,6 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
 
         except Exception as err:
             logger.error(f'Ошибка при проверке заданий методистом: {err}')
-
-
-async def base_paginated_tasks_handler(
-        query: CallbackQuery,
-        state: FSMContext,
-        queryset_func: Callable,
-        cd: str,
-        msg: Callable,
-        obj_info: Callable,
-        extra_button: Callable = None,
-        extra_fields: dict = None,
-) -> Any:
-    """Базовый метод с пагинацией."""
-
-    try:
-        data = await state.get_data()
-        language = data["language"]
-        lexicon = LEXICON[language]
-        current_page = data.get("current_page", 1)
-        task_number = query.data.split(':')[-1]
-
-        if task_number.isdigit():
-            query_id = data["task_ids"][int(task_number)]
-        else:
-            query_id = data.get("query_id")
-
-        class Pattern:
-            CD = cd
-            BACK_CD = f"back_{cd}"
-            TN = task_number
-
-        match query_id, extra_fields, task_number:
-            case (None, dict(), Pattern.CD) | (int(), dict(), Pattern.BACK_CD):
-                query_set = queryset_func(**extra_fields)
-            case int(), dict(), Pattern.TN as tn if tn.isdigit():
-                query_set = queryset_func(query_id, **extra_fields)
-            case int(), dict(), Pattern.CD:
-                query_set = queryset_func(query_id, **extra_fields)
-            case _:
-                query_set = queryset_func()
-
-        if query.data == f"{cd}:next":
-            current_page += 1
-        elif query.data == f"{cd}:previous":
-            current_page -= 1
-
-        if not query_set:
-            message = lexicon["nothing"]
-            await query.answer(message)
-
-        else:
-            page_info = generate_objects_list(
-                objects=query_set,
-                lexicon=lexicon,
-                msg=msg,
-                obj_info=obj_info,
-                current_page=current_page,
-            )
-
-            message = page_info["msg"]
-            task_ids = page_info["objects_ids"]
-            first_item = page_info["first_item"]
-            final_item = page_info["final_item"]
-            new_current_page = page_info["current_page"]
-
-            extra_button = extra_button(language) if extra_button else None
-
-            await state.set_state(TaskList.tasks_for_review)
-
-            await state.update_data(
-                task_ids=task_ids,
-                language=language,
-                current_page=new_current_page,
-                task_info=page_info,
-                cd=cd,
-                query_id=query_id,
-            )
-
-            await query.message.edit_text(
-                message,
-                reply_markup=pagination_keyboard(
-                    buttons_count=len(query_set),
-                    start=first_item,
-                    end=final_item,
-                    cd=cd,
-                    extra_button=extra_button,
-                )
-            )
-
-    except Exception as err:
-        logger.error(f'Ошибка при проверке заданий методистом: {err}')
 
 
 # Обработчики раздела с заданиями
