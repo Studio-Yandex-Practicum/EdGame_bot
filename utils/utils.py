@@ -1,21 +1,22 @@
 import logging
+from typing import Callable
 
 from aiogram.types import Message
 
-from utils.db_commands import send_task, get_achievement, user_achievements
 from db.models import Achievement, User, Team
+from utils.db_commands import send_task, get_achievement, user_achievements
 from .pagination import pagination_static
 
 logger = logging.getLogger(__name__)
 
 
 def generate_achievements_list(
-    tasks: list[Achievement],
-    lexicon: dict,
-    current_page: int = 1,
-    page_size: int = 5,
-    pages: dict = None,
-    methodist=False,
+        tasks: list[Achievement],
+        lexicon: dict,
+        current_page: int = 1,
+        page_size: int = 5,
+        pages: dict = None,
+        methodist=False,
 ) -> dict:
     """
     Обрабатывает список доступных ачивок и выдает словарь с текстом для
@@ -58,7 +59,7 @@ def generate_achievements_list(
 
 
 async def _check_artifact_type(
-    message: Message, artifact_type: str, lexicon: dict
+        message: Message, artifact_type: str, lexicon: dict
 ):
     """Проверяет типа артифакта на соответствие заданию."""
     artifact_types = {
@@ -79,7 +80,7 @@ async def _check_artifact_type(
 
 
 async def process_artifact(
-    message: Message, achievement_id: int, lexicon: dict
+        message: Message, achievement_id: int, lexicon: dict
 ):
     """
     Достает id из возможных типов сообщения и сохраняет в базе
@@ -106,7 +107,7 @@ async def process_artifact(
 
 
 async def process_artifact_group(
-    messages: list[Message], achievement_id: int, lexicon: dict
+        messages: list[Message], achievement_id: int, lexicon: dict
 ):
     """
     Достает id из возможных типов сообщения и сохраняет в базе
@@ -134,7 +135,7 @@ async def process_artifact_group(
 
 
 def get_achievement_info(
-    task_id: type(int or str), lexicon: dict
+        task_id: type(int or str), lexicon: dict
 ) -> dict[str, str]:
     """
     Возвращает словарь с текстом об ачивке для сообщения
@@ -266,11 +267,11 @@ def generate_profile_info(user: User, lexicon: dict):
 
 
 def generate_users_list(
-    users: list[User],
-    lexicon: dict,
-    current_page: int = 1,
-    page_size: int = 5,
-    pages: dict = None
+        users: list[User],
+        lexicon: dict,
+        current_page: int = 1,
+        page_size: int = 5,
+        pages: dict = None
 ) -> dict:
     """
     Обрабатывает список объектов и выдает словарь с текстом для
@@ -325,11 +326,11 @@ def generate_team_info(team: Team, lexicon: dict):
 
 
 def generate_teams_list(
-    teams: list[Team],
-    lexicon: dict,
-    current_page: int = 1,
-    page_size: int = 5,
-    pages: dict = None
+        teams: list[Team],
+        lexicon: dict,
+        current_page: int = 1,
+        page_size: int = 5,
+        pages: dict = None
 ) -> dict:
     """
     Обрабатывает список команд и выдает словарь с текстом для
@@ -367,32 +368,39 @@ def generate_teams_list(
     return page_info
 
 
-def generate_tasks_list(
-        tasks: list[tuple],
+def generate_objects_list(
+        objects: list | list[tuple],
         lexicon: dict,
+        msg: Callable,
+        obj_info: Callable,
         current_page: int = 1,
         page_size: int = 5,
         pages: dict = None,
 ) -> dict:
     """
+    Обрабатывает список доступных объектов моделей данных и выдает словарь с
+    текстом для сообщения, словарем id объектов моделей данных, информацию
+    для пагинатора, если объектов моделей данных много, и номер последнего
+    элемента для клавиатуры.
     """
 
-    task_list = []
-    task_ids = {}
+    objects_list = []
+    objects_ids = {}
     count = 0
 
     if not pages:
-        for i in range(len(tasks)):
+        for obj in objects:
             count += 1
-            kid, achievement, task = tasks[i]
-            task_info = (
-                f"{count}: {achievement.name}\n"
-                f"{lexicon['sender']}: {kid.name}\n"
-            )
-            task_list.append(task_info)
-            task_ids[count] = task.id
+            if isinstance(obj, tuple):
+                kid, achievement, task, category = obj
+                objects_ids[count] = task.id
+            else:
+                objects_ids[count] = obj.id
 
-        pages = pagination_static(page_size, task_list)
+            info = obj_info(lexicon, count, obj)
+            objects_list.append(info)
+
+        pages = pagination_static(page_size, objects_list)
 
     if current_page < 1:
         current_page = len(pages)
@@ -400,19 +408,42 @@ def generate_tasks_list(
         current_page = 1
     new_page = pages[current_page]
 
-    text = '\n\n'.join(new_page["objects"])
-    msg = (
-        f'{lexicon["children_tasks"]}:\n\n'
-        f'{text}\n\n'
-        f'{lexicon["checkout_artifacts"]}:')
+    text = "\n\n".join(new_page["objects"])
+    msg = f'{msg(lexicon, text)}'
 
     page_info = {
         "current_page": current_page,
         "first_item": new_page["first_item"],
         "final_item": new_page["final_item"],
         "pages": pages,
-        "tasks": tasks,
-        "task_ids": task_ids,
+        "objects": objects,
+        "objects_ids": objects_ids,
         "msg": msg}
-
     return page_info
+
+
+def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
+    msg = (
+        f"{lexicon[header]}:\n\n"
+        f"{text}\n\n"
+        f"{lexicon[footer]}"
+    )
+    return msg
+
+
+def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
+    kid, achievement, task, category = obj
+    info = (
+        f"<b>{count}.</b>\n"
+        f"<b>{lexicon['category']}:</b> {category.name}\n"
+        f"<b>{lexicon['achievement']}:</b> {achievement.name}\n"
+        f"<b>{lexicon['sender']}:</b> {kid.name}\n"
+    )
+    return info
+
+
+def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+    info = (
+        f"{count}. {obj.name}"
+    )
+    return info

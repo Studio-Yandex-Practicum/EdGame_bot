@@ -1,9 +1,9 @@
 import logging
 import time
-from enum import Enum
 from typing import Callable, Any
 
 from aiogram import Router, F
+from aiogram import handlers
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup,
@@ -18,20 +18,109 @@ from keyboards.methodist_keyboards import (
 from lexicon.lexicon import LEXICON, BUTTONS
 from utils.db_commands import (
     get_all_achievements, select_user, create_achievement, approve_task,
-    set_achievement_param, get_user_achievement, reject_task, get_all_tasks,
-    get_all_categories, get_tasks_by_achievement_and_status,
-    get_tasks_by_achievement_category_and_status, get_categories_with_tasks)
+    set_achievement_param, get_user_achievement, reject_task,
+    get_tasks_by_achievement_and_status,
+    get_tasks_by_achievement_category_and_status, get_categories_with_tasks,
+    get_achievements_with_tasks, get_tasks_by_status)
 from utils.pagination import PAGE_SIZE
 from utils.states_form import TaskList, AddTask, EditTask, ReviewTask
 from utils.user_utils import save_rejection_reason_in_db
 from utils.utils import (
     generate_achievements_list, get_achievement_info, generate_objects_list,
-    object_info, tasks_by_category_message, tasks_message, task_info,
-    generate_tasks_list)
+    object_info, task_info,
+    message_pattern)
 
 logger = logging.getLogger(__name__)
 
 methodist_task_router = Router()
+
+
+class BasePaginatedHandler(handlers.CallbackQueryHandler):
+    cd: str
+    query_id: int = None
+    language: str = None
+
+    def get_queryset(self) -> Any:
+        raise NotImplementedError
+
+    @staticmethod
+    def message_view(lexicon, text) -> str:
+        """Шаблон сообщения."""
+        raise NotImplementedError
+
+    @staticmethod
+    def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+        """Шаблон объекта в соббщении."""
+        raise NotImplementedError
+
+    def extra_buttons(self) -> dict | None:
+        """Дополнительные кнопки"""
+        return None
+
+    async def handle(self) -> Any:
+        try:
+            fsm_state = self.data["state"]
+            fsm_data = await self.data["state"].get_data()
+            self.language = fsm_data["language"]
+            lexicon = LEXICON[self.language]
+            current_page = fsm_data.get("current_page", 1)
+            task_number = self.callback_data.split(':')[-1]
+
+            if task_number.isdigit():
+                self.query_id = fsm_data["task_ids"][int(task_number)]
+            else:
+                self.query_id = fsm_data.get("query_id")
+
+            if self.callback_data == f"{self.cd}:next":
+                current_page += 1
+            elif self.callback_data == f"{self.cd}:previous":
+                current_page -= 1
+
+            query_set = self.get_queryset()
+
+            if not query_set:
+                msg = lexicon["nothing"]
+                await self.message.answer(msg)
+
+            else:
+                page_info = generate_objects_list(
+                    objects=query_set,
+                    lexicon=lexicon,
+                    msg=self.message_view,
+                    obj_info=self.object_info,
+                    current_page=current_page,
+                )
+
+                msg = page_info["msg"]
+                task_ids = page_info["objects_ids"]
+                first_item = page_info["first_item"]
+                final_item = page_info["final_item"]
+                new_current_page = page_info["current_page"]
+
+                await fsm_state.set_state(TaskList.tasks_for_review)
+
+                await fsm_state.update_data(
+                    task_ids=task_ids,
+                    language=self.language,
+                    current_page=new_current_page,
+                    task_info=page_info,
+                    cd=self.cd,
+                    query_id=self.query_id,
+                )
+
+                await self.message.edit_text(
+                    msg,
+                    reply_markup=pagination_keyboard(
+                        buttons_count=len(query_set),
+                        start=first_item,
+                        end=final_item,
+                        cd=self.cd,
+                        extra_button=self.extra_buttons(),
+                    )
+                )
+
+        except Exception as err:
+            logger.error(f'Ошибка при проверке заданий методистом: {err}')
 
 
 async def base_paginated_tasks_handler(
@@ -44,7 +133,7 @@ async def base_paginated_tasks_handler(
         extra_button: Callable = None,
         extra_fields: dict = None,
 ) -> Any:
-    """"""
+    """Базовый метод с пагинацией."""
 
     try:
         data = await state.get_data()
@@ -159,21 +248,23 @@ async def choice_tasks_for_review(message: Message, state: FSMContext):
             "back_choice_category",
     ))
 )
-async def choice_category_for_review_callback(
-        query: CallbackQuery, state: FSMContext):
+class ChoiceCategoryForReviewCallback(BasePaginatedHandler):
     """Выбор категории для проверки заданий."""
 
-    extra_fields = {"status": "pending_methodist"}
+    cd = "choice_category"
 
-    await base_paginated_tasks_handler(
-        query,
-        state,
-        get_categories_with_tasks,
-        "choice_category",
-        tasks_by_category_message,
-        object_info,
-        extra_fields=extra_fields,
-    )
+    def get_queryset(self) -> Any:
+        return get_categories_with_tasks("pending_methodist")
+
+    @staticmethod
+    def message_view(lexicon, text) -> str:
+        header = 'show_categories_with_tasks'
+        footer = 'choice_category'
+        return message_pattern(lexicon, text, header, footer)
+
+    @staticmethod
+    def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+        return object_info(lexicon, count, obj)
 
 
 @methodist_task_router.callback_query(
@@ -185,32 +276,33 @@ async def choice_category_for_review_callback(
             "tasks_by_category:previous",
     ))
 )
-async def tasks_for_review_by_category_callback(
-        query: CallbackQuery, state: FSMContext):
+class TasksForReviewByCategoryCallback(BasePaginatedHandler):
     """
     Показывает ачивки по категориям, отправленные методисту на проверку в
     статусе "pending_methodist".
     """
+    cd = "tasks_by_category"
 
-    def extra_buttons(language):
+    def get_queryset(self) -> Any:
+        return get_tasks_by_achievement_category_and_status(
+            self.query_id, "pending_methodist")
+
+    @staticmethod
+    def message_view(lexicon, text) -> str:
+        header = 'children_tasks'
+        footer = 'checkout_artifacts'
+        return message_pattern(lexicon, text, header, footer)
+
+    @staticmethod
+    def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+        return task_info(lexicon, count, obj)
+
+    def extra_buttons(self) -> dict:
         back_button = {
-            "text": BUTTONS[language]["back"],
+            "text": BUTTONS[self.language]["back"],
             "callback_data": "back_choice_category"
         }
         return back_button
-
-    extra_fields = {"status": "pending_methodist"}
-
-    await base_paginated_tasks_handler(
-        query,
-        state,
-        get_tasks_by_achievement_category_and_status,
-        "tasks_by_category",
-        tasks_message,
-        task_info,
-        extra_button=extra_buttons,
-        extra_fields=extra_fields,
-    )
 
 
 @methodist_task_router.callback_query(
@@ -218,64 +310,26 @@ async def tasks_for_review_by_category_callback(
             "choice_achievement",
             "choice_achievement:next",
             "choice_achievement:previous",
+            "back_choice_achievement",
     ))
 )
-async def choice_achievement_for_review_callback(
-        query: CallbackQuery, state: FSMContext):
+class ChoiceAchievementForReviewCallback(BasePaginatedHandler):
     """Выбор ачивки для проверки."""
 
-    try:
-        await query.answer()
-        data = await state.get_data()
-        language = data["language"]
-        lexicon = LEXICON[language]
-        current_page = data.get("current_page", 1)
-        tasks = get_all_achievements()
+    cd = "choice_achievement"
 
-        if query.data == "choice_achievement:next":
-            current_page += 1
-        elif query.data == "choice_achievement:previous":
-            current_page -= 1
+    def get_queryset(self) -> Any:
+        return get_achievements_with_tasks("pending_methodist")
 
-        if not tasks:
-            msg = lexicon["no_tasks_yet"]
-            await query.message.answer(msg)
-        else:
-            page_info = generate_achievements_list(
-                tasks=tasks,
-                lexicon=lexicon,
-                current_page=current_page,
-                methodist=True,
-            )
+    @staticmethod
+    def message_view(lexicon, text) -> str:
+        header = 'show_achievement_with_tasks'
+        footer = 'choice_achievement'
+        return message_pattern(lexicon, text, header, footer)
 
-            msg = page_info["msg"]
-            task_ids = page_info["task_ids"]
-            first_item = page_info["first_item"]
-            final_item = page_info["final_item"]
-            new_current_page = page_info["current_page"]
-
-            await state.set_state(TaskList.tasks_for_review)
-            await state.update_data(
-                language=language,
-                current_page=new_current_page,
-                task_info=page_info,
-                tasks_type="choice_achievement",
-                task_ids=task_ids,
-
-            )
-
-            await query.message.edit_text(
-                msg,
-                reply_markup=pagination_keyboard(
-                    buttons_count=len(tasks),
-                    start=first_item,
-                    end=final_item,
-                    cd="choice_achievement",
-                )
-            )
-
-    except Exception as err:
-        logger.error(f'Ошибка при получении ачивок: {err}')
+    @staticmethod
+    def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+        return object_info(lexicon, count, obj)
 
 
 @methodist_task_router.callback_query(
@@ -287,141 +341,57 @@ async def choice_achievement_for_review_callback(
             "tasks_by_achievement:previous",
     ))
 )
-async def tasks_for_review_by_achievement_callback(
-        query: CallbackQuery, state: FSMContext):
+class TasksForReviewByAchievementCallback(BasePaginatedHandler):
     """Задания на одну ачивку для проверки методистом."""
-    try:
-        await query.answer()
-        data = await state.get_data()
-        language = data["language"]
-        lexicon = LEXICON[language]
-        current_page = data.get("current_page", 1)
-        task_number = query.data.split(':')[-1]
 
-        if task_number.isdigit():
-            achievement_id = data["task_ids"][int(task_number)]
-        else:
-            achievement_id = data["achievement_id"]
+    cd = "tasks_by_achievement"
 
-        tasks_for_review = get_all_tasks(
-            status="pending_methodist", achievement_id=achievement_id)
+    def get_queryset(self) -> Any:
+        return get_tasks_by_achievement_and_status(
+            self.query_id, "pending_methodist")
 
-        if query.data == "tasks_by_achievement:next":
-            current_page += 1
-        elif query.data == "tasks_by_achievement:previous":
-            current_page -= 1
+    @staticmethod
+    def message_view(lexicon, text) -> str:
+        header = 'children_tasks'
+        footer = 'checkout_artifacts'
+        return message_pattern(lexicon, text, header, footer)
 
-        if not tasks_for_review:
-            msg = lexicon["no_artifacts_yet"]
-            await query.message.answer(msg)
+    @staticmethod
+    def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+        return task_info(lexicon, count, obj)
 
-        else:
-            page_info = generate_tasks_list(
-                tasks=tasks_for_review,
-                lexicon=lexicon,
-                current_page=current_page,
-            )
-
-            msg = page_info["msg"]
-            task_ids = page_info["task_ids"]
-            first_item = page_info["first_item"]
-            final_item = page_info["final_item"]
-            new_current_page = page_info["current_page"]
-            back_button = {
-                "text": BUTTONS[language]["back"],
-                "callback_data": "back_choice_achievement"
-            }
-
-            await state.set_state(TaskList.tasks_for_review)
-            await state.update_data(
-                task_ids=task_ids,
-                language=language,
-                current_page=new_current_page,
-                task_info=page_info,
-                tasks_for_review=tasks_for_review,
-                tasks_type="tasks_by_achievement",
-                achievement_id=achievement_id,
-            )
-
-            await query.message.edit_text(
-                msg,
-                reply_markup=pagination_keyboard(
-                    buttons_count=len(tasks_for_review),
-                    start=first_item,
-                    end=final_item,
-                    cd="tasks_by_achievement",
-                    extra_button=back_button,
-                )
-            )
-
-    except Exception as err:
-        logger.error(f'Ошибка при отправке списка заданий методисту: {err}')
+    def extra_buttons(self) -> dict:
+        back_button = {
+            "text": BUTTONS[self.language]["back"],
+            "callback_data": "back_choice_achievement"
+        }
+        return back_button
 
 
 @methodist_task_router.callback_query(
     F.data.in_(("all_tasks", "all_tasks:next", "all_tasks:previous")))
-async def tasks_for_review_callback(query: CallbackQuery, state: FSMContext):
+class TasksForReviewCallback(BasePaginatedHandler):
     """
-    Обработчик кнопки Задания на проверку.
+    Обработчик кнопки Все задания.
 
     Показывает все ачивки, отправленные методисту на проверку в статусе
     "pending_methodist".
     """
 
-    try:
-        await query.answer()
-        data = await state.get_data()
-        language = data["language"]
-        lexicon = LEXICON[language]
-        current_page = data.get("current_page", 1)
-        tasks_for_review = get_all_tasks("pending_methodist")
+    cd = "all_tasks"
 
-        if query.data == "all_tasks:next":
-            current_page += 1
-        elif query.data == "all_tasks:previous":
-            current_page -= 1
+    def get_queryset(self) -> Any:
+        return get_tasks_by_status("pending_methodist")
 
-        if not tasks_for_review:
-            msg = lexicon["no_artifacts_yet"]
-            await query.message.answer(msg)
-        else:
-            page_info = generate_tasks_list(
-                tasks=tasks_for_review,
-                lexicon=lexicon,
-                current_page=current_page,
-            )
+    @staticmethod
+    def message_view(lexicon, text) -> str:
+        header = 'children_tasks'
+        footer = 'checkout_artifacts'
+        return message_pattern(lexicon, text, header, footer)
 
-            msg = page_info["msg"]
-            task_ids = page_info["task_ids"]
-            first_item = page_info["first_item"]
-            final_item = page_info["final_item"]
-            new_current_page = page_info["current_page"]
-
-            await state.set_state(TaskList.tasks_for_review)
-            await state.update_data(
-                task_ids=task_ids,
-                language=language,
-                current_page=new_current_page,
-                task_info=page_info,
-                tasks_for_review=tasks_for_review,
-                tasks_type="all_tasks"
-            )
-
-            await query.message.edit_text(
-                msg,
-                reply_markup=pagination_keyboard(
-                    buttons_count=len(tasks_for_review),
-                    start=first_item,
-                    end=final_item,
-                    cd="all_tasks",
-                )
-            )
-
-    except KeyError as err:
-        logger.error(
-            f'Ошибка в ключе при отправке списка заданий методисту: {err}')
-    except Exception as err:
-        logger.error(f'Ошибка при отправке списка заданий методисту: {err}')
+    @staticmethod
+    def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+        return task_info(lexicon, count, obj)
 
 
 @methodist_task_router.callback_query(
@@ -486,13 +456,13 @@ async def approve_methodist_handler(query: CallbackQuery, state: FSMContext):
         language = data['language']
         lexicon = LEXICON[language]
         task_id = data['task_id']
-        tasks_type = data["tasks_type"]
+        cd = data["cd"]
         msg = f'{lexicon["failed_to_find_task"]} {task_id}.'
         if approve_task(task_id):
             msg = f'{lexicon["task_approved"]}: {task_id}.'
         await query.message.answer(
             msg,
-            reply_markup=continue_job_keyboard(language, tasks_type)
+            reply_markup=continue_job_keyboard(language, cd)
         )
     except Exception as err:
         logger.error(f'Произошла ошибка при подтверждении задания: {err}')
@@ -556,11 +526,11 @@ async def no_methodist_handler(query: CallbackQuery, state: FSMContext):
         data = await state.get_data()
         language = data['language']
         lexicon = LEXICON[language]
-        tasks_type = data['tasks_type']
+        cd = data['cd']
 
         await query.message.answer(
             lexicon["no_rejection_reason"],
-            reply_markup=continue_job_keyboard(language, tasks_type)
+            reply_markup=continue_job_keyboard(language, cd)
         )
 
     except Exception as err:
@@ -577,18 +547,18 @@ async def rejection_reason(message: Message, state: FSMContext):
         task_id = data.get("task_id")
         language = data['language']
         lexicon = LEXICON[language]
-        tasks_type = data['tasks_type']
+        cd = data['cd']
 
         if message.text != "Отмена":
             save_rejection_reason_in_db(task_id, message.text)
             await message.answer(
                 lexicon["rejection_reason_saved"],
-                reply_markup=continue_job_keyboard(language, tasks_type)
+                reply_markup=continue_job_keyboard(language, cd)
             )
         else:
             await message.answer(
                 lexicon["no_rejection_reason"],
-                reply_markup=continue_job_keyboard(language, tasks_type)
+                reply_markup=continue_job_keyboard(language, cd)
             )
             await state.clear()
 

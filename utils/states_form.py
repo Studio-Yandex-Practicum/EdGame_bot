@@ -33,7 +33,7 @@ class TaskList(StatesGroup):
     language = State()
     tasks = State()
     choice_tasks_type = State()
-    tasks_type = State()
+    cd = State()
     tasks_for_review = State()
     task_ids = State()
     task_info = State()
