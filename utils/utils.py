@@ -386,14 +386,11 @@ def generate_objects_list(
 
     objects_list = []
     objects_ids = {}
-    count = 0
 
     if not pages:
-        for obj in objects:
-            count += 1
+        for count, obj in enumerate(objects, start=1):
             if isinstance(obj, tuple):
-                kid, achievement, task, category = obj
-                objects_ids[count] = task.id
+                objects_ids[count] = obj[0].id
             else:
                 objects_ids[count] = obj.id
 
@@ -432,7 +429,7 @@ def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
 
 
 def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
-    kid, achievement, task, category = obj
+    task, kid, achievement, category = obj
     info = (
         f"<b>{count}.</b>\n"
         f"<b>{lexicon['category']}:</b> {category.name}\n"

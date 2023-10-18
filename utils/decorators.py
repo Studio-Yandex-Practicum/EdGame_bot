@@ -13,7 +13,7 @@ def task_params(queryset):
             user = db_commands.select_user(task.user_id)
             achievement = db_commands.get_achievement(task.achievement_id)
             category = db_commands.get_category(task.achievement.category_id)
-            tasks.append((user, achievement, task, category))
+            tasks.append((task, user, achievement, category))
 
         return tasks
     return wrapper
