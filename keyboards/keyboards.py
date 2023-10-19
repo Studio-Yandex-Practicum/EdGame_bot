@@ -58,9 +58,10 @@ def profile_keyboard(language) -> ReplyKeyboardMarkup:
     )
     write_to_councelor = KeyboardButton(text=buttons["write_to_councelor"])
     help_button = KeyboardButton(text=buttons["help"])
+    category_button = KeyboardButton(text=buttons["category"])
     keyboard = [
         [available_achievements, current_achievements],
-        [reviewed_achievements],
+        [reviewed_achievements, category_button],
         [edit_profile],
         [help_button, write_to_councelor],
     ]

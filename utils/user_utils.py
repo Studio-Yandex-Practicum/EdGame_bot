@@ -175,3 +175,16 @@ async def send_task(
         )
     else:
         await message.answer("Не удалось получить файл по id")
+    
+def get_category_child_all(session: Session):
+    return session.query(AchievementStatus).all()
+
+def get_category_id_achievement_all(session: Session, category_id):
+    return (
+        session.query(Achievement)
+        .filter(Achievement.category_id == category_id)
+        .all()
+    )
+        
+       
+        
