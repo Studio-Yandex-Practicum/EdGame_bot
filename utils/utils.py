@@ -2,6 +2,7 @@ import logging
 from typing import Callable
 
 from aiogram.types import Message
+from sqlalchemy import Row
 
 from db.models import Achievement, User, Team
 from utils.db_commands import send_task, get_achievement, user_achievements
@@ -389,7 +390,7 @@ def generate_objects_list(
 
     if not pages:
         for count, obj in enumerate(objects, start=1):
-            if isinstance(obj, tuple):
+            if isinstance(obj, Row):
                 objects_ids[count] = obj[0].id
             else:
                 objects_ids[count] = obj.id

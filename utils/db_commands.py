@@ -6,7 +6,6 @@ from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
 from db.models import Achievement, AchievementStatus, User, Team, Category
-from utils.decorators import task_params
 
 logger = logging.getLogger(__name__)
 
@@ -359,24 +358,28 @@ def get_category(category_id: int):
     return session.query(Category).filter(Category.id == category_id).first()
 
 
-@task_params
 def get_tasks_by_status(status: str) -> list[tuple]:
     """Задания по статусу."""
 
     return (
-        session.query(AchievementStatus)
+        session.query(AchievementStatus, User, Achievement, Category)
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
         .filter(AchievementStatus.status == status)
         .all()
     )
 
 
-@task_params
 def get_tasks_by_achievement_and_status(
         achievement_id: int, status: str) -> list[tuple]:
     """Задания на проверку для определенной ачивки."""
 
     return (
-        session.query(AchievementStatus)
+        session.query(AchievementStatus, User, Achievement, Category)
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
         .filter(
             AchievementStatus.status == status,
             AchievementStatus.achievement_id == achievement_id,
@@ -385,14 +388,15 @@ def get_tasks_by_achievement_and_status(
     )
 
 
-@task_params
 def get_tasks_by_achievement_category_and_status(
         category_id: int, status: str) -> list[tuple]:
     """Задания на проверку в определенной категории."""
 
     return (
-        session.query(AchievementStatus)
-        .join(AchievementStatus.achievement)
+        session.query(AchievementStatus, User, Achievement, Category)
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
         .filter(
             AchievementStatus.status == status,
             Achievement.category_id == category_id
