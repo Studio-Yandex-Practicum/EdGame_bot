@@ -350,19 +350,13 @@ def get_team(team_id: int = None, name: str = None):
         return session.query(Team).filter(Team.name == name).first()
 
 
-def get_all_categories():
-    return session.query(Category).all()
-
-
-def get_category(category_id: int):
-    return session.query(Category).filter(Category.id == category_id).first()
-
-
 def get_tasks_by_status(status: str) -> list[tuple]:
     """Задания по статусу."""
 
     return (
-        session.query(AchievementStatus, User, Achievement, Category)
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
         .join(Category, Category.id == Achievement.category_id)
@@ -376,7 +370,9 @@ def get_tasks_by_achievement_and_status(
     """Задания на проверку для определенной ачивки."""
 
     return (
-        session.query(AchievementStatus, User, Achievement, Category)
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
         .join(Category, Category.id == Achievement.category_id)
@@ -393,7 +389,9 @@ def get_tasks_by_achievement_category_and_status(
     """Задания на проверку в определенной категории."""
 
     return (
-        session.query(AchievementStatus, User, Achievement, Category)
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
         .join(Category, Category.id == Achievement.category_id)
@@ -409,7 +407,7 @@ def get_categories_with_tasks(status: str) -> Category:
     """Категории, в которых есть задания на проверку."""
 
     return (
-        session.query(Category)
+        session.query(Category.id, Category.name)
         .join(Achievement, Category.id == Achievement.category_id)
         .join(
             AchievementStatus,
@@ -424,7 +422,7 @@ def get_achievements_with_tasks(status: str) -> Achievement:
     """Ачивки, которые сдали на проверку."""
 
     return (
-        session.query(Achievement)
+        session.query(Achievement.id, Achievement.name)
         .join(
             AchievementStatus,
             Achievement.id == AchievementStatus.achievement_id,

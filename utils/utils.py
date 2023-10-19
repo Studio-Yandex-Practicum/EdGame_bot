@@ -2,7 +2,6 @@ import logging
 from typing import Callable
 
 from aiogram.types import Message
-from sqlalchemy import Row
 
 from db.models import Achievement, User, Team
 from utils.db_commands import send_task, get_achievement, user_achievements
@@ -390,10 +389,7 @@ def generate_objects_list(
 
     if not pages:
         for count, obj in enumerate(objects, start=1):
-            if isinstance(obj, Row):
-                objects_ids[count] = obj[0].id
-            else:
-                objects_ids[count] = obj.id
+            objects_ids[count] = obj[0]
 
             info = obj_info(lexicon, count, obj)
             objects_list.append(info)
@@ -430,18 +426,20 @@ def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
 
 
 def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
-    task, kid, achievement, category = obj
+    *_, kid, achievement, category = obj
     info = (
         f"<b>{count}.</b>\n"
-        f"<b>{lexicon['category']}:</b> {category.name}\n"
-        f"<b>{lexicon['achievement']}:</b> {achievement.name}\n"
-        f"<b>{lexicon['sender']}:</b> {kid.name}\n"
+        f"<b>{lexicon['category']}:</b> {category}\n"
+        f"<b>{lexicon['achievement']}:</b> {achievement}\n"
+        f"<b>{lexicon['sender']}:</b> {kid}\n"
     )
     return info
 
 
 def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+    *_, name = obj
+
     info = (
-        f"{count}. {obj.name}"
+        f"{count}. {name}"
     )
     return info
