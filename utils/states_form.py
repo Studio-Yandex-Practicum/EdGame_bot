@@ -15,6 +15,8 @@ class Data(StatesGroup):
     task_ids = State()
     pagination_info = State()
     artifact = State()
+    category = State()
+
 
 
 class Profile(StatesGroup):

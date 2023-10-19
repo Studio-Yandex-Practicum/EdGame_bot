@@ -3,10 +3,11 @@ import logging
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
-
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.keyboards import pagination_keyboard, task_keyboard
 from keyboards.methodist_keyboards import art_list_keyboard
 from lexicon.lexicon import LEXICON, BUTTONS
+from aiogram_inline_paginations.paginator import Paginator
 from utils.db_commands import (
     select_user, available_achievements, get_users_by_role)
 from utils.states_form import Data
@@ -15,7 +16,15 @@ from utils.utils import (
     generate_text_with_tasks_in_review,
     generate_text_with_reviewed_tasks,
     get_achievement_info, process_artifact_group)
+from utils.utils import (
+    generate_achievements_list, process_artifact,
+    generate_text_with_tasks_in_review,
+    generate_text_with_reviewed_tasks,
+    get_achievement_info, process_artifact_group)
+from utils.user_utils import (get_category_child_all, 
+                              get_category_id_achievement_all)
 from utils.pagination import PAGE_SIZE
+from db.engine import session
 
 logger = logging.getLogger(__name__)
 
@@ -355,3 +364,40 @@ async def process_artefact(
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:
         logger.error(f"Ошибка при обработке артефакта: {err}")
+
+
+@child_task_router.message(F.text.in_BUTTONS["RU"]["category"])
+async def process_artefact(message: Message, state: FSMContext):
+    try:
+        category = get_category_child_all(session)
+        if len(category) == 0:
+            await message.answer(LEXICON["RU"]['no_category'])
+        buttons = []
+        for i in range(len(category)):
+            t = category[i]
+            button = InlineKeyboardButton(
+                text=t.name, callback_data=f'{t.id}')
+            buttons.append([button])
+            reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+        paginator = Paginator(data=reply_markup, size=1)
+        await state.set_state(Data.category)
+        await message.answer(LEXICON["RU"]["choose_achievement"],  
+                             reply_markup=paginator())
+    except Exception:
+        await message.answer(LEXICON["RU"]["error_achievement"])
+    finally:
+        session.close()
+
+
+@child_task_router.message(Data.category)
+async def check_child_buttons(query: CallbackQuery, state: FSMContext):
+    try:
+        category_id = int(query.data[0])
+        achievements = get_category_id_achievement_all(session, category_id)
+        await query.message.answer(
+            achievements)
+    except Exception:
+        await query.message.answer(LEXICON["RU"]["error_achievements"])
+    finally:
+        session.close()
+    
