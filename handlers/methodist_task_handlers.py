@@ -3,12 +3,12 @@ import time
 from typing import Any
 
 from aiogram import Router, F
-from aiogram import handlers
 from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     Message, CallbackQuery, InlineKeyboardMarkup,
     InputMediaPhoto, InputMediaVideo)
 
+from handlers.handlers import BasePaginatedHandler
 from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
 from keyboards.methodist_keyboards import (
     methodist_profile_keyboard, add_task_keyboard, task_type_keyboard,
@@ -26,8 +26,7 @@ from utils.pagination import PAGE_SIZE
 from utils.states_form import TaskList, AddTask, EditTask, ReviewTask
 from utils.user_utils import save_rejection_reason_in_db
 from utils.utils import (
-    generate_achievements_list, get_achievement_info, generate_objects_list,
-    object_info, task_info,
+    generate_achievements_list, get_achievement_info, object_info, task_info,
     message_pattern)
 
 logger = logging.getLogger(__name__)
@@ -35,91 +34,23 @@ logger = logging.getLogger(__name__)
 methodist_task_router = Router()
 
 
-class BasePaginatedHandler(handlers.CallbackQueryHandler):
-    """Базовый класс с пагинацией."""
-
-    cd: str
-    query_id: int = None
-    language: str = None
-
-    def get_queryset(self) -> Any:
-        raise NotImplementedError
-
-    @staticmethod
-    def message_view(lexicon, text) -> str:
-        """Шаблон сообщения."""
-        raise NotImplementedError
-
-    @staticmethod
-    def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
-        """Шаблон объекта в соббщении."""
-        raise NotImplementedError
-
-    def extra_buttons(self) -> dict | None:
-        """Дополнительные кнопки"""
-        return None
-
+class BasePaginatedTaskHandler(BasePaginatedHandler):
     async def handle(self) -> Any:
+        await super().handle()
         try:
-            fsm_state = self.data["state"]
-            fsm_data = await self.data["state"].get_data()
-            self.language = fsm_data["language"]
-            lexicon = LEXICON[self.language]
-            current_page = fsm_data.get("current_page", 1)
-            task_number = self.callback_data.split(':')[-1]
+            task_ids = self.page_info["objects_ids"]
+            new_current_page = self.page_info["current_page"]
 
-            if task_number.isdigit():
-                self.query_id = fsm_data["task_ids"][int(task_number)]
-            else:
-                self.query_id = fsm_data.get("query_id")
+            await self.fsm_state.set_state(TaskList.tasks_for_review)
 
-            if self.callback_data == f"{self.cd}:next":
-                current_page += 1
-            elif self.callback_data == f"{self.cd}:previous":
-                current_page -= 1
-
-            query_set = self.get_queryset()
-
-            if not query_set:
-                msg = lexicon["nothing"]
-                await self.message.answer(msg)
-
-            else:
-                page_info = generate_objects_list(
-                    objects=query_set,
-                    lexicon=lexicon,
-                    msg=self.message_view,
-                    obj_info=self.object_info,
-                    current_page=current_page,
-                )
-
-                msg = page_info["msg"]
-                task_ids = page_info["objects_ids"]
-                first_item = page_info["first_item"]
-                final_item = page_info["final_item"]
-                new_current_page = page_info["current_page"]
-
-                await fsm_state.set_state(TaskList.tasks_for_review)
-
-                await fsm_state.update_data(
-                    task_ids=task_ids,
-                    language=self.language,
-                    current_page=new_current_page,
-                    task_info=page_info,
-                    cd=self.cd,
-                    query_id=self.query_id,
-                )
-
-                await self.message.edit_text(
-                    msg,
-                    reply_markup=pagination_keyboard(
-                        buttons_count=len(query_set),
-                        start=first_item,
-                        end=final_item,
-                        cd=self.cd,
-                        extra_button=self.extra_buttons(),
-                    )
-                )
+            await self.fsm_state.update_data(
+                task_ids=task_ids,
+                language=self.language,
+                current_page=new_current_page,
+                task_info=self.page_info,
+                cd=self.cd,
+                query_id=self.query_id,
+            )
 
         except Exception as err:
             logger.error(f'Ошибка при проверке заданий методистом: {err}')
@@ -159,7 +90,7 @@ async def choice_tasks_for_review(message: Message, state: FSMContext):
             "back_choice_category",
     ))
 )
-class ChoiceCategoryForReviewCallback(BasePaginatedHandler):
+class ChoiceCategoryForReviewCallback(BasePaginatedTaskHandler):
     """Выбор категории для проверки заданий."""
 
     cd = "choice_category"
@@ -187,7 +118,7 @@ class ChoiceCategoryForReviewCallback(BasePaginatedHandler):
             "tasks_by_category:previous",
     ))
 )
-class TasksForReviewByCategoryCallback(BasePaginatedHandler):
+class TasksForReviewByCategoryCallback(BasePaginatedTaskHandler):
     """
     Показывает ачивки по категориям, отправленные методисту на проверку в
     статусе "pending_methodist".
@@ -224,7 +155,7 @@ class TasksForReviewByCategoryCallback(BasePaginatedHandler):
             "back_choice_achievement",
     ))
 )
-class ChoiceAchievementForReviewCallback(BasePaginatedHandler):
+class ChoiceAchievementForReviewCallback(BasePaginatedTaskHandler):
     """Выбор ачивки для проверки."""
 
     cd = "choice_achievement"
@@ -252,7 +183,7 @@ class ChoiceAchievementForReviewCallback(BasePaginatedHandler):
             "tasks_by_achievement:previous",
     ))
 )
-class TasksForReviewByAchievementCallback(BasePaginatedHandler):
+class TasksForReviewByAchievementCallback(BasePaginatedTaskHandler):
     """Задания на одну ачивку для проверки методистом."""
 
     cd = "tasks_by_achievement"
@@ -281,7 +212,7 @@ class TasksForReviewByAchievementCallback(BasePaginatedHandler):
 
 @methodist_task_router.callback_query(
     F.data.in_(("all_tasks", "all_tasks:next", "all_tasks:previous")))
-class TasksForReviewCallback(BasePaginatedHandler):
+class TasksForReviewCallback(BasePaginatedTaskHandler):
     """
     Обработчик кнопки Все задания.
 
