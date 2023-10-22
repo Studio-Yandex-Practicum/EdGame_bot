@@ -11,12 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 def generate_achievements_list(
-        tasks: list[Achievement],
-        lexicon: dict,
-        current_page: int = 1,
-        page_size: int = 5,
-        pages: dict = None,
-        methodist=False,
+    tasks: list[Achievement],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+    methodist=False,
 ) -> dict:
     """
     Обрабатывает список доступных ачивок и выдает словарь с текстом для
@@ -42,11 +42,11 @@ def generate_achievements_list(
     text = "\n\n".join(new_page["objects"])
     msg = (
         f'{lexicon["available_achievements"]}:\n\n'
-        f"{text}\n\n"
+        f'{text}\n\n'
         f'{lexicon["choose_achievement"]}:'
     )
     if methodist:
-        msg = f'{lexicon["available_achievements"]}:\n\n' f"{text}\n\n"
+        msg = f'{lexicon["available_achievements"]}:\n\n{text}\n\n'
     page_info = {
         "current_page": current_page,
         "first_item": new_page["first_item"],
@@ -59,7 +59,7 @@ def generate_achievements_list(
 
 
 async def _check_artifact_type(
-        message: Message, artifact_type: str, lexicon: dict
+    message: Message, artifact_type: str, lexicon: dict
 ):
     """Проверяет типа артифакта на соответствие заданию."""
     artifact_types = {
@@ -80,7 +80,7 @@ async def _check_artifact_type(
 
 
 async def process_artifact(
-        message: Message, achievement_id: int, lexicon: dict
+    message: Message, achievement_id: int, lexicon: dict
 ):
     """
     Достает id из возможных типов сообщения и сохраняет в базе
@@ -107,7 +107,7 @@ async def process_artifact(
 
 
 async def process_artifact_group(
-        messages: list[Message], achievement_id: int, lexicon: dict
+    messages: list[Message], achievement_id: int, lexicon: dict
 ):
     """
     Достает id из возможных типов сообщения и сохраняет в базе
@@ -135,7 +135,7 @@ async def process_artifact_group(
 
 
 def get_achievement_info(
-        task_id: type(int or str), lexicon: dict
+    task_id: type(int or str), lexicon: dict
 ) -> dict[str, str]:
     """
     Возвращает словарь с текстом об ачивке для сообщения
@@ -267,11 +267,11 @@ def generate_profile_info(user: User, lexicon: dict):
 
 
 def generate_users_list(
-        users: list[User],
-        lexicon: dict,
-        current_page: int = 1,
-        page_size: int = 5,
-        pages: dict = None
+    users: list[User],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None
 ) -> dict:
     """
     Обрабатывает список объектов и выдает словарь с текстом для
@@ -313,9 +313,10 @@ def generate_team_info(team: Team, lexicon: dict):
     """Генерирует информацию о команде."""
     members = []
     if team.users:
+        members.append(f'{lexicon["team_members"]}\n')
         for user in team.users:
             user_info = (f'{lexicon["name"]} - {user.name}\n'
-                         f'{lexicon["group_number"]} - {user.group}\n\n')
+                         f'{lexicon["group_number"]} - {user.group}')
             members.append(user_info)
     text = (f'{lexicon["team_name"]} - {team.name}\n\n'
             f'{lexicon["team_size"]} - {team.team_size}\n\n')
@@ -326,11 +327,12 @@ def generate_team_info(team: Team, lexicon: dict):
 
 
 def generate_teams_list(
-        teams: list[Team],
-        lexicon: dict,
-        current_page: int = 1,
-        page_size: int = 5,
-        pages: dict = None
+    teams: list[Team],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+    methodist=False
 ) -> dict:
     """
     Обрабатывает список команд и выдает словарь с текстом для
@@ -356,7 +358,9 @@ def generate_teams_list(
         current_page = 1
     new_page = pages[current_page]
     text = "\n\n".join(new_page["objects"])
-    msg = f'{lexicon["show_teams_list"]}:\n\n{text}\n\n'
+    msg = f'{lexicon["show_teams_for_child"]}\n\n{text}\n\n'
+    if methodist:
+        msg = f'{lexicon["show_teams_list"]}:\n\n{text}\n\n'
     page_info = {
         "current_page": current_page,
         "first_item": new_page["first_item"],

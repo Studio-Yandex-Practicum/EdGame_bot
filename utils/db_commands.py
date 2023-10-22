@@ -1,23 +1,20 @@
-import logging
 import time
+import logging
 from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, Category, Team, User
+from db.models import Achievement, AchievementStatus, User, Category, Team
 
 logger = logging.getLogger(__name__)
 
 
 def register_user(data):
     user = User(
-        id=data["id"],
-        name=data["name"],
-        role="kid",
-        language=data["language"],
-        score=0,
-        group=data["group"],
+        id=data['id'], name=data['name'], role="kid",
+        language=data['language'], score=0,
+        group=data['group']
     )
     session.add(user)
     try:
@@ -35,10 +32,9 @@ def select_user(user_id) -> User:
 
 
 def is_user_in_db(user_id):
-    """Проверяем наличие пользователя в базе данных."""
+    '''Проверяем наличие пользователя в базе данных.'''
     return session.query(
-        session.query(User).filter(User.id == user_id).exists()
-    ).scalar()
+        session.query(User).filter(User.id == user_id).exists()).scalar()
 
 
 def get_users_by_role(role: str):
@@ -53,7 +49,9 @@ def set_user_param(
     language: str = None,
     score: int = None,
     team: Team = None,
-    delete_team: bool = None,
+    delete_team: bool = False,
+    captain_of_team: int = None,
+    leave_captain_pos: bool = False
 ):
     """Сеттер для обновления свойств объекта User."""
     if name:
@@ -66,11 +64,15 @@ def set_user_param(
         user.team = team
     if delete_team:
         user.team = None
+    if captain_of_team:
+        user.captain_of_team_id = captain_of_team
+    if leave_captain_pos:
+        user.captain_of_team_id = None
     try:
         session.commit()
-        logger.info("Пользователь обновлен")
+        logger.info('Пользователь обновлен')
     except IntegrityError as err:
-        logger.error(f"Ошибка при обновлении пользователя: {err}")
+        logger.error(f'Ошибка при обновлении пользователя: {err}')
         session.rollback()
 
 
@@ -119,19 +121,15 @@ def available_achievements(user_id, user_score) -> list:
     return available_achievements_list
 
 
-def get_achievement(
-    achievement_id: int = None, name: str = None
-) -> Achievement:
-    """Достаем ачивку из базы по ее id."""
+def get_achievement(achievement_id: int = None,
+                    name: str = None) -> Achievement:
+    '''Достаем ачивку из базы по ее id.'''
     achievement = (
-        session.query(Achievement)
-        .filter(
-            Achievement.id == achievement_id
-            if achievement_id
+        session.query(
+            Achievement).filter(
+            Achievement.id == achievement_id if achievement_id
             else Achievement.name == name
-        )
-        .first()
-    )
+        ).first())
     return achievement if achievement else "Unknown Achievement"
 
 
@@ -141,18 +139,12 @@ def get_all_achievements():
     return achievements
 
 
-def set_achievement_param(
-    achievement_id: int,
-    name: str = None,
-    description: str = None,
-    instruction: str = None,
-    score: int = None,
-    price: int = None,
-    artifact_type: str = None,
-    image: str = None,
-    achievement_type: str = None,
-):
-    """Сеттер для обновления свойств объекта Achievement."""
+def set_achievement_param(achievement_id: int, name: str = None,
+                          description: str = None, instruction: str = None,
+                          score: int = None, price: int = None,
+                          artifact_type: str = None, image: str = None,
+                          achievement_type: str = None):
+    '''Сеттер для обновления свойств объекта Achievement.'''
     achievement = get_achievement(achievement_id)
     if name:
         achievement.name = name
@@ -172,10 +164,10 @@ def set_achievement_param(
         achievement.achievement_type = achievement_type
     try:
         session.commit()
-        logger.info("Ачивка обновлена")
+        logger.info('Ачивка обновлена')
         return True
     except IntegrityError as err:
-        logger.error(f"Ошибка при обновлении ачивки: {err}")
+        logger.error(f'Ошибка при обновлении ачивки: {err}')
         session.rollback()
         return False
 
@@ -286,52 +278,56 @@ def send_to_methdist(user_achievement_id):
 def create_achievement(data: dict):
     """Метод для создания новой ачивки в базе."""
     new_achievement = Achievement(
-        name=data.get("name", "test"),
-        image=data.get("image"),
-        description=data.get("description", "test_desc"),
-        instruction=data.get("instruction", "test_inst"),
-        price=data.get("price", 0),
-        score=data.get("score", 0),
-        achievement_type=data.get("achievement_type", "individual"),
-        artifact_type=data.get("artifact_type", "text"),
+        name=data.get('name', 'test'),
+        image=data.get('image'),
+        description=data.get('description', 'test_desc'),
+        instruction=data.get('instruction', 'test_inst'),
+        price=data.get('price', 0),
+        score=data.get('score', 0),
+        achievement_type=data.get('achievement_type', 'individual'),
+        artifact_type=data.get('artifact_type', 'text')
     )
     session.add(new_achievement)
     try:
         session.commit()
-        logger.info("Ачивка добавлена")
+        logger.info('Ачивка добавлена')
         return True
     except IntegrityError as err:
         session.rollback()  # откатываем session.add(user)
-        logger.error(f"Ошибка при сохранении ачивки: {err}")
+        logger.error(f'Ошибка при сохранении ачивки: {err}')
         return False
 
 
 def get_user_achievement(user_achievement_id: int) -> AchievementStatus:
-    """Достаем ачивку из базы по ее id."""
+    '''Достаем ачивку из базы по ее id.'''
     user_achievement = (
-        session.query(AchievementStatus)
-        .filter(AchievementStatus.id == user_achievement_id)
-        .first()
-    )
+        session.query(
+            AchievementStatus).filter(
+            AchievementStatus.id == user_achievement_id
+        ).first())
     return user_achievement
 
 
 def create_team(name: str, size: int):
     """Создает новую команду."""
-    new_team = Team(name=name, team_size=size)
+    new_team = Team(
+        name=name,
+        team_size=size
+    )
     session.add(new_team)
     try:
         session.commit()
         return new_team
-        logger.info("Новая команда создана.")
+        logger.info('Новая команда создана.')
     except IntegrityError as err:
         session.rollback()
-        logger.error(f"Ошибка при создании команды: {err}")
+        logger.error(f'Ошибка при создании команды: {err}')
 
 
-def set_team_param(
-    team: Team, name: str = None, size: int = None, users: list[User] = None
-):
+def set_team_param(team: Team,
+                   name: str = None,
+                   size: int = None,
+                   users: list[User] = None):
     """Сеттер для объекта Команды."""
     if name:
         team.name = name
@@ -341,10 +337,10 @@ def set_team_param(
         team.users = users
     try:
         session.commit()
-        logger.info(f"Команда {team.name} обновлена.")
+        logger.info(f'Команда {team.name} обновлена.')
     except IntegrityError as err:
         session.rollback()
-        logger.error(f"Ошибка при редактировании команды: {err}")
+        logger.error(f'Ошибка при редактировании команды: {err}')
 
 
 def get_all_teams():
