@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from db.models import Achievement, AchievementStatus, User
+from db.models import Achievement, AchievementStatus, User, Category
 from aiogram import types
 
 from db.engine import session
@@ -177,7 +177,7 @@ async def send_task(
         await message.answer("Не удалось получить файл по id")
     
 def get_category_child_all(session: Session):
-    return session.query(AchievementStatus).all()
+    return session.query(Category).all()
 
 def get_category_id_achievement_all(session: Session, category_id):
     return (

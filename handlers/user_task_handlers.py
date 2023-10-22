@@ -1,4 +1,5 @@
 import logging
+from aiogram import types
 
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
@@ -366,36 +367,47 @@ async def process_artefact(
         logger.error(f"Ошибка при обработке артефакта: {err}")
 
 
-@child_task_router.message(F.text.in_BUTTONS["RU"]["category"])
+@child_task_router.message(F.text.in_([BUTTONS["RU"]["category"]]))
 async def process_artefact(message: Message, state: FSMContext):
+    print(10)
     try:
         category = get_category_child_all(session)
+        print(11, category)
         if len(category) == 0:
+           
             await message.answer(LEXICON["RU"]['no_category'])
         buttons = []
+        print(12)
         for i in range(len(category)):
             t = category[i]
+            print(t, 13)
             button = InlineKeyboardButton(
                 text=t.name, callback_data=f'{t.id}')
+            print(14)
             buttons.append([button])
-            reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-        paginator = Paginator(data=reply_markup, size=1)
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await state.set_state(Data.category)
         await message.answer(LEXICON["RU"]["choose_achievement"],  
-                             reply_markup=paginator())
+                             reply_markup=reply_markup)
     except Exception:
         await message.answer(LEXICON["RU"]["error_achievement"])
     finally:
         session.close()
 
 
-@child_task_router.message(Data.category)
+@child_task_router.callback_query(Data.category)
 async def check_child_buttons(query: CallbackQuery, state: FSMContext):
+    print(1123)
     try:
         category_id = int(query.data[0])
+        print(category_id, 0)
         achievements = get_category_id_achievement_all(session, category_id)
-        await query.message.answer(
-            achievements)
+        print(achievements)
+        result = ""
+        for achievement in achievements:
+            result += f"{achievement.name}\n"
+            print(result)
+        await query.message.answer(result)
     except Exception:
         await query.message.answer(LEXICON["RU"]["error_achievements"])
     finally:

@@ -207,6 +207,7 @@ BUTTONS_RU = {
     'leave_team': 'Уйти из команды',
     'become_captain': 'Стать капитаном',
     'leave_captain_position': 'Уйти с поста капитана',
+    'category': 'Выбери категорию заданий',
     # Редактирование профиля
     'edit_profile': 'Редактировать профиль',
     'change_firstname': 'Имя',
