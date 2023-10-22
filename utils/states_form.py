@@ -117,3 +117,18 @@ class EditTeam(StatesGroup):
     pagination_info = State()
     current_page = State()
     current_page_children = State()
+
+
+class JoinTeam(StatesGroup):
+    """Машина состояний для присоединения к команде."""
+    team_chosen = State()
+    join_team = State()
+    language = State()
+    team = State()
+    team_id = State()
+    query_id = State()
+    teams = State()
+    team_ids = State()
+    child = State()
+    pagination_info = State()
+    become_captain = State()
