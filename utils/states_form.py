@@ -5,6 +5,7 @@ class Data(StatesGroup):
     """
     Машина состояний для реализации сценариев диалогов с пользователем.
     """
+
     name = State()
     language = State()
     change_name = State()
@@ -21,6 +22,7 @@ class Profile(StatesGroup):
     """
     Машина состояний для анкетирования при старте бота.
     """
+
     choose_language = State()
     get_name = State()
     get_group = State()
@@ -30,9 +32,9 @@ class TaskList(StatesGroup):
     """
     Машина состояний для отображения списка ачивок у методиста.
     """
+
     language = State()
     tasks = State()
-    choice_tasks_type = State()
     cd = State()
     tasks_for_review = State()
     task_ids = State()
@@ -45,6 +47,7 @@ class AddTask(StatesGroup):
     """
     Машина состояний для добавления ачивки в базу методистом.
     """
+
     language = State()
     task_id = State()
     image = State()
@@ -62,6 +65,7 @@ class EditTask(StatesGroup):
     """
     Машина состояний для редактирования ачивки методистом.
     """
+
     language = State()
     task_id = State()
     image = State()
@@ -80,6 +84,7 @@ class ReviewTask(StatesGroup):
     """
     Машина состояний для проверки ачивки методистом.
     """
+
     pending = State()
     task_id = State()
     language = State()
@@ -88,6 +93,7 @@ class ReviewTask(StatesGroup):
 
 class CreateTeam(StatesGroup):
     """Машина состояний для создания команды."""
+
     name = State()
     size = State()
     team = State()
@@ -103,6 +109,7 @@ class CreateTeam(StatesGroup):
 
 class EditTeam(StatesGroup):
     """Машина состояний для создания команды."""
+
     name = State()
     size = State()
     team = State()

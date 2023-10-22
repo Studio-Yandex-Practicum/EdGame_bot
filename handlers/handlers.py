@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from aiogram import handlers
+from aiogram.types.chat import Chat
 
 from keyboards.keyboards import pagination_keyboard
 from lexicon.lexicon import LEXICON
@@ -37,6 +38,10 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
         """Дополнительные кнопки"""
         return None
 
+    async def delete_messages(self, media_group):
+        for message_id in media_group:
+            await Chat.delete_message(self.message.chat, message_id)
+
     async def handle(self) -> Any:
         try:
             self.fsm_state = self.data["state"]
@@ -44,7 +49,7 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
             self.language = self.fsm_data["language"]
             lexicon = LEXICON[self.language]
             current_page = self.fsm_data.get("current_page", 1)
-            task_number = self.callback_data.split(':')[-1]
+            task_number = self.callback_data.split(":")[-1]
 
             if task_number.isdigit():
                 self.query_id = self.fsm_data["task_ids"][int(task_number)]
@@ -60,7 +65,7 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
 
             if not query_set:
                 msg = lexicon["nothing"]
-                await self.message.answer(msg)
+                await self.event.answer(msg)
 
             else:
                 self.page_info = generate_objects_list(
@@ -83,8 +88,8 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
                         end=final_item,
                         cd=self.cd,
                         extra_button=self.extra_buttons(),
-                    )
+                    ),
                 )
 
         except Exception as err:
-            logger.error(f'Ошибка: {err}')
+            logger.error(f"Ошибка: {err}")

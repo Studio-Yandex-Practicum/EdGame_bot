@@ -15,16 +15,16 @@ async def main():
     """Функция конфигурирования и запуска бота."""
     # Конфигурируем логирование
     rotating_handler = RotatingFileHandler(
-        filename='bot_logfile.log',
+        filename="bot_logfile.log",
         maxBytes=50000000,
         backupCount=3,
-        encoding='utf-8'
+        encoding="utf-8",
     )
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(filename)s:%(lineno)d #%(levelname)-8s "
         "[%(asctime)s] - %(name)s - %(message)s",
-        handlers=[rotating_handler]
+        # handlers=[rotating_handler]
     )
 
     # Выводим в консоль информацию о начале запуска бота
