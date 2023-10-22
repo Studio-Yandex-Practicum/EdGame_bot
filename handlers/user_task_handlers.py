@@ -4,17 +4,20 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from keyboards.keyboards import pagination_keyboard, task_keyboard
+from keyboards.keyboards import (
+    pagination_keyboard, task_keyboard, task_page_keyboard,
+    send_artifact_keyboard, help_keyboard)
 from keyboards.methodist_keyboards import art_list_keyboard
 from lexicon.lexicon import LEXICON, BUTTONS
 from utils.db_commands import (
-    select_user, available_achievements, get_users_by_role)
+    select_user, available_achievements, get_users_by_role_and_group)
 from utils.states_form import Data
 from utils.utils import (
     generate_achievements_list, process_artifact,
     generate_text_with_tasks_in_review,
     generate_text_with_reviewed_tasks,
-    get_achievement_info, process_artifact_group)
+    get_achievement_info, process_artifact_group,
+    generate_achievement_message_for_kid)
 from utils.pagination import PAGE_SIZE
 
 logger = logging.getLogger(__name__)
@@ -92,41 +95,41 @@ async def show_tasks_list(message: Message, state: FSMContext):
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
         if not tasks:
-            await message.answer(text='Нет доступных заданий.',
-                                 reply_markup=task_keyboard(user.language,
-                                                            show_tasks=True))
-        else:
-            info = generate_achievements_list(
-                tasks=tasks,
-                lexicon=lexicon,
-                current_page=1,
-                page_size=PAGE_SIZE)
-            msg = info["msg"]
-            task_ids = info["task_ids"]
-            first_item = info["first_item"]
-            final_item = info["final_item"]
-            lk_button = {
-                "text": BUTTONS[language]["lk"],
-                "callback_data": "profile"
-            }
-            await state.set_state(Data.tasks)
-            await state.update_data(
-                tasks=tasks,
-                task_ids=task_ids,
-                pagination_info=info,
-                language=language
-            )
-
             await message.answer(
-                msg,
-                reply_markup=pagination_keyboard(
-                    buttons_count=len(tasks),
-                    start=first_item,
-                    end=final_item,
-                    cd='task',
-                    page_size=PAGE_SIZE,
-                    extra_button=lk_button)
-            )
+                text=lexicon["no_available_achievements"],
+                reply_markup=help_keyboard(language))
+            return
+        info = generate_achievements_list(
+            tasks=tasks,
+            lexicon=lexicon,
+            current_page=1,
+            page_size=PAGE_SIZE)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        first_item = info["first_item"]
+        final_item = info["final_item"]
+        lk_button = {
+            "text": BUTTONS[language]["lk"],
+            "callback_data": "profile"
+        }
+        await state.set_state(Data.tasks)
+        await state.update_data(
+            tasks=tasks,
+            task_ids=task_ids,
+            pagination_info=info,
+            language=language
+        )
+
+        await message.answer(
+            msg,
+            reply_markup=pagination_keyboard(
+                buttons_count=len(tasks),
+                start=first_item,
+                end=final_item,
+                cd='task',
+                page_size=PAGE_SIZE,
+                extra_button=lk_button)
+        )
     except KeyError as err:
         logger.error(
             f"Ошибка в ключевом слове в списке ачивок ребенка: {err}")
@@ -148,40 +151,40 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         tasks = available_achievements(user.id, user.score)
         if not tasks:
-            await query.message.answer(text='Нет доступных заданий.',
-                                       reply_markup=task_keyboard(user.language,
-                                                                  show_tasks=True))
-        else:
-            info = generate_achievements_list(
-                tasks=tasks,
-                lexicon=lexicon,
-                current_page=1,
-                page_size=PAGE_SIZE)
-            msg = info["msg"]
-            task_ids = info["task_ids"]
-            first_item = info["first_item"]
-            final_item = info["final_item"]
-            lk_button = {
-                "text": BUTTONS[language]["lk"],
-                "callback_data": "profile"
-            }
-            await state.set_state(Data.tasks)
-            await state.update_data(
-                tasks=tasks,
-                task_ids=task_ids,
-                pagination_info=info,
-                language=language
-            )
-            await query.message.edit_text(
-                msg,
-                reply_markup=pagination_keyboard(
-                    buttons_count=len(tasks),
-                    start=first_item,
-                    end=final_item,
-                    cd='task',
-                    page_size=PAGE_SIZE,
-                    extra_button=lk_button)
-            )
+            await query.message.answer(
+                text=lexicon["no_available_achievements"],
+                reply_markup=help_keyboard(language))
+            return
+        info = generate_achievements_list(
+            tasks=tasks,
+            lexicon=lexicon,
+            current_page=1,
+            page_size=PAGE_SIZE)
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        first_item = info["first_item"]
+        final_item = info["final_item"]
+        lk_button = {
+            "text": BUTTONS[language]["lk"],
+            "callback_data": "profile"
+        }
+        await state.set_state(Data.tasks)
+        await state.update_data(
+            tasks=tasks,
+            task_ids=task_ids,
+            pagination_info=info,
+            language=language
+        )
+        await query.message.edit_text(
+            msg,
+            reply_markup=pagination_keyboard(
+                buttons_count=len(tasks),
+                start=first_item,
+                end=final_item,
+                cd='task',
+                page_size=PAGE_SIZE,
+                extra_button=lk_button)
+        )
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:
@@ -203,6 +206,11 @@ async def show_tasks_list_pagination(query: CallbackQuery, state: FSMContext):
         tasks = data["tasks"]
         language = data["language"]
         lexicon = LEXICON[language]
+        if not tasks:
+            await query.message.answer(
+                text=lexicon["no_available_achievements"],
+                reply_markup=help_keyboard(language))
+            return
         pagination_info = data["pagination_info"]
         current_page = pagination_info["current_page"]
         pages = pagination_info["pages"]
@@ -267,7 +275,9 @@ async def process_info_button(query: CallbackQuery, state: FSMContext):
 
 
 # Обработчики выбора и выполнения ачивки
-@child_task_router.callback_query(Data.tasks, F.data.startswith('task'))
+@child_task_router.callback_query(Data.tasks, F.data.startswith('task:'))
+@child_task_router.callback_query(
+    F.data.startswith('back_to_chosen_achievement:'))
 async def show_task(query: CallbackQuery, state: FSMContext):
     """
     Обработчик кнопок выбора отдельной ачивки.
@@ -277,6 +287,7 @@ async def show_task(query: CallbackQuery, state: FSMContext):
     try:
         await query.answer()
         data = await state.get_data()
+        child = select_user(query.from_user.id)
         language = data["language"]
         lexicon = LEXICON[language]
         task_number = int(query.data.split(':')[-1])
@@ -286,29 +297,67 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         task_info = get_achievement_info(task_id, lexicon)
         info = task_info["info"]
         image = task_info["image"]
-        msg = (
-            f'{lexicon["achievement_chosen"]}\n\n'
-            f"{info}\n\n"
-            f'{lexicon["send_artifact"]}'
+        task = task_info["task"]
+        msg = generate_achievement_message_for_kid(
+            lexicon=lexicon,
+            text=info,
+            user=child,
+            achievement=task
         )
-        await state.set_state(Data.artifact)
-        await state.update_data(task_id=task_id, query_id=task_number)
+        markup = task_page_keyboard(language)
+        if task.achievement_type == 'teamwork':
+            markup = task_page_keyboard(
+                language,
+                available=True if child.captain_of_team_id else False)
+        await state.set_state(Data.fulfil_achievement)
+        await state.update_data(
+            task_id=task_id,
+            query_id=task_number,
+            child=child
+        )
         if not image:
             await query.message.edit_text(
                 msg,
-                reply_markup=task_keyboard(language)
+                reply_markup=markup
             )
             return
         await query.message.answer_photo(
             photo=image,
             caption=msg,
-            reply_markup=task_keyboard(language)
+            reply_markup=markup
         )
         await query.message.delete()
     except KeyError as err:
-        logger.error(f"Проверь правильность ключевых слов: {err}")
+        logger.error(
+            f"Проверь правильность ключевых слов при получении ачивки: {err}")
     except Exception as err:
         logger.error(f"Ошибка при получении ачивки: {err}")
+
+
+@child_task_router.callback_query(
+    Data.fulfil_achievement, F.data == 'fulfil_achievement')
+async def process_fulfil_achievement(query: CallbackQuery, state: FSMContext):
+    """
+    Обработчик кнопки Выполнить ачивку. Начинает сценарий сбора артефактов.
+    """
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        query_id = data["query_id"]
+        await state.set_state(Data.artifact)
+        await query.message.answer(
+            lexicon["send_artifact"],
+            reply_markup=send_artifact_keyboard(language, cd=query_id)
+        )
+        await query.message.delete()
+    except KeyError as err:
+        logger.error(
+            "Проверь правильность ключевых слов при запросе "
+            f"артефактов: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при запросе артефактов: {err}")
 
 
 @child_task_router.message(Data.artifact)
@@ -322,36 +371,52 @@ async def process_artefact(
     try:
         # Достаем id профиля вожатого в тг из базы
         data = await state.get_data()
+        child = data["child"]
         task_id = data["task_id"]
         language = data["language"]
         lexicon = LEXICON[language]
-        councelors = get_users_by_role("councelor")
+        query_id = data["query_id"]
+        councelors = get_users_by_role_and_group(
+            role="councelor", group=child.group)
+        # пока нет реальных пользователей вожатых подставляем свой id
         councelor = (
             councelors[0] if councelors else select_user(message.from_user.id)
         )
         if media_group:
             status_changed = await process_artifact_group(
-                album, task_id, lexicon
+                messages=album,
+                achievement_id=task_id,
+                lexicon=lexicon,
+                user=child
             )
         else:
-            status_changed = await process_artifact(message, task_id, lexicon)
+            status_changed = await process_artifact(
+                message=message,
+                achievement_id=task_id,
+                lexicon=lexicon,
+                user=child
+            )
         if not status_changed:
             await message.answer(
-                lexicon["error_getting_achievement"],
-                reply_markup=task_keyboard(language))
+                lexicon["error_sending_artifact"],
+                reply_markup=send_artifact_keyboard(language, cd=query_id)
+            )
             await state.set_state(Data.artifact)
             return
-        elif status_changed:
-            await bot.send_message(
-                chat_id=councelor.id,
-                text=LEXICON[councelor.language]["new_artifact"],
-                reply_markup=art_list_keyboard(councelor.language)
-            )
+        tasks = available_achievements(child.id, child.score)
+        await state.update_data(tasks=tasks)
+        await bot.send_message(
+            chat_id=councelor.id,
+            text=LEXICON[councelor.language]["new_artifact"],
+            reply_markup=art_list_keyboard(councelor.language)
+        )
         await message.answer(
             lexicon["artifact_sent"],
-            reply_markup=task_keyboard(language)
+            reply_markup=task_page_keyboard(language, available=False)
         )
     except KeyError as err:
-        logger.error(f"Проверь правильность ключевых слов: {err}")
+        logger.error(
+            "Проверь правильность ключевых слов при отправке "
+            f"артефакта: {err}")
     except Exception as err:
         logger.error(f"Ошибка при обработке артефакта: {err}")

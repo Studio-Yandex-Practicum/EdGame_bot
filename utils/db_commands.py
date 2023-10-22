@@ -43,6 +43,13 @@ def get_users_by_role(role: str):
     return users
 
 
+def get_users_by_role_and_group(role: str, group: int):
+    """Получаем пользователей по статусу и номеру отряда."""
+    users = session.query(User).filter(
+        User.role == role, User.group == group).all()
+    return users
+
+
 def set_user_param(
     user: User,
     name: str = None,
@@ -183,22 +190,33 @@ def set_achievement_param(achievement_id: int, name: str = None,
         return False
 
 
-def send_task(user_id, achievement_id, files_id, message_text):
+def send_task(
+        user: User,
+        achievement: Achievement,
+        files_id: list,
+        message_text: str
+) -> bool:
     """
-    На вход: user_id текущего юзера, которого мы получили при старте бота в
+    На вход: user текущий юзер, которого мы получили при старте бота в
     select_user(), achievement_id, полученный из ачивки, на кнопку которой
     юзер нажмёт, files_id, список, который будет состоять из id
     отправленных юзером артефактов, message_text, сообщение, которое может
     прислать юзер вместе с заданием. Значения files_id и message_text могут
     быть None. На выходе получаем новую запись AchievementStatus.
     """
+    team = (
+        user.captain_of_team_id
+        if achievement.achievement_type == 'teamwork'
+        else None
+    )
     task = AchievementStatus(
-        user_id=user_id,
-        achievement_id=achievement_id,
+        user_id=user.id,
+        achievement_id=achievement.id,
         files_id=files_id,
         message_text=message_text,
         status="pending",
         created_at=datetime.fromtimestamp(time.time()),
+        team_id=team
     )
 
     session.add(task)
