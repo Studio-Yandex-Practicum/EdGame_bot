@@ -31,3 +31,6 @@ SQLAlchemy==2.0.19
 typing_extensions==4.7.1
 urllib3==2.0.4
 yarl==1.9.2
+pre-commit==3.5.0
+flake8==6.1.0
+black==23.7.0
