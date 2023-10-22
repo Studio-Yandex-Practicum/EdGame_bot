@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 from aiogram import handlers
-from aiogram.types.chat import Chat
 
 from keyboards.keyboards import pagination_keyboard
 from lexicon.lexicon import LEXICON
@@ -37,10 +36,6 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
     def extra_buttons(self) -> dict | None:
         """Дополнительные кнопки"""
         return None
-
-    async def delete_messages(self, media_group):
-        for message_id in media_group:
-            await Chat.delete_message(self.message.chat, message_id)
 
     async def handle(self) -> Any:
         try:

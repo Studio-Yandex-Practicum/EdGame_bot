@@ -4,13 +4,13 @@ from typing import Any
 
 from aiogram import F, Router, handlers
 from aiogram.fsm.context import FSMContext
-from aiogram.methods import SendMessage
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardMarkup,
     InputMediaPhoto,
     InputMediaVideo,
     Message,
+    Chat,
 )
 
 from handlers.handlers import BasePaginatedHandler
@@ -59,6 +59,10 @@ methodist_task_router = Router()
 
 
 class BasePaginatedTaskHandler(BasePaginatedHandler):
+    async def delete_messages(self, media_group):
+        for message_id in media_group:
+            await Chat.delete_message(self.message.chat, message_id)
+
     async def handle(self) -> Any:
         await super().handle()
         try:
@@ -143,10 +147,10 @@ class ChoiceTasksForReviewCallback(handlers.CallbackQueryHandler):
 @methodist_task_router.callback_query(
     F.data.in_(
         (
-            "choice_category",
-            "choice_category:next",
-            "choice_category:previous",
-            "back_choice_category",
+                "choice_category",
+                "choice_category:next",
+                "choice_category:previous",
+                "back_choice_category",
         )
     )
 )
@@ -180,9 +184,9 @@ class ChoiceCategoryForReviewCallback(BasePaginatedTaskHandler):
 @methodist_task_router.callback_query(
     F.data.in_(
         (
-            "tasks_by_category",
-            "tasks_by_category:next",
-            "tasks_by_category:previous",
+                "tasks_by_category",
+                "tasks_by_category:next",
+                "tasks_by_category:previous",
         )
     )
 )
@@ -220,10 +224,10 @@ class TasksForReviewByCategoryCallback(BasePaginatedTaskHandler):
 @methodist_task_router.callback_query(
     F.data.in_(
         (
-            "choice_achievement",
-            "choice_achievement:next",
-            "choice_achievement:previous",
-            "back_choice_achievement",
+                "choice_achievement",
+                "choice_achievement:next",
+                "choice_achievement:previous",
+                "back_choice_achievement",
         )
     )
 )
@@ -257,9 +261,9 @@ class ChoiceAchievementForReviewCallback(BasePaginatedTaskHandler):
 @methodist_task_router.callback_query(
     F.data.in_(
         (
-            "tasks_by_achievement",
-            "tasks_by_achievement:next",
-            "tasks_by_achievement:previous",
+                "tasks_by_achievement",
+                "tasks_by_achievement:next",
+                "tasks_by_achievement:previous",
         )
     )
 )
@@ -666,7 +670,7 @@ async def process_add_task_type(query: CallbackQuery, state: FSMContext):
 
 @methodist_task_router.callback_query(AddTask.artifact_type)
 async def process_add_task_artifact_type(
-    query: CallbackQuery, state: FSMContext
+        query: CallbackQuery, state: FSMContext
 ):
     """Принимает тип артефакта, запрашивает изображение для ачивки."""
     try:
@@ -1412,7 +1416,7 @@ async def change_artifact_type(query: CallbackQuery, state: FSMContext):
 
 @methodist_task_router.callback_query(EditTask.artifact_type)
 async def process_change_artifact_type(
-    query: CallbackQuery, state: FSMContext
+        query: CallbackQuery, state: FSMContext
 ):
     """Принимает тип артефакта."""
     try:
