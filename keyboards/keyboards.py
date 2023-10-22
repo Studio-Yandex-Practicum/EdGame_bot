@@ -127,7 +127,7 @@ def pagination_keyboard(buttons_count: int,
 
 # Отдельная ачивка
 def task_keyboard(language: str,
-                  show_tasks: bool = None
+                  show_tasks: bool = True
                   ) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в отдельной ачивке."""
     buttons = BUTTONS[language]
