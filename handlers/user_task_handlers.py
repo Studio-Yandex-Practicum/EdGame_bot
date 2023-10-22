@@ -369,21 +369,16 @@ async def process_artefact(
 
 @child_task_router.message(F.text.in_([BUTTONS["RU"]["category"]]))
 async def process_artefact(message: Message, state: FSMContext):
-    print(10)
     try:
         category = get_category_child_all(session)
-        print(11, category)
-        if len(category) == 0:
-           
+        if len(category) == 0:  
             await message.answer(LEXICON["RU"]['no_category'])
         buttons = []
-        print(12)
         for i in range(len(category)):
             t = category[i]
-            print(t, 13)
             button = InlineKeyboardButton(
                 text=t.name, callback_data=f'{t.id}')
-            print(14)
+
             buttons.append([button])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await state.set_state(Data.category)
@@ -397,16 +392,12 @@ async def process_artefact(message: Message, state: FSMContext):
 
 @child_task_router.callback_query(Data.category)
 async def check_child_buttons(query: CallbackQuery, state: FSMContext):
-    print(1123)
     try:
         category_id = int(query.data[0])
-        print(category_id, 0)
         achievements = get_category_id_achievement_all(session, category_id)
-        print(achievements)
         result = ""
         for achievement in achievements:
             result += f"{achievement.name}\n"
-            print(result)
         await query.message.answer(result)
     except Exception:
         await query.message.answer(LEXICON["RU"]["error_achievements"])
