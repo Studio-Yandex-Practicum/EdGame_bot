@@ -66,23 +66,24 @@ def profile_keyboard(language) -> ReplyKeyboardMarkup:
         [help_button, write_to_councelor],
     ]
     markup = ReplyKeyboardMarkup(
-        keyboard=keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=True
+        keyboard=keyboard, resize_keyboard=True, one_time_keyboard=True
     )
     return markup
 
 
 # Кнопки inline
 
+
 # Редактирование профиля
 def edit_profile_keyboard(language: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в редактировании профиля."""
     buttons = BUTTONS[language]
     change_firstname = InlineKeyboardButton(
-        text=buttons["change_firstname"], callback_data="change_name")
+        text=buttons["change_firstname"], callback_data="change_name"
+    )
     change_language = InlineKeyboardButton(
-        text=buttons["change_language"], callback_data="change_language")
+        text=buttons["change_language"], callback_data="change_language"
+    )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
 
     keyboard = [[change_firstname], [change_language], [lk]]
@@ -91,26 +92,30 @@ def edit_profile_keyboard(language: str) -> InlineKeyboardMarkup:
 
 
 # Список ачивок
-def pagination_keyboard(buttons_count: int,
-                        start: int = 0,
-                        end: int = 5,
-                        cd: str = 'data',
-                        page_size: int = 5,
-                        extra_button: dict = None) -> InlineKeyboardMarkup:
+def pagination_keyboard(
+    buttons_count: int,
+    start: int = 0,
+    end: int = 5,
+    cd: str = "data",
+    page_size: int = 5,
+    extra_button: dict = None,
+) -> InlineKeyboardMarkup:
     """Функция для генерации кнопок с номерами элементов."""
     keyboard = []
     buttons = []
     nav_buttons = []
     button_next = InlineKeyboardButton(text=">>", callback_data=f"{cd}:next")
     button_prev = InlineKeyboardButton(
-        text="<<", callback_data=f"{cd}:previous")
+        text="<<", callback_data=f"{cd}:previous"
+    )
     info_button = InlineKeyboardButton(
         text=f"{end}/{buttons_count}", callback_data=f"{cd}:info"
     )
     for i in range(buttons_count):
         buttons.append(
             InlineKeyboardButton(
-                text=f"{i + 1}", callback_data=f"{cd}:{i + 1}")
+                text=f"{i + 1}", callback_data=f"{cd}:{i + 1}"
+            )
         )
     keyboard.append(buttons[start:end])
     if buttons_count > page_size:
@@ -126,22 +131,25 @@ def pagination_keyboard(buttons_count: int,
 
 
 # Отдельная ачивка
-def task_keyboard(language: str,
-                  show_tasks: bool = None
-                  ) -> InlineKeyboardMarkup:
+def task_keyboard(
+    language: str, show_tasks: bool = None
+) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в отдельной ачивке."""
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     available_achievements = {
         "text": buttons["available_achievements"],
-        "callback_data": "available_achievements"
+        "callback_data": "available_achievements",
     }
     back_to_achievements = {
         "text": buttons["back"],
-        "callback_data": "back_to_available_achievements"}
-    tasks = (InlineKeyboardButton(**available_achievements)
-             if show_tasks
-             else InlineKeyboardButton(**back_to_achievements))
+        "callback_data": "back_to_available_achievements",
+    }
+    tasks = (
+        InlineKeyboardButton(**available_achievements)
+        if show_tasks
+        else InlineKeyboardButton(**back_to_achievements)
+    )
     keyboard = [[tasks], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
@@ -152,8 +160,7 @@ def contacts_keyboard(language, username) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру для связи с вожатым."""
     buttons = BUTTONS[language]
     councelor_chat = InlineKeyboardButton(
-        text=buttons["councelor_chat"],
-        url=f"https://t.me/{username}"
+        text=buttons["councelor_chat"], url=f"https://t.me/{username}"
     )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
 
@@ -176,12 +183,10 @@ def join_team_keyboard(language: str) -> InlineKeyboardMarkup:
     """Клавиатура ребенка для присоединения к команде."""
     buttons = BUTTONS[language]
     join = InlineKeyboardButton(
-        text=buttons["join_team"],
-        callback_data="join_team"
+        text=buttons["join_team"], callback_data="join_team"
     )
     back_to_team_list = InlineKeyboardButton(
-        text=buttons["back"],
-        callback_data="back_to_team_list"
+        text=buttons["back"], callback_data="back_to_team_list"
     )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     keyboard = [[join], [back_to_team_list], [lk]]
@@ -189,27 +194,22 @@ def join_team_keyboard(language: str) -> InlineKeyboardMarkup:
     return markup
 
 
-def become_cap_or_leave_team_keyboard(language: str,
-                                      cap_pos_available: bool = False
-                                      ) -> InlineKeyboardMarkup:
-    """
-    Клавиатура ребенка для удаления из команды или выбора стать капитаном.
-    """
+def become_cap_or_leave_team_keyboard(
+    language: str, cap_pos_available: bool = False
+) -> InlineKeyboardMarkup:
+    """Клавиатура ребенка: уйти из команды или стать капитаном."""
     buttons = BUTTONS[language]
     leave = InlineKeyboardButton(
-        text=buttons["leave_team"],
-        callback_data="leave_team"
+        text=buttons["leave_team"], callback_data="leave_team"
     )
     back_to_team_list = InlineKeyboardButton(
-        text=buttons["back"],
-        callback_data="back_to_team_list"
+        text=buttons["back"], callback_data="back_to_team_list"
     )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     keyboard = [[leave], [back_to_team_list], [lk]]
     if cap_pos_available:
         become_captain = InlineKeyboardButton(
-            text=buttons["become_captain"],
-            callback_data="become_captain"
+            text=buttons["become_captain"], callback_data="become_captain"
         )
         keyboard[0].append(become_captain)
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -220,16 +220,14 @@ def leave_captain_position_keyboard(language: str) -> InlineKeyboardMarkup:
     """Клавиатура ребенка для удаления c поста капитана команды."""
     buttons = BUTTONS[language]
     leave = InlineKeyboardButton(
-        text=buttons["leave_team"],
-        callback_data="leave_team"
+        text=buttons["leave_team"], callback_data="leave_team"
     )
     leave_cap_pos = InlineKeyboardButton(
         text=buttons["leave_captain_position"],
-        callback_data="leave_captain_position"
+        callback_data="leave_captain_position",
     )
     back_to_team_list = InlineKeyboardButton(
-        text=buttons["back"],
-        callback_data="back_to_team_list"
+        text=buttons["back"], callback_data="back_to_team_list"
     )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     keyboard = [[leave], [leave_cap_pos], [back_to_team_list], [lk]]
@@ -241,8 +239,7 @@ def team_full_keyboard(language: str) -> InlineKeyboardMarkup:
     """Клавиатура ребенка, если в команде нет мест."""
     buttons = BUTTONS[language]
     back_to_team_list = InlineKeyboardButton(
-        text=buttons["back"],
-        callback_data="back_to_team_list"
+        text=buttons["back"], callback_data="back_to_team_list"
     )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     keyboard = [[back_to_team_list], [lk]]
