@@ -2,7 +2,7 @@ name: edgame workflow
 
 on:
     push:
-        branches: ["dev", "main", "githubactions_test"]
+        
 
 jobs:
     tests:
