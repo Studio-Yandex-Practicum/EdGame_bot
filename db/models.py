@@ -1,5 +1,4 @@
-from sqlalchemy import ARRAY, TIMESTAMP, Column, ForeignKey, Integer, String, \
-    BigInteger
+from sqlalchemy import ARRAY, TIMESTAMP, BigInteger, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.schema import CheckConstraint
 

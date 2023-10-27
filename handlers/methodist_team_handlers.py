@@ -1,25 +1,39 @@
 import logging
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
 
 from keyboards.keyboards import pagination_keyboard
 from keyboards.methodist_keyboards import (
-    methodist_profile_keyboard, create_team_keyboard,
-    choose_team_size_keyboard, add_members_or_pass_keyboard,
-    choose_member_keyboard, delete_user_from_team_keyboard,
-    team_keyboard_methodist, team_limit_reached_keyboard, edit_team_keyboard)
-from utils.utils import (
-    generate_profile_info, generate_users_list, generate_teams_list,
-    generate_team_info)
+    add_members_or_pass_keyboard,
+    choose_member_keyboard,
+    choose_team_size_keyboard,
+    create_team_keyboard,
+    delete_user_from_team_keyboard,
+    edit_team_keyboard,
+    methodist_profile_keyboard,
+    team_keyboard_methodist,
+    team_limit_reached_keyboard,
+)
+from lexicon.lexicon import BUTTONS, CD, LEXICON
 from utils.db_commands import (
-    select_user, set_user_param, create_team, set_team_param, get_all_teams,
-    get_team, get_users_by_role)
+    create_team,
+    get_all_teams,
+    get_team,
+    get_users_by_role,
+    select_user,
+    set_team_param,
+    set_user_param,
+)
 from utils.pagination import PAGE_SIZE
 from utils.states_form import CreateTeam, EditTeam
-
-from lexicon.lexicon import LEXICON, BUTTONS, CD
+from utils.utils import (
+    generate_profile_info,
+    generate_team_info,
+    generate_teams_list,
+    generate_users_list,
+)
 
 logger = logging.getLogger(__name__)
 

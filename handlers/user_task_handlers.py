@@ -1,21 +1,23 @@
 import logging
 
-from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery
+from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
 
 from keyboards.keyboards import pagination_keyboard, task_keyboard
 from keyboards.methodist_keyboards import art_list_keyboard
-from lexicon.lexicon import LEXICON, BUTTONS
-from utils.db_commands import (
-    select_user, available_achievements, get_users_by_role)
+from lexicon.lexicon import BUTTONS, LEXICON
+from utils.db_commands import available_achievements, get_users_by_role, select_user
+from utils.pagination import PAGE_SIZE
 from utils.states_form import Data
 from utils.utils import (
-    generate_achievements_list, process_artifact,
-    generate_text_with_tasks_in_review,
+    generate_achievements_list,
     generate_text_with_reviewed_tasks,
-    get_achievement_info, process_artifact_group)
-from utils.pagination import PAGE_SIZE
+    generate_text_with_tasks_in_review,
+    get_achievement_info,
+    process_artifact,
+    process_artifact_group,
+)
 
 logger = logging.getLogger(__name__)
 

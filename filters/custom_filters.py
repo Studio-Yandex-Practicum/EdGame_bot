@@ -1,6 +1,7 @@
-from aiogram.types import Message, CallbackQuery
 from typing import Union
+
 from aiogram.filters import BaseFilter
+from aiogram.types import CallbackQuery, Message
 
 from db.engine import session
 from db.models import User

@@ -1,19 +1,23 @@
 import logging
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
-from lexicon.lexicon import LEXICON, BUTTONS
-from keyboards.keyboards import (
-    help_keyboard, edit_profile_keyboard, create_welcome_keyboard)
-from keyboards.methodist_keyboards import methodist_profile_keyboard
-from utils.db_commands import select_user, set_user_param
-from utils.utils import generate_profile_info
-from utils.states_form import Data
 from filters.custom_filters import IsMethodist
-from .methodist_team_handlers import methodist_team_router
+from keyboards.keyboards import (
+    create_welcome_keyboard,
+    edit_profile_keyboard,
+    help_keyboard,
+)
+from keyboards.methodist_keyboards import methodist_profile_keyboard
+from lexicon.lexicon import BUTTONS, LEXICON
+from utils.db_commands import select_user, set_user_param
+from utils.states_form import Data
+from utils.utils import generate_profile_info
+
 from .methodist_task_handlers import methodist_task_router
+from .methodist_team_handlers import methodist_team_router
 
 logger = logging.getLogger(__name__)
 

@@ -1,26 +1,42 @@
 import logging
 import time
 
-from aiogram import Router, F
-from aiogram.types import (
-    Message, CallbackQuery, InlineKeyboardMarkup,
-    InputMediaPhoto, InputMediaVideo)
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardMarkup,
+    InputMediaPhoto,
+    InputMediaVideo,
+    Message,
+)
 
-from lexicon.lexicon import LEXICON, BUTTONS
-from keyboards.counselor_keyboard import (create_yes_no_keyboard)
+from keyboards.counselor_keyboard import create_yes_no_keyboard
 from keyboards.keyboards import pagination_keyboard
 from keyboards.methodist_keyboards import (
-    methodist_profile_keyboard, add_task_keyboard, task_type_keyboard,
-    artifact_type_keyboard, confirm_task_keyboard, edit_task_keyboard,
-    task_keyboard_methodist, review_keyboard_methodist)
+    add_task_keyboard,
+    artifact_type_keyboard,
+    confirm_task_keyboard,
+    edit_task_keyboard,
+    methodist_profile_keyboard,
+    review_keyboard_methodist,
+    task_keyboard_methodist,
+    task_type_keyboard,
+)
+from lexicon.lexicon import BUTTONS, LEXICON
 from utils.db_commands import (
-    get_all_achievements, select_user, create_achievement, approve_task,
-    set_achievement_param, get_user_achievement, reject_task)
-from utils.utils import generate_achievements_list, get_achievement_info
-from utils.states_form import TaskList, AddTask, EditTask, ReviewTask
+    approve_task,
+    create_achievement,
+    get_all_achievements,
+    get_user_achievement,
+    reject_task,
+    select_user,
+    set_achievement_param,
+)
 from utils.pagination import PAGE_SIZE
+from utils.states_form import AddTask, EditTask, ReviewTask, TaskList
 from utils.user_utils import save_rejection_reason_in_db
+from utils.utils import generate_achievements_list, get_achievement_info
 
 logger = logging.getLogger(__name__)
 

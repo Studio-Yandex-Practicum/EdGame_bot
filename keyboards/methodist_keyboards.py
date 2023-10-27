@@ -1,6 +1,9 @@
 from aiogram.types import (
-    InlineKeyboardButton, KeyboardButton, InlineKeyboardMarkup,
-    ReplyKeyboardMarkup)
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+)
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from lexicon.lexicon import BUTTONS, LEXICON

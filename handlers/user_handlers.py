@@ -1,24 +1,29 @@
 import logging
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
-from aiogram.filters import CommandStart, Text, StateFilter
+from aiogram import F, Router
+from aiogram.filters import CommandStart, StateFilter, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
-from keyboards.keyboards import (
-    menu_keyboard, profile_keyboard, edit_profile_keyboard,
-    create_welcome_keyboard, contacts_keyboard, help_keyboard)
-from keyboards.methodist_keyboards import methodist_profile_keyboard
-from keyboards.counselor_keyboard import create_profile_keyboard
-from lexicon.lexicon import LEXICON, LEXICON_COMMANDS, BUTTONS
-from utils.db_commands import (
-    register_user, select_user, is_user_in_db, set_user_param)
-from utils.states_form import Data, Profile
-from utils.utils import generate_profile_info
 from db.engine import session
 from filters.custom_filters import IsStudent
+from keyboards.counselor_keyboard import create_profile_keyboard
+from keyboards.keyboards import (
+    contacts_keyboard,
+    create_welcome_keyboard,
+    edit_profile_keyboard,
+    help_keyboard,
+    menu_keyboard,
+    profile_keyboard,
+)
+from keyboards.methodist_keyboards import methodist_profile_keyboard
+from lexicon.lexicon import BUTTONS, LEXICON, LEXICON_COMMANDS
 from middlewares.custom_middlewares import AcceptMediaGroupMiddleware
+from utils.db_commands import is_user_in_db, register_user, select_user, set_user_param
+from utils.states_form import Data, Profile
+from utils.utils import generate_profile_info
+
 from .methodist_handlers import methodist_router
 from .user_task_handlers import child_task_router
 from .user_team_handlers import child_team_router

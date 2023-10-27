@@ -1,20 +1,22 @@
 import logging
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, Message
 
 from keyboards.keyboards import (
-    pagination_keyboard, profile_keyboard, join_team_keyboard,
-    become_cap_or_leave_team_keyboard, leave_captain_position_keyboard,
-    team_full_keyboard)
-from utils.utils import generate_teams_list, generate_team_info
-from utils.db_commands import (
-    select_user, set_user_param, get_all_teams, get_team)
+    become_cap_or_leave_team_keyboard,
+    join_team_keyboard,
+    leave_captain_position_keyboard,
+    pagination_keyboard,
+    profile_keyboard,
+    team_full_keyboard,
+)
+from lexicon.lexicon import BUTTONS, LEXICON
+from utils.db_commands import get_all_teams, get_team, select_user, set_user_param
 from utils.pagination import PAGE_SIZE
 from utils.states_form import JoinTeam
-
-from lexicon.lexicon import LEXICON, BUTTONS
+from utils.utils import generate_team_info, generate_teams_list
 
 logger = logging.getLogger(__name__)
 

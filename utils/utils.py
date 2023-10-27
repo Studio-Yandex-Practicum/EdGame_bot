@@ -2,8 +2,9 @@ import logging
 
 from aiogram.types import Message
 
-from utils.db_commands import send_task, get_achievement, user_achievements
-from db.models import Achievement, User, Team
+from db.models import Achievement, Team, User
+from utils.db_commands import get_achievement, send_task, user_achievements
+
 from .pagination import pagination_static
 
 logger = logging.getLogger(__name__)

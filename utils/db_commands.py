@@ -1,11 +1,11 @@
-import time
 import logging
+import time
 from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, User, Category, Team
+from db.models import Achievement, AchievementStatus, Category, Team, User
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
-from .lexicon_ru import LEXICON_RU, BUTTONS_RU
-from .lexicon_en import LEXICON_EN, BUTTONS_EN
-from .lexicon_tt import LEXICON_TT, BUTTONS_TT
+from .lexicon_en import BUTTONS_EN, LEXICON_EN
+from .lexicon_ru import BUTTONS_RU, LEXICON_RU
+from .lexicon_tt import BUTTONS_TT, LEXICON_TT
 
 LEXICON = {
     'RU': LEXICON_RU,

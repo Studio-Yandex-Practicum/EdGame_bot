@@ -2,6 +2,7 @@ from aiogram import F, Router, types
 from aiogram.filters import Command, Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+
 from db.engine import session
 from db.models import AchievementStatus, User
 from keyboards.counselor_keyboard import (
