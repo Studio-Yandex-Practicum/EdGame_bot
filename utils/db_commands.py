@@ -92,8 +92,9 @@ def set_user_param(
 
 def user_achievements(user_id):
     """
-    Вставляем id текущего пользователя и получаем список кортежей.
+    Задания в кабинете ребенка.
 
+    Вставляем id текущего пользователя и получаем список кортежей.
     В кортежах у нас имеется объект ачивки (вынимаем необходимые
     для бота данные), статус проверки и причину отказа, если та имеется.
     """
@@ -214,8 +215,9 @@ def send_task(
     user: User, achievement: Achievement, files_id: list, message_text: str
 ) -> bool:
     """
-    Функция для создания объекта AchievementStatus.
+    Сохраняет задание, отправленное на проверку.
 
+    Функция для создания объекта AchievementStatus.
     На вход: user текущий юзер, которого мы получили при старте бота в
     select_user(), achievement, полученная ачивка, на кнопку которой
     юзер нажмёт, files_id, список, который будет состоять из id
@@ -249,8 +251,12 @@ def send_task(
 
 
 def change_language(user_id, language):
-    # На вход: user_id текущего юзера, которого мы получили при старте бота в
-    # select_user(), язык на который хотим сменить.
+    """
+    Функция для обновления языка пользователя.
+
+    На вход: user_id текущего юзера, которого мы получили при старте бота в
+    select_user(), язык на который хотим сменить.
+    """
     session.query(User).filter(User.id == user_id).update(
         {"language": language}
     )
@@ -294,8 +300,12 @@ def approve_task(user_achievement_id):
 
 
 def reject_task(user_achievement_id):
-    # На вход: user_achievement_id проверяемой ачивки и причину отказа.
-    # Для кнопки "отказать".
+    """
+    Функция для отклонения задания.
+
+    На вход: user_achievement_id проверяемой ачивки и причину отказа.
+    Для кнопки "отказать".
+    """
     user_achievement = (
         session.query(AchievementStatus)
         .filter(AchievementStatus.id == user_achievement_id)
