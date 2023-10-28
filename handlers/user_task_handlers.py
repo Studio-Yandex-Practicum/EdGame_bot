@@ -180,7 +180,10 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
             )
             return
         info = generate_achievements_list(
-            tasks=tasks, lexicon=lexicon, current_page=1, page_size=PAGE_SIZE
+            tasks=tasks,
+            lexicon=lexicon,
+            current_page=1,
+            page_size=PAGE_SIZE,
         )
         msg = info["msg"]
         task_ids = info["task_ids"]
@@ -230,21 +233,21 @@ async def show_tasks_list_pagination(query: CallbackQuery, state: FSMContext):
         await query.answer()
         data = await state.get_data()
         tasks = data["tasks"]
+        pagination_info = data["pagination_info"]
+        current_page = pagination_info["current_page"]
+        pages = pagination_info["pages"]
         language = data["language"]
         lexicon = LEXICON[language]
+        if query.data == "back_to_available_achievements":
+            user = select_user(query.from_user.id)
+            tasks = available_achievements(user.id, user.score)
+            pages = None
         if not tasks:
             await query.message.answer(
                 text=lexicon["no_available_achievements"],
                 reply_markup=help_keyboard(language),
             )
             return
-        pagination_info = data["pagination_info"]
-        current_page = pagination_info["current_page"]
-        pages = pagination_info["pages"]
-        if query.data == "back_to_available_achievements":
-            user = select_user(query.from_user.id)
-            tasks = available_achievements(user.id, user.score)
-            pages = None
         if query.data == "task:next":
             current_page += 1
         elif query.data == "task:previous":
@@ -268,6 +271,7 @@ async def show_tasks_list_pagination(query: CallbackQuery, state: FSMContext):
         if query.data == "back_to_available_achievements":
             # Если возвращаемся со страницы отдельной ачивки,
             # редактировать сообщение с фото нельзя
+            await state.update_data(task_ids=info["task_ids"])
             await query.message.answer(
                 msg,
                 reply_markup=pagination_keyboard(
@@ -405,9 +409,7 @@ async def process_artefact(
             role="councelor", group=child.group
         )
         # пока нет реальных пользователей вожатых подставляем свой id
-        councelor = (
-            councelors[0] if councelors else select_user(message.from_user.id)
-        )
+        councelor = councelors[0] if councelors else None
         if media_group:
             status_changed = await process_artifact_group(
                 messages=album,
@@ -431,15 +433,16 @@ async def process_artefact(
             return
         tasks = available_achievements(child.id, child.score)
         await state.update_data(tasks=tasks)
-        await bot.send_message(
-            chat_id=councelor.id,
-            text=LEXICON[councelor.language]["new_artifact"],
-            reply_markup=art_list_keyboard(councelor.language),
-        )
         await message.answer(
             lexicon["artifact_sent"],
             reply_markup=task_page_keyboard(language, available=False),
         )
+        if councelor:
+            await bot.send_message(
+                chat_id=councelor.id,
+                text=LEXICON[councelor.language]["new_artifact"],
+                reply_markup=art_list_keyboard(councelor.language),
+            )
     except KeyError as err:
         logger.error(
             "Проверь правильность ключевых слов при ообработке "
