@@ -12,13 +12,16 @@ from utils.db_commands import select_user, set_user_param
 from utils.utils import generate_profile_info
 from utils.states_form import Data
 from filters.custom_filters import IsMethodist
+from .methodist_categories_handlers import methodist_category_router
 from .methodist_team_handlers import methodist_team_router
 from .methodist_task_handlers import methodist_task_router
 
 logger = logging.getLogger(__name__)
 
 methodist_router = Router()
-methodist_router.include_routers(methodist_team_router, methodist_task_router)
+methodist_router.include_routers(methodist_category_router,
+                                 methodist_team_router,
+                                 methodist_task_router)
 methodist_router.message.filter(IsMethodist())
 methodist_router.callback_query.filter(IsMethodist())
 

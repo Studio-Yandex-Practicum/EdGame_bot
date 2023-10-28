@@ -33,6 +33,7 @@ def methodist_profile_keyboard(language: str) -> ReplyKeyboardMarkup:
     create_team = KeyboardButton(text=buttons["create_team"])
     team_list = KeyboardButton(text=buttons["team_list"])
     help_button = KeyboardButton(text=buttons["help"])
+    add_category = KeyboardButton(text=buttons["add_category"])
 
     keyboard = [
         [add_task, create_team],
@@ -40,7 +41,8 @@ def methodist_profile_keyboard(language: str) -> ReplyKeyboardMarkup:
         [achievement_list],
         [team_list],
         [edit_profile],
-        [help_button]
+        [help_button],
+        [add_category]
     ]
     markup = ReplyKeyboardMarkup(
         keyboard=keyboard,
@@ -268,4 +270,42 @@ def edit_team_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
         callback_data=f'back_to_team:{cd}')
     keyboard = [[edit_team_name, edit_team_size], [complete]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def add_category_keyboard(language: str) -> InlineKeyboardMarkup:
+    '''Генерирует инлайн клавиатуру в разделе добавления категории.'''
+    buttons = BUTTONS[language]
+    ready = InlineKeyboardButton(text=buttons["ready"], callback_data='ready')
+    lk = InlineKeyboardButton(
+        text=buttons["lk"], callback_data='profile')
+    markup = InlineKeyboardMarkup(inline_keyboard=[[ready], [lk]])
+    return markup
+
+
+def edit_category_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
+    '''Генерирует инлайн клавиатуру в разделе редактирования категории.'''
+    buttons = BUTTONS[language]
+    name = InlineKeyboardButton(
+        text=buttons["edit_name"], callback_data='edit_name')
+    complete = InlineKeyboardButton(
+        text=buttons["complete_editing_task"],
+        callback_data=f'back_to_category:{cd}')
+    keyboard = [
+        [name],
+        [complete]
+    ]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def confirm_category_keyboard(language: str) -> InlineKeyboardMarkup:
+    '''Генерирует клавиатуру при подтверждении добавления категории.'''
+    buttons = BUTTONS[language]
+    confirm_adding_category = InlineKeyboardButton(
+        text=buttons["confirm_adding_category"], callback_data='confirm')
+    edit_category = InlineKeyboardButton(
+        text=buttons["edit_category"], callback_data='edit_category')
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[[confirm_adding_category, edit_category]])
     return markup

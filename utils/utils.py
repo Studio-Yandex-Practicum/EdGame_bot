@@ -2,8 +2,8 @@ import logging
 
 from aiogram.types import Message
 
-from utils.db_commands import send_task, get_achievement, user_achievements
-from db.models import Achievement, User, Team
+from utils.db_commands import send_task, get_achievement, user_achievements, get_category
+from db.models import Achievement, Category, User, Team
 from .pagination import pagination_static
 
 logger = logging.getLogger(__name__)
@@ -367,5 +367,71 @@ def generate_teams_list(
         "pages": pages,
         "teams": teams,
         "team_ids": team_ids,
+        "msg": msg}
+    return page_info
+
+
+def get_category_info(
+    category_id: type(int or str), lexicon: dict
+) -> dict[str, str]:
+    """
+    Возвращает словарь с названием категории для сообщения
+    пользователю.
+    """
+    category = (
+        get_category(category_id)
+        if isinstance(category_id, int)
+        else get_category(name=category_id)
+    )
+    name = category.name
+    info = (
+        f'{lexicon["category_name"]}: {name}'
+    )
+    return {"info": info, "id": category.id}
+
+
+def generate_categories_list(
+    categories: list[Category],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+    methodist=False,
+) -> dict:
+    """
+    Обрабатывает список доступных категорий и выдает словарь с текстом для
+    сообщения, словарем id категорий, информацию для пагинатора,
+    если категорий много, и номер последнего элемента для клавиатуры.
+    """
+    categories_list = []
+    categories_ids = {}
+    count = 0
+    if not pages:
+        for i in range(len(categories)):
+            count += 1
+            categories_info = f"{count}: {categories[i].name}"
+            categories_list.append(categories_info)
+            categories_ids[count] = categories[i].id
+            # Список описаний, разбитый по страницам
+            pages = pagination_static(page_size, categories_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
+    msg = (
+        f'{lexicon["available_categories"]}:\n\n'
+        f'{text}\n\n'
+    )
+    if methodist:
+        msg = f'{lexicon["available_categories"]}:\n\n{text}\n\n'
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "categories": categories,
+        "categories_ids": categories_ids,
         "msg": msg}
     return page_info

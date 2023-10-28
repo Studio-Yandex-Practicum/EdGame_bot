@@ -132,3 +132,24 @@ class JoinTeam(StatesGroup):
     child = State()
     pagination_info = State()
     become_captain = State()
+
+
+class AddCategory(StatesGroup):
+    """
+    Машина состояний для добавления категории в базу методистом.
+    """
+    language = State()
+    category_id = State()
+    name = State()
+    confirm_task = State()
+
+
+class EditCategory(StatesGroup):
+    """
+    Машина состояний для редактирования категории методистом.
+    """
+    language = State()
+    category_id = State()
+    name = State()
+    confirm_task = State()
+    query_id = State()
