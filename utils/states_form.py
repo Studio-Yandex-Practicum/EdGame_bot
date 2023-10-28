@@ -2,9 +2,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class Data(StatesGroup):
-    """
-    Машина состояний для реализации сценариев диалогов с пользователем.
-    """
+    """Машина состояний для реализации сценариев диалогов с пользователем."""
 
     name = State()
     language = State()
@@ -19,9 +17,7 @@ class Data(StatesGroup):
 
 
 class Profile(StatesGroup):
-    """
-    Машина состояний для анкетирования при старте бота.
-    """
+    """Машина состояний для анкетирования при старте бота."""
 
     choose_language = State()
     get_name = State()
@@ -29,9 +25,7 @@ class Profile(StatesGroup):
 
 
 class TaskList(StatesGroup):
-    """
-    Машина состояний для отображения списка ачивок у методиста.
-    """
+    """Машина состояний для отображения списка ачивок у методиста."""
 
     language = State()
     tasks = State()
@@ -44,9 +38,7 @@ class TaskList(StatesGroup):
 
 
 class AddTask(StatesGroup):
-    """
-    Машина состояний для добавления ачивки в базу методистом.
-    """
+    """Машина состояний для добавления ачивки в базу методистом."""
 
     language = State()
     task_id = State()
@@ -62,9 +54,7 @@ class AddTask(StatesGroup):
 
 
 class EditTask(StatesGroup):
-    """
-    Машина состояний для редактирования ачивки методистом.
-    """
+    """Машина состояний для редактирования ачивки методистом."""
 
     language = State()
     task_id = State()
@@ -81,9 +71,7 @@ class EditTask(StatesGroup):
 
 
 class ReviewTask(StatesGroup):
-    """
-    Машина состояний для проверки ачивки методистом.
-    """
+    """Машина состояний для проверки ачивки методистом."""
 
     pending = State()
     task_id = State()
@@ -130,6 +118,7 @@ class EditTeam(StatesGroup):
 
 class JoinTeam(StatesGroup):
     """Машина состояний для присоединения к команде."""
+
     team_chosen = State()
     join_team = State()
     language = State()

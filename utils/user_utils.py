@@ -1,8 +1,8 @@
-from sqlalchemy.orm import Session
-from db.models import Achievement, AchievementStatus, User
 from aiogram import types
+from sqlalchemy.orm import Session
 
 from db.engine import session
+from db.models import Achievement, AchievementStatus, User
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -97,7 +97,7 @@ def get_message_text(session: Session, id: int):
 
 
 def get_achievements_by_name(session: Session, achievement_name: str):
-    """Возвращает все запросы на проверку одного задания"""
+    """Возвращает все запросы на проверку одного задания."""
     achievements = (
         session.query(Achievement)
         .join(AchievementStatus)

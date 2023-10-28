@@ -24,7 +24,7 @@ async def main():
         level=logging.DEBUG,
         format="%(filename)s:%(lineno)d #%(levelname)-8s "
         "[%(asctime)s] - %(name)s - %(message)s",
-        handlers=[rotating_handler]
+        handlers=[rotating_handler],
     )
 
     # Выводим в консоль информацию о начале запуска бота

@@ -155,7 +155,6 @@ def task_keyboard_methodist(language: str) -> InlineKeyboardMarkup:
 
 def review_keyboard_methodist(language: str, cd: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру с кнопками проверки ачивки."""
-
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     back = InlineKeyboardButton(text=buttons["back"], callback_data=cd)
@@ -227,9 +226,7 @@ def choose_member_keyboard(
 def delete_user_from_team_keyboard(
     language: str, cd: str = None
 ) -> InlineKeyboardMarkup:
-    """
-    Клавиатура при просмотре информации о ребенке, добавленном в команду.
-    """
+    """Клавиатура при просмотре информации о ребенке, добавленном в команду."""
     buttons = BUTTONS[language]
     delete = InlineKeyboardButton(
         text=buttons["delete_from_team"], callback_data="delete_member"
@@ -292,7 +289,6 @@ def edit_team_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
 
 def choice_tasks_for_review_keyboard(language: str) -> InlineKeyboardMarkup:
     """Выбор заданий на проверку."""
-
     buttons = BUTTONS[language]
     all_tasks = InlineKeyboardButton(
         text=buttons["all_tasks"], callback_data="all_tasks"
@@ -315,8 +311,6 @@ def choice_tasks_for_review_keyboard(language: str) -> InlineKeyboardMarkup:
 
 
 def continue_job_keyboard(language: str, cd: str) -> InlineKeyboardMarkup:
-    """"""
-
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
     continue_btn = InlineKeyboardButton(
