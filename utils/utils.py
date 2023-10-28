@@ -2,8 +2,9 @@ import logging
 
 from aiogram.types import Message
 
-from utils.db_commands import send_task, get_achievement, user_achievements
-from db.models import Achievement, User, Team
+from db.models import Achievement, Team, User
+from utils.db_commands import get_achievement, send_task, user_achievements
+
 from .pagination import pagination_static
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,8 @@ def generate_achievements_list(
     pages: dict = None,
     methodist=False,
 ) -> dict:
-    """
+    """Пагинированный список ачивок.
+
     Обрабатывает список доступных ачивок и выдает словарь с текстом для
     сообщения, словарем id ачивок, информацию для пагинатора,
     если ачивок много, и номер последнего элемента для клавиатуры.
@@ -41,7 +43,7 @@ def generate_achievements_list(
     text = "\n\n".join(new_page["objects"])
     msg = (
         f'{lexicon["available_achievements"]}:\n\n'
-        f'{text}\n\n'
+        f"{text}\n\n"
         f'{lexicon["choose_achievement"]}:'
     )
     if methodist:
@@ -53,7 +55,8 @@ def generate_achievements_list(
         "pages": pages,
         "tasks": tasks,
         "task_ids": task_ids,
-        "msg": msg}
+        "msg": msg,
+    }
     return page_info
 
 
@@ -67,7 +70,7 @@ async def _check_artifact_type(
         "document": message.document,
         "audio": message.audio,
         "voice": message.voice,
-        "text": message.text
+        "text": message.text,
     }
     artifact = artifact_types[artifact_type]
     if not artifact:
@@ -81,9 +84,10 @@ async def _check_artifact_type(
 async def process_artifact(
     message: Message, achievement_id: int, lexicon: dict
 ):
-    """
-    Достает id из возможных типов сообщения и сохраняет в базе
-    информацию об ачивке с новым статусом.
+    """Сохраняет статус ачивки.
+
+    Достает id из возможных типов сообщения и сохраняет в базе информацию об
+    ачивке с новым статусом.
     """
     achievement = get_achievement(achievement_id)
     art_type = achievement.artifact_type
@@ -108,9 +112,10 @@ async def process_artifact(
 async def process_artifact_group(
     messages: list[Message], achievement_id: int, lexicon: dict
 ):
-    """
-    Достает id из возможных типов сообщения и сохраняет в базе
-    информацию об ачивке с новым статусом.
+    """Сохраняет статус ачивки.
+
+    Достает id из возможных типов сообщения и сохраняет в базе информацию
+    об ачивке с новым статусом.
     """
     achievement = get_achievement(achievement_id)
     art_type = achievement.artifact_type
@@ -136,9 +141,10 @@ async def process_artifact_group(
 def get_achievement_info(
     task_id: type(int or str), lexicon: dict
 ) -> dict[str, str]:
-    """
-    Возвращает словарь с текстом об ачивке для сообщения
-    пользователю, id изображения и id ачивки.
+    """Информация об ачивке.
+
+    Возвращает словарь с текстом об ачивке для сообщения пользователю,
+    id изображения и id ачивки.
     """
     task = (
         get_achievement(task_id)
@@ -166,9 +172,10 @@ def get_achievement_info(
 
 
 def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
-    """
-    Принимает id пользователя и возвращает текст
-    с инфой об ачивках на проверке для сообщения.
+    """Ачивки, сданные на проверку.
+
+    Принимает id пользователя и возвращает текст с инфой об ачивках на
+    проверке для сообщения.
     """
     achievements = user_achievements(user_id)
     in_review = []
@@ -207,9 +214,10 @@ def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
 
 
 def generate_text_with_reviewed_tasks(user_id: int, lexicon: dict[str, str]):
-    """
-    Принимает id пользователя и возвращает текст
-    с инфой о проверенных ачивках для сообщения.
+    """Список проверенных ачивок.
+
+    Принимает id пользователя и возвращает текст с инфой о проверенных
+    ачивках для сообщения.
     """
     achievements = user_achievements(user_id)
     reviewed = []
@@ -257,11 +265,11 @@ def generate_profile_info(user: User, lexicon: dict):
         f'{lexicon["lk_info"]}:\n'
         f'{lexicon["name"]} - {user.name}\n'
         f'{lexicon["score"]} - {user.score}\n'
-        f'Роль - {user.role}\n'
-        f'Номер отряда - {user.group}\n'
+        f"Роль - {user.role}\n"
+        f"Номер отряда - {user.group}\n"
     )
     if user.team:
-        text += f'Команда - {user.team.name}'
+        text += f"Команда - {user.team.name}"
     return text
 
 
@@ -270,9 +278,11 @@ def generate_users_list(
     lexicon: dict,
     current_page: int = 1,
     page_size: int = 5,
-    pages: dict = None
+    pages: dict = None,
 ) -> dict:
     """
+    Пагинированный список пользователей.
+
     Обрабатывает список объектов и выдает словарь с текстом для
     сообщения, словарем id объектов, информацию для пагинатора,
     если объектов много, и номер последнего элемента для клавиатуры.
@@ -304,7 +314,8 @@ def generate_users_list(
         "pages": pages,
         "users": users,
         "user_ids": user_ids,
-        "msg": msg}
+        "msg": msg,
+    }
     return page_info
 
 
@@ -314,13 +325,17 @@ def generate_team_info(team: Team, lexicon: dict):
     if team.users:
         members.append(f'{lexicon["team_members"]}\n')
         for user in team.users:
-            user_info = (f'{lexicon["name"]} - {user.name}\n'
-                         f'{lexicon["group_number"]} - {user.group}')
+            user_info = (
+                f'{lexicon["name"]} - {user.name}\n'
+                f'{lexicon["group_number"]} - {user.group}'
+            )
             members.append(user_info)
-    text = (f'{lexicon["team_name"]} - {team.name}\n\n'
-            f'{lexicon["team_size"]} - {team.team_size}\n\n')
+    text = (
+        f'{lexicon["team_name"]} - {team.name}\n\n'
+        f'{lexicon["team_size"]} - {team.team_size}\n\n'
+    )
     if members:
-        members_info = '\n'.join(members)
+        members_info = "\n".join(members)
         text += members_info
     return text
 
@@ -331,9 +346,11 @@ def generate_teams_list(
     current_page: int = 1,
     page_size: int = 5,
     pages: dict = None,
-    methodist=False
+    methodist=False,
 ) -> dict:
     """
+    Пагинированный список команд.
+
     Обрабатывает список команд и выдает словарь с текстом для
     сообщения, словарем id объектов, информацию для пагинатора,
     если объектов много, и номер последнего элемента для клавиатуры.
@@ -367,5 +384,6 @@ def generate_teams_list(
         "pages": pages,
         "teams": teams,
         "team_ids": team_ids,
-        "msg": msg}
+        "msg": msg,
+    }
     return page_info
