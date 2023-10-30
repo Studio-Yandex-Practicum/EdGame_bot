@@ -84,6 +84,7 @@ class BasePaginatedTaskHandler(BasePaginatedHandler):
             media_group = self.fsm_data.get("media_group")
             if media_group:
                 await self.delete_messages(media_group)
+                await self.fsm_state.update_data(media_group=None)
 
         except Exception as err:
             logger.error(f"Ошибка при проверке заданий методистом: {err}")
@@ -341,6 +342,15 @@ async def show_review_task(query: CallbackQuery, state: FSMContext):
     Получаем условный id ачивки из callback_data, достаем реальный id из
     состояние Data и получаем полную инфу об ачивке из базы данных.
     """
+
+    async def input_media(
+        files_id: list, InputMedia: InputMediaPhoto | InputMediaVideo
+    ) -> list:
+        media_group = []
+        for file in files_id:
+            media_group.append(InputMedia(media=file))
+        return media_group
+
     try:
         await query.answer()
         data = await state.get_data()
@@ -351,32 +361,43 @@ async def show_review_task(query: CallbackQuery, state: FSMContext):
         task_id = data["task_ids"][task_number]
         task = get_user_achievement(task_id)
         msg = (
-            f'{lexicon["review_name"]} {task.achievement.name}\n'
-            f'{lexicon["review_description"]} {task.achievement.description}\n'
-            f'{lexicon["review_instruction"]} {task.achievement.instruction}\n'
-            f'{lexicon["review_type"]} {task.achievement.achievement_type}\n'
-            f'{lexicon["review_artifact"]} {task.achievement.artifact_type}\n'
-            f'{lexicon["review_user"]} {task.user.name}\n'
+            f"<b>{lexicon['review_user']}</b> {task.user.name}\n"
+            f"***\n"
+            f"<b>{lexicon['review_name']}</b> {task.achievement.name}\n"
+            f"<b>{lexicon['review_description']}</b> "
+            f"{task.achievement.description}\n"
+            f"<b>{lexicon['review_instruction']}</b> "
+            f"{task.achievement.instruction}\n"
+            f"<b>{lexicon['review_type']}</b> "
+            f"{task.achievement.achievement_type}\n"
+            f"<b>{lexicon['review_artifact']}</b> "
+            f"{task.achievement.artifact_type}\n"
         )
-        if task.files_id:
-            media = []
-            if task.achievement.artifact_type == "image":
-                for file in task.files_id:
-                    media.append(InputMediaPhoto(media=file))
-            else:
-                for file in task.files_id:
-                    media.append(InputMediaVideo(media=file))
+
+        if task.achievement.artifact_type == "text":
+            msg = f"{task.message_text}\n\n" + msg
+            await query.message.answer(
+                msg, reply_markup=review_keyboard_methodist(language, cd=cd)
+            )
+        else:
+            match task.achievement.artifact_type:
+                case "image":
+                    media = await input_media(task.files_id, InputMediaPhoto)
+                case "video":
+                    media = await input_media(task.files_id, InputMediaVideo)
+
             media_group = await query.message.answer_media_group(media=media)
             media_group = [message.message_id for message in media_group]
+
             await state.update_data(media_group=media_group)
-        else:
-            await query.message.answer(str(task.message_text))
+            await query.message.answer(
+                msg, reply_markup=review_keyboard_methodist(language, cd=cd)
+            )
+
         await state.set_state(ReviewTask.pending)
         await state.update_data(task_id=task_id, language=language)
-        await query.message.answer(
-            msg, reply_markup=review_keyboard_methodist(language, cd=cd)
-        )
         await query.message.delete()
+
     except KeyError as err:
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:
@@ -394,12 +415,15 @@ async def approve_methodist_handler(query: CallbackQuery, state: FSMContext):
         task_id = data["task_id"]
         cd = data["cd"]
         msg = f'{lexicon["failed_to_find_task"]} {task_id}.'
+
         if approve_task(task_id):
             msg = f'{lexicon["task_approved"]}: {task_id}.'
+
+        await state.update_data(media_group=None)
         await query.message.answer(
             msg, reply_markup=continue_job_keyboard(language, cd)
         )
-        await state.update_data(media_group=None)
+
     except Exception as err:
         logger.error(f"Произошла ошибка при подтверждении задания: {err}")
         await query.message.answer(
@@ -416,15 +440,21 @@ async def reject_methodist_handler(query: CallbackQuery, state: FSMContext):
         language = data["language"]
         lexicon = LEXICON[language]
         task_id = data["task_id"]
+        cd = data["cd"]
+        msg = f'{lexicon["failed_to_find_task"]} {task_id}.'
+
         if reject_task(task_id):
             await query.message.answer(
                 f'{lexicon["task_rejected"]}',
                 reply_markup=yes_no_keyboard(language, "methodist_check_task"),
             )
+
         else:
-            await query.message.answer(
-                f'{lexicon["failed_to_find_task"]}: {task_id}'
+            await query.message.edit_text(
+                msg, reply_markup=continue_job_keyboard(language, cd)
             )
+        await state.update_data(media_group=None)
+
     except Exception as err:
         logger.error(f"Произошла ошибка при отклонении задания: {err}")
         await query.message.answer("Произошла ошибка при отклонении задания.")
@@ -444,7 +474,7 @@ async def yes_methodist_handler(query: CallbackQuery, state: FSMContext):
 
         await state.set_state(ReviewTask.reject_message)
         await state.update_data(task_id=task_id)
-        await query.message.answer(f'{lexicon["give_rejection_reason"]}')
+        await query.message.edit_text(f'{lexicon["give_rejection_reason"]}')
 
     except Exception as err:
         logger.error(f"Произошла ошибка при обработке запроса: {err}")
@@ -463,11 +493,10 @@ async def no_methodist_handler(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         cd = data["cd"]
 
-        await query.message.answer(
+        await query.message.edit_text(
             lexicon["no_rejection_reason"],
             reply_markup=continue_job_keyboard(language, cd),
         )
-        await state.update_data(media_group=None)
 
     except Exception as err:
         logger.error(f"Произошла ошибка при обработке запроса: {err}")
@@ -484,7 +513,7 @@ async def rejection_reason(message: Message, state: FSMContext):
         lexicon = LEXICON[language]
         cd = data["cd"]
 
-        if message.text != "Отмена":
+        if message.text.lower() != "отмена":
             save_rejection_reason_in_db(task_id, message.text)
             await message.answer(
                 lexicon["rejection_reason_saved"],
@@ -495,7 +524,8 @@ async def rejection_reason(message: Message, state: FSMContext):
                 lexicon["no_rejection_reason"],
                 reply_markup=continue_job_keyboard(language, cd),
             )
-        await state.update_data(media_group=None)
+
+        await state.set_state(state=None)
 
     except Exception as err:
         logger.error(f"Произошла ошибка при обработке запроса: {err}")
