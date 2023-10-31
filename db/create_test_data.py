@@ -5,8 +5,8 @@ from db.engine import session
 
 # Указать здесь file_id фото из вашего бота.
 IMAGE = (
-    "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmA"
-    "C2RrAQADAgADcwADMAQ"
+    "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmAC"
+    "2RrAQADAgADcwADMAQ"
 )
 
 

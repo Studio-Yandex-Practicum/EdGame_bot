@@ -248,7 +248,10 @@ async def edit_profile(message: Message, state: FSMContext):
 
 @child_router.callback_query(F.data == "change_name")
 async def change_name(query: CallbackQuery, state: FSMContext):
-    """Обработчик создает состояние для смены имени."""
+    """Обработчик создает состояние для смены имени.
+
+    Просит прислать сообщение.
+    """
     try:
         await query.answer()
         await state.set_state(Data.change_name)
@@ -283,7 +286,10 @@ async def process_change_name(message: Message, state: FSMContext):
 
 @child_router.callback_query(F.data == "change_language")
 async def change_language(query: CallbackQuery, state: FSMContext):
-    """Обработчик уточняет, какой язык установить."""
+    """Обработчик создает состояние для смены языка.
+
+    Уточняет, какой язык установить.
+    """
     try:
         await query.answer()
         await state.set_state(Data.change_language)

@@ -97,7 +97,7 @@ def get_message_text(session: Session, id: int):
 
 
 def get_achievements_by_name(session: Session, achievement_name: str):
-    """Возвращает все запросы на проверку одного задания"""
+    """Возвращает все запросы на проверку одного задания."""
     achievements = (
         session.query(Achievement)
         .join(AchievementStatus)

@@ -38,8 +38,10 @@ child_task_router = Router()
     )
 )
 async def show_current_tasks(message: Message, state: FSMContext):
-    """Показывам ачивки в статусе на проверке либо предлагаем
-    перейти к списку ачивок.
+    """Ачивки на проверке.
+
+    Показываем ачивки в статусе на проверке, либо предлагаем перейти к
+    списку ачивок.
     """
     try:
         # Достаем из базы ачивки со статусом на проверке
@@ -66,8 +68,9 @@ async def show_current_tasks(message: Message, state: FSMContext):
     )
 )
 async def show_reviewed_tasks(message: Message):
-    """
-    Показывам ачивки в статусе на проверке либо предлагаем
+    """Ачивки на проверке.
+
+    Показываем ачивки в статусе на проверке либо предлагаем
     перейти к списку ачивок.
     """
     try:
@@ -96,10 +99,10 @@ async def show_reviewed_tasks(message: Message):
     )
 )
 async def show_tasks_list(message: Message, state: FSMContext):
-    """
-    Обработчик кнопки Посмотреть доступные ачивки.
-    Отправляет список открытых ачивок, сохраняет открытые
-    ачивки и их id через Data.
+    """Обработчик кнопки Посмотреть доступные ачивки.
+
+    Отправляет список открытых ачивок, сохраняет открытые ачивки и их id
+    через Data.
     """
     try:
         user = select_user(message.from_user.id)
@@ -153,10 +156,10 @@ async def show_tasks_list(message: Message, state: FSMContext):
 
 @child_task_router.callback_query(F.data == "available_achievements")
 async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик инлайн кнопки Посмотреть доступные ачивки.
-    Отправляет список открытых ачивок, сохраняет открытые
-    ачивки и их id через Data.
+    """Обработчик инлайн кнопки Посмотреть доступные ачивки.
+
+    Отправляет список открытых ачивок, сохраняет открытые ачивки и их id через
+    Data.
     """
     try:
         await query.answer()
@@ -214,10 +217,10 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
     )
 )
 async def show_tasks_list_pagination(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик инлайн кнопки Посмотреть доступные ачивки.
-    Отправляет список открытых ачивок, сохраняет открытые
-    ачивки и их id через Data.
+    """Обработчик инлайн кнопки Посмотреть доступные ачивки.
+
+    Отправляет список открытых ачивок, сохраняет открытые ачивки и их id
+    через Data.
     """
     try:
         await query.answer()
@@ -294,8 +297,8 @@ async def process_info_button(query: CallbackQuery, state: FSMContext):
 # Обработчики выбора и выполнения ачивки
 @child_task_router.callback_query(Data.tasks, F.data.startswith("task"))
 async def show_task(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик кнопок выбора отдельной ачивки.
+    """Обработчик кнопок выбора отдельной ачивки.
+
     Получаем условный id ачивки из callback_data, достаем реальный id из
     состояния Data и получаем полную инфу об ачивке из базы данных.
     """

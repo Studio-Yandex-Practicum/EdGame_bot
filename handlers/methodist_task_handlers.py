@@ -54,9 +54,10 @@ methodist_task_router = Router()
     )
 )
 async def show_tasks_for_review(message: Message, state: FSMContext):
-    """
-    Обработчик кнопки Задания на проверку. Показывает ачивки,
-    отправленные методисту на проверку в статусе "pending_methodist".
+    """Обработчик кнопки Задания на проверку.
+
+    Показывает ачивки, отправленные методисту на проверку в статусе
+    "pending_methodist".
     """
     try:
         user = select_user(message.from_user.id)
@@ -102,9 +103,10 @@ async def show_tasks_for_review(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "tasks_for_review")
 async def tasks_for_review_callback(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик кнопки Задания на проверку. Показывает ачивки,
-    отправленные методисту на проверку в статусе "pending_methodist".
+    """Обработчик кнопки Задания на проверку.
+
+    Показывает ачивки, отправленные методисту на проверку в статусе
+    "pending_methodist".
     """
     try:
         user = select_user(query.from_user.id)
@@ -152,8 +154,8 @@ async def tasks_for_review_callback(query: CallbackQuery, state: FSMContext):
     TaskList.tasks_for_review, F.data.startswith("task")
 )
 async def show_review_task(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик кнопок выбора отдельной ачивки на проверку.
+    """Обработчик кнопок выбора отдельной ачивки на проверку.
+
     Получаем условный id ачивки из callback_data, достаем реальный id из
     состояние Data и получаем полную инфу об ачивке из базы данных.
     """
@@ -363,9 +365,9 @@ async def process_add_task_instruction(message: Message, state: FSMContext):
 
 @methodist_task_router.message(AddTask.score)
 async def process_add_task_score(message: Message, state: FSMContext):
-    """
-    Принимает кол-во начисляемых баллов за ачивку,
-    запрашивает кол-во баллов для открытия ачивки.
+    """Принимает кол-во начисляемых баллов за ачивку.
+
+    Запрашивает кол-во баллов для открытия ачивки.
     """
     try:
         data = await state.get_data()
@@ -448,10 +450,10 @@ async def process_add_task_artifact_type(
 
 @methodist_task_router.message(AddTask.image)
 async def process_add_task_image(message: Message, state: FSMContext):
-    """
-    Принимает изображение для ачивки, сохраняет ачивку в БД.
-    Отправляет собранные данные для подтверждения корректности
-    или для перехода к редактированию.
+    """Принимает изображение для ачивки, сохраняет ачивку в БД.
+
+    Отправляет собранные данные для подтверждения корректности или для
+    перехода к редактированию.
     """
     try:
         data = await state.get_data()
@@ -544,8 +546,8 @@ async def process_saving_task_to_db(query: CallbackQuery, state: FSMContext):
     )
 )
 async def show_task_list(message: Message, state: FSMContext):
-    """
-    Обарботчик кнопки Посмотреть/редактировать ачивки.
+    """Обработчик кнопки Посмотреть/редактировать ачивки.
+
     Показывает все созданные ачивки с пагинацией.
     """
     try:
@@ -605,8 +607,8 @@ async def show_task_list(message: Message, state: FSMContext):
     F.data.in_(["back_to_achievement_list", "task:next", "task:previous"])
 )
 async def show_task_list_callback(query: CallbackQuery, state: FSMContext):
-    """
-    Обарботчик кнопки Посмотреть/редактировать ачивки.
+    """Обработчик кнопки Посмотреть/редактировать ачивки.
+
     Показывает все созданные ачивки с пагинацией.
     """
     try:
@@ -677,8 +679,8 @@ async def show_task_list_callback(query: CallbackQuery, state: FSMContext):
 )
 @methodist_task_router.callback_query(F.data.startswith("back_to_task:"))
 async def show_task(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик кнопок выбора отдельной ачивки.
+    """Обработчик кнопок выбора отдельной ачивки.
+
     Получаем условный id ачивки из callback_data, достаем реальный id из
     состояние Data и получаем полную инфу об ачивке из базы данных.
     """
@@ -751,8 +753,8 @@ async def process_complete_editing(query: CallbackQuery, state: FSMContext):
     EditTask.confirm_task, F.data == "edit_task"
 )
 async def process_edit_task(query: CallbackQuery, state: FSMContext):
-    """
-    Обарботчик инлайн кнопки Редактировать задание.
+    """Обработчик инлайн кнопки 'Редактировать задание'.
+
     Начинает сценарий внесения изменений в базу.
     """
     try:
@@ -776,9 +778,9 @@ async def process_edit_task(query: CallbackQuery, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_name")
 async def edit_name(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены названия ачивки, просит
-    прислать сообщение.
+    """Обработчик создает состояние для смены названия ачивки.
+
+    Просит прислать сообщение.
     """
     try:
         await query.answer()
@@ -828,9 +830,9 @@ async def process_edit_name(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_image")
 async def change_image(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены изображения ачивки, просит
-    прислать фото.
+    """Обработчик создает состояние для смены изображения ачивки.
+
+    Просит прислать фото.
     """
     try:
         await query.answer()
@@ -884,9 +886,9 @@ async def process_change_image(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_description")
 async def change_description(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены описания ачивки, просит
-    прислать текст.
+    """Обработчик создает состояние для смены описания ачивки.
+
+    Просит прислать текст.
     """
     try:
         await query.answer()
@@ -936,9 +938,9 @@ async def process_change_description(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_instruction")
 async def change_instruction(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены инструкции ачивки, просит
-    прислать текст.
+    """Обработчик создает состояние для смены инструкции ачивки.
+
+    Просит прислать текст.
     """
     try:
         await query.answer()
@@ -988,9 +990,9 @@ async def process_change_instruction(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_score")
 async def change_score(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены баллов ачивки, просит
-    прислать число.
+    """Обработчик создает состояние для смены баллов ачивки.
+
+    Просит прислать число.
     """
     try:
         await query.answer()
@@ -1043,9 +1045,9 @@ async def process_change_score(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_price")
 async def change_price(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены стоимости ачивки, просит
-    прислать число.
+    """Обработчик создает состояние для смены стоимости ачивки.
+
+    Просит прислать число.
     """
     try:
         await query.answer()
@@ -1099,9 +1101,9 @@ async def process_change_price(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_task_type")
 async def change_task_type(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены типа ачивки,
-    предлагает выбрать из кнопок.
+    """Обработчик создает состояние для смены типа ачивки.
+
+    Предлагает выбрать из кнопок.
     """
     try:
         await query.answer()
@@ -1151,9 +1153,9 @@ async def process_change_task_type(query: CallbackQuery, state: FSMContext):
 
 @methodist_task_router.callback_query(F.data == "edit_artifact_type")
 async def change_artifact_type(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены типа артефакта,
-    предлагает выбрать из кнопок.
+    """Обработчик создает состояние для смены типа артефакта.
+
+    Предлагает выбрать из кнопок.
     """
     try:
         await query.answer()

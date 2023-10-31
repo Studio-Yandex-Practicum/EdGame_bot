@@ -192,8 +192,8 @@ async def process_pass_adding_members(query: CallbackQuery, state: FSMContext):
     CreateTeam.add_members, F.data == "add_team_members"
 )
 async def process_add_team_members(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик кнопки Добавить участников.
+    """Обработчик кнопки 'Добавить участников'.
+
     Выводит список детей для добавления в команду.
     """
     try:
@@ -253,8 +253,8 @@ async def process_add_team_members(query: CallbackQuery, state: FSMContext):
 async def process_add_team_members_pagination(
     query: CallbackQuery, state: FSMContext
 ):
-    """
-    Обработчик кнопки Добавить участников.
+    """Обработчик кнопки 'Добавить участников'.
+
     Выводит список детей для добавления в команду.
     """
     try:
@@ -570,9 +570,9 @@ async def process_team_info_button(query: CallbackQuery, state: FSMContext):
 @methodist_team_router.callback_query(EditTeam.team, F.data.startswith("team"))
 @methodist_team_router.callback_query(F.data.startswith("back_to_team"))
 async def process_choose_team(query: CallbackQuery, state: FSMContext):
-    """
-    Показывает информацию о команде и предлагает изменить состав
-    или редактировать свойства команды.
+    """Показывает информацию о команде.
+
+    Предлагает изменить состав или редактировать свойства команды.
     """
     try:
         await query.answer()
@@ -603,8 +603,8 @@ async def process_choose_team(query: CallbackQuery, state: FSMContext):
     EditTeam.team, F.data == "edit_team_members"
 )
 async def process_edit_team_members(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик кнопки Редактировать состав команд.
+    """Обработчик кнопки 'Редактировать состав команд'.
+
     Выводит список детей для добавления в команду.
     """
     try:
@@ -670,8 +670,8 @@ async def process_edit_team_members(query: CallbackQuery, state: FSMContext):
 async def process_edit_team_members_pagination(
     query: CallbackQuery, state: FSMContext
 ):
-    """
-    Обработчик кнопки Добавить участников.
+    """Обработчик кнопки 'Добавить участников'.
+
     Выводит список детей для добавления в команду.
     """
     try:

@@ -159,9 +159,7 @@ async def process_team_info_button(query: CallbackQuery, state: FSMContext):
 )
 # @child_team_router.callback_query(F.data.startswith('back_to_team'))
 async def process_choose_team(query: CallbackQuery, state: FSMContext):
-    """
-    Показывает информацию о команде и предлагает присоединиться к ней.
-    """
+    """Показывает информацию о команде и предлагает присоединиться к ней."""
     try:
         await query.answer()
         data = await state.get_data()

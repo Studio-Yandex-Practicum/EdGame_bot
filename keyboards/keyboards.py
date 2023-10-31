@@ -197,7 +197,7 @@ def join_team_keyboard(language: str) -> InlineKeyboardMarkup:
 def become_cap_or_leave_team_keyboard(
     language: str, cap_pos_available: bool = False
 ) -> InlineKeyboardMarkup:
-    """Клавиатура ребенка для удаления из команды или выбора стать капитаном."""
+    """Клавиатура ребенка: уйти из команды или стать капитаном."""
     buttons = BUTTONS[language]
     leave = InlineKeyboardButton(
         text=buttons["leave_team"], callback_data="leave_team"

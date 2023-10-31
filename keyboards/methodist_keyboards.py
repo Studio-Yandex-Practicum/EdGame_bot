@@ -227,9 +227,7 @@ def choose_member_keyboard(
 def delete_user_from_team_keyboard(
     language: str, cd: str = None
 ) -> InlineKeyboardMarkup:
-    """
-    Клавиатура при просмотре информации о ребенке, добавленном в команду.
-    """
+    """Клавиатура при просмотре информации о ребенке, добавленном в команду."""
     buttons = BUTTONS[language]
     delete = InlineKeyboardButton(
         text=buttons["delete_from_team"], callback_data="delete_member"
