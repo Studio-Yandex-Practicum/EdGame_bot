@@ -378,3 +378,52 @@ def get_team(team_id: int = None, name: str = None):
         return session.query(Team).filter(Team.id == team_id).first()
     elif name:
         return session.query(Team).filter(Team.name == name).first()
+
+
+def create_category(data: dict):
+    """Метод для создания новой категории в базе."""
+    new_category = Category(
+        name=data.get('name', 'test')
+    )
+    session.add(new_category)
+    try:
+        session.commit()
+        logger.info('Категория добавлена')
+        return True
+    except IntegrityError as err:
+        session.rollback()  # откатываем session.add(user)
+        logger.error(f'Ошибка при сохранении категории: {err}')
+        return False
+
+
+def get_category(category_id: int = None,
+                    name: str = None) -> Achievement:
+    '''Достаем категорию из базы по ее id.'''
+    category = (
+        session.query(
+            Category).filter(
+            Category.id == category_id if category_id
+            else Category.name == name
+        ).first())
+    return category if category else "Unknown Achievement"
+
+
+def get_all_categories():
+    """Возвращает все категории из базы."""
+    categories = session.query(Category).all()
+    return categories
+
+
+def set_category_param(category_id: int, name: str = None):
+    '''Сеттер для обновления свойств объекта Category.'''
+    achievement = get_category(category_id)
+    if name:
+        achievement.name = name
+    try:
+        session.commit()
+        logger.info('Категория обновлена')
+        return True
+    except IntegrityError as err:
+        logger.error(f'Ошибка при обновлении категории: {err}')
+        session.rollback()
+        return False
