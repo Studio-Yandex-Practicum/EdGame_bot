@@ -2,9 +2,8 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class Data(StatesGroup):
-    """
-    Машина состояний для реализации сценариев диалогов с пользователем.
-    """
+    """Машина состояний для реализации сценариев диалогов с пользователем."""
+
     name = State()
     language = State()
     change_name = State()
@@ -18,18 +17,16 @@ class Data(StatesGroup):
 
 
 class Profile(StatesGroup):
-    """
-    Машина состояний для анкетирования при старте бота.
-    """
+    """Машина состояний для анкетирования при старте бота."""
+
     choose_language = State()
     get_name = State()
     get_group = State()
 
 
 class TaskList(StatesGroup):
-    """
-    Машина состояний для отображения списка ачивок у методиста.
-    """
+    """Машина состояний для отображения списка ачивок у методиста."""
+
     language = State()
     tasks = State()
     tasks_for_review = State()
@@ -40,9 +37,8 @@ class TaskList(StatesGroup):
 
 
 class AddTask(StatesGroup):
-    """
-    Машина состояний для добавления ачивки в базу методистом.
-    """
+    """Машина состояний для добавления ачивки в базу методистом."""
+
     language = State()
     task_id = State()
     image = State()
@@ -57,9 +53,8 @@ class AddTask(StatesGroup):
 
 
 class EditTask(StatesGroup):
-    """
-    Машина состояний для редактирования ачивки методистом.
-    """
+    """Машина состояний для редактирования ачивки методистом."""
+
     language = State()
     task_id = State()
     image = State()
@@ -75,9 +70,8 @@ class EditTask(StatesGroup):
 
 
 class ReviewTask(StatesGroup):
-    """
-    Машина состояний для проверки ачивки методистом.
-    """
+    """Машина состояний для проверки ачивки методистом."""
+
     pending = State()
     task_id = State()
     language = State()
@@ -86,6 +80,7 @@ class ReviewTask(StatesGroup):
 
 class CreateTeam(StatesGroup):
     """Машина состояний для создания команды."""
+
     name = State()
     size = State()
     team = State()
@@ -101,6 +96,7 @@ class CreateTeam(StatesGroup):
 
 class EditTeam(StatesGroup):
     """Машина состояний для создания команды."""
+
     name = State()
     size = State()
     team = State()
@@ -121,6 +117,7 @@ class EditTeam(StatesGroup):
 
 class JoinTeam(StatesGroup):
     """Машина состояний для присоединения к команде."""
+
     team_chosen = State()
     join_team = State()
     language = State()

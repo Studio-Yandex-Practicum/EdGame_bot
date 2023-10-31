@@ -38,7 +38,8 @@ def create_inline_keyboard(task_id, name):
     )
 
 
-# Создание инлайн клавиатуры для добавления комментария при отколении вожатым дз
+# Создание инлайн клавиатуры для добавления комментария при отколении вожатым
+# дз
 def create_yes_no_keyboard(task_id):
     yes_button = InlineKeyboardButton(
         text="Да", callback_data=f"yes:{task_id}"
