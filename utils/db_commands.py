@@ -399,3 +399,18 @@ def get_all_categories():
     """Возвращает все категории из базы."""
     categories = session.query(Category).all()
     return categories
+
+
+def set_category_param(category_id: int, name: str = None):
+    '''Сеттер для обновления свойств объекта Category.'''
+    achievement = get_category(category_id)
+    if name:
+        achievement.name = name
+    try:
+        session.commit()
+        logger.info('Категория обновлена')
+        return True
+    except IntegrityError as err:
+        logger.error(f'Ошибка при обновлении категории: {err}')
+        session.rollback()
+        return False

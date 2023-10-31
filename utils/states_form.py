@@ -153,3 +153,15 @@ class EditCategory(StatesGroup):
     name = State()
     confirm_task = State()
     query_id = State()
+
+
+class CategoryList(StatesGroup):
+    """
+    Машина состояний для отображения списка категорий у методиста.
+    """
+    language = State()
+    categories = State()
+    category_ids = State()
+    category_info = State()
+    current_page = State()
+    query_id = State()
