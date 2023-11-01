@@ -7,10 +7,15 @@ from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 
+from config_data.config import load_config
 from db.engine import engine, session
 from db.models import Password
-from keyboards.admin_keyboards import henchman_pass_keyboard
+from keyboards.admin_keyboards import (
+    boss_pass_keyboard,
+    henchman_pass_keyboard,
+)
 from keyboards.counselor_keyboard import create_profile_keyboard
+from keyboards.keyboards import cancel_keyboard
 from keyboards.methodist_keyboards import methodist_profile_keyboard
 from lexicon.lexicon import LEXICON
 from utils.db_commands import select_user
@@ -22,6 +27,7 @@ from utils.states_form import (
 )
 
 admin_router = Router()
+config = load_config()
 
 
 @admin_router.message(Text(text="password"), StateFilter(default_state))
@@ -52,7 +58,7 @@ async def hashing_password(message: Message, state: FSMContext):
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON[user.language]["counselor"],
+            text=LEXICON["RU"]["counselor"],
             reply_markup=create_profile_keyboard(),
         )
     elif psw == methodist_psw:
@@ -60,12 +66,12 @@ async def hashing_password(message: Message, state: FSMContext):
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON[user.language]["methodist"],
+            text=LEXICON["RU"]["methodist"],
             reply_markup=methodist_profile_keyboard(user.language),
         )
     elif psw == master_psw:
         await message.answer(
-            text=LEXICON[user.language]["henchman_pass"],
+            text=LEXICON["RU"]["henchman_pass"],
             reply_markup=henchman_pass_keyboard(),
         )
     await state.clear()
@@ -76,15 +82,17 @@ async def hashing_password(message: Message, state: FSMContext):
 )
 async def change_counselor_pass(callback: CallbackQuery, state: FSMContext):
     """Смена пароля вожатого."""
-    user = select_user(callback.message.chat.id)
+    await callback.message.delete()
     await callback.message.answer(
-        text=LEXICON[user.language]["counselor_pass"]
+        text=LEXICON["RU"]["counselor_pass"], reply_markup=cancel_keyboard()
     )
     await state.set_state(CounselorPassword.psw2hash)
 
 
 # Обрабатываем пароль вожатого
-@admin_router.message(StateFilter(CounselorPassword.psw2hash))
+@admin_router.message(
+    StateFilter(CounselorPassword.psw2hash), F.text.isalpha()
+)
 async def hashing_counselor_password(message: Message, state: FSMContext):
     """Хешируем и сохраняем новый пароль вожатого."""
     # Берем остальные пароли из базы
@@ -117,15 +125,17 @@ async def hashing_counselor_password(message: Message, state: FSMContext):
 )
 async def change_methodist_pass(callback: CallbackQuery, state: FSMContext):
     """Смена пароля методиста."""
-    user = select_user(callback.message.chat.id)
+    await callback.message.delete()
     await callback.message.answer(
-        text=LEXICON[user.language]["methodist_pass"]
+        text=LEXICON["RU"]["methodist_pass"], reply_markup=cancel_keyboard()
     )
     await state.set_state(MethodistPassword.psw2hash)
 
 
 # Обрабатываем пароль методиста
-@admin_router.message(StateFilter(MethodistPassword.psw2hash))
+@admin_router.message(
+    StateFilter(MethodistPassword.psw2hash), F.text.isalpha()
+)
 async def hashing_methodist_password(message: Message, state: FSMContext):
     """Хешируем и сохраняем новый пароль методиста."""
     # Берем остальные пароли из базы
@@ -158,13 +168,15 @@ async def hashing_methodist_password(message: Message, state: FSMContext):
 )
 async def change_master_pass(callback: CallbackQuery, state: FSMContext):
     """Смена мастер-пароля."""
-    user = select_user(callback.message.chat.id)
-    await callback.message.answer(text=LEXICON[user.language]["master_pass"])
+    await callback.message.delete()
+    await callback.message.answer(
+        text=LEXICON["RU"]["master_pass"], reply_markup=cancel_keyboard()
+    )
     await state.set_state(MasterPassword.psw2hash)
 
 
 # Обрабатываем мастер-пароль
-@admin_router.message(StateFilter(MasterPassword.psw2hash))
+@admin_router.message(StateFilter(MasterPassword.psw2hash), F.text.isalpha())
 async def hashing_master_password(message: Message, state: FSMContext):
     """Хешируем и сохраняем новый мастер-пароль."""
     # Берем остальные пароли из базы
@@ -189,4 +201,18 @@ async def hashing_master_password(message: Message, state: FSMContext):
     session.add(password)
     session.commit()
     await message.answer(text="Пароль обновлен")
+    await state.clear()
+
+
+@admin_router.callback_query(F.data == "cancel")
+async def cancel_pass(callback: CallbackQuery, state: FSMContext):
+    """Отмена ввода пароля."""
+    if callback.message.chat.id == config.boss_id:
+        await callback.message.edit_reply_markup(
+            reply_markup=boss_pass_keyboard()
+        )
+    else:
+        await callback.message.edit_reply_markup(
+            reply_markup=henchman_pass_keyboard()
+        )
     await state.clear()

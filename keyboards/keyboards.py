@@ -9,7 +9,7 @@ from lexicon.lexicon import BUTTONS
 
 
 # Функция, генерирующая клавиатуру для выбора языка
-def create_welcome_keyboard():
+def create_welcome_keyboard() -> InlineKeyboardMarkup:
     # Создаем объекты инлайн-кнопок
     rus_lang: InlineKeyboardButton = InlineKeyboardButton(
         text="Русский язык", callback_data="RU"
@@ -29,7 +29,7 @@ def create_welcome_keyboard():
 
 # Текст на кнопках
 # Главное меню
-def menu_keyboard(language):
+def menu_keyboard(language: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в главном меню."""
     buttons = BUTTONS[language]
     write_to_methodist = KeyboardButton(text=buttons["write_to_methodist"])
@@ -45,7 +45,7 @@ def menu_keyboard(language):
 
 
 # Личный кабинет
-def profile_keyboard(language) -> ReplyKeyboardMarkup:
+def profile_keyboard(language: str) -> ReplyKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в личном кабинете."""
     buttons = BUTTONS[language]
     edit_profile = KeyboardButton(text=buttons["edit_profile"])
@@ -156,7 +156,7 @@ def task_keyboard(
 
 
 # Написать вожатому
-def contacts_keyboard(language, username) -> InlineKeyboardMarkup:
+def contacts_keyboard(language: str, username: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру для связи с вожатым."""
     buttons = BUTTONS[language]
     counselor_chat = InlineKeyboardButton(
@@ -170,7 +170,7 @@ def contacts_keyboard(language, username) -> InlineKeyboardMarkup:
 
 
 # Клавиатура с кнопкой Личный кабинет
-def help_keyboard(language) -> InlineKeyboardMarkup:
+def help_keyboard(language: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру при нажатии команды help."""
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
@@ -245,3 +245,13 @@ def team_full_keyboard(language: str) -> InlineKeyboardMarkup:
     keyboard = [[back_to_team_list], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
+
+
+def cancel_keyboard() -> InlineKeyboardMarkup:
+    cancel_button: InlineKeyboardButton = InlineKeyboardButton(
+        text="Отмена", callback_data="cancel"
+    )
+    cancel: InlineKeyboardMarkup = InlineKeyboardMarkup(
+        inline_keyboard=[[cancel_button]]
+    )
+    return cancel
