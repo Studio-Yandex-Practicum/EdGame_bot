@@ -129,3 +129,27 @@ class JoinTeam(StatesGroup):
     child = State()
     pagination_info = State()
     become_captain = State()
+
+
+class EnteringPassword(StatesGroup):
+    """Машина состояний для ввода пароля."""
+
+    psw2hash = State()
+
+
+class CounselorPassword(StatesGroup):
+    """Машина состояний для ввода пароля для вожатого."""
+
+    psw2hash = State()
+
+
+class MethodistPassword(StatesGroup):
+    """Машина состояний для ввода пароля для методиста."""
+
+    psw2hash = State()
+
+
+class MasterPassword(StatesGroup):
+    """Машина состояний для ввода мастер-пароля."""
+
+    psw2hash = State()

@@ -5,7 +5,9 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, Team, User
+from db.models import Achievement, AchievementStatus, Password, Team, User
+
+from .pass_gen import counselor_pass, master_pass, methodist_pass
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,23 @@ def register_user(data):
     except IntegrityError:
         session.rollback()  # откатываем session.add(user)
         return False
+
+
+def check_password():
+    password = session.query(Password).first()
+    if password is None:
+        password = Password(
+            master_pass=master_pass,
+            counselor_pass=counselor_pass,
+            methodist_pass=methodist_pass,
+        )
+        session.add(password)
+        try:
+            session.commit()
+            return True
+        except IntegrityError:
+            session.rollback()  # откатываем session.add(user)
+            return False
 
 
 def select_user(user_id) -> User:

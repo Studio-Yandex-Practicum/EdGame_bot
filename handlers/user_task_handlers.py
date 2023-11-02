@@ -300,7 +300,7 @@ async def show_task(query: CallbackQuery, state: FSMContext):
     """Обработчик кнопок выбора отдельной ачивки.
 
     Получаем условный id ачивки из callback_data, достаем реальный id из
-    состояние Data и получаем полную инфу об ачивке из базы данных.
+    состояния Data и получаем полную инфу об ачивке из базы данных.
     """
     try:
         await query.answer()
@@ -348,9 +348,9 @@ async def process_artefact(
         task_id = data["task_id"]
         language = data["language"]
         lexicon = LEXICON[language]
-        councelors = get_users_by_role("councelor")
-        councelor = (
-            councelors[0] if councelors else select_user(message.from_user.id)
+        counselors = get_users_by_role("counselor")
+        counselor = (
+            counselors[0] if counselors else select_user(message.from_user.id)
         )
         if media_group:
             status_changed = await process_artifact_group(
@@ -367,9 +367,9 @@ async def process_artefact(
             return
         elif status_changed:
             await bot.send_message(
-                chat_id=councelor.id,
-                text=LEXICON[councelor.language]["new_artifact"],
-                reply_markup=art_list_keyboard(councelor.language),
+                chat_id=counselor.id,
+                text=LEXICON[counselor.language]["new_artifact"],
+                reply_markup=art_list_keyboard(counselor.language),
             )
         await message.answer(
             lexicon["artifact_sent"], reply_markup=task_keyboard(language)
