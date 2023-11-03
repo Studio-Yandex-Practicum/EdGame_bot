@@ -318,7 +318,7 @@ async def show_task(query: CallbackQuery, state: FSMContext):
     Обработчик кнопок выбора отдельной ачивки.
 
     Получаем условный id ачивки из callback_data, достаем реальный id из
-    состояние Data и получаем полную инфу об ачивке из базы данных.
+    состояния Data и получаем полную инфу об ачивке из базы данных.
     """
     try:
         await query.answer()
