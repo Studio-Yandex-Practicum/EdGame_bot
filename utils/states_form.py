@@ -13,7 +13,10 @@ class Data(StatesGroup):
     tasks = State()
     task_ids = State()
     pagination_info = State()
+    fulfil_achievement = State()
     artifact = State()
+    child = State()
+    query_id = State()
 
 
 class Profile(StatesGroup):

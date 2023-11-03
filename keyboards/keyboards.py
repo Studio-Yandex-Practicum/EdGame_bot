@@ -132,7 +132,7 @@ def pagination_keyboard(
 
 # Отдельная ачивка
 def task_keyboard(
-    language: str, show_tasks: bool = None
+    language: str, show_tasks: bool = True
 ) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в отдельной ачивке."""
     buttons = BUTTONS[language]
@@ -151,6 +151,39 @@ def task_keyboard(
         else InlineKeyboardButton(**back_to_achievements)
     )
     keyboard = [[tasks], [lk]]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def task_page_keyboard(
+    language: str, available: bool = True
+) -> InlineKeyboardMarkup:
+    """Генерирует клавиатуру с кнопками в отдельной ачивке."""
+    buttons = BUTTONS[language]
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    back_to_achievements = {
+        "text": buttons["back"],
+        "callback_data": "back_to_available_achievements",
+    }
+    fulfil_achievement = InlineKeyboardButton(
+        text=buttons["fulfil_achievement"], callback_data="fulfil_achievement"
+    )
+    keyboard = [[back_to_achievements], [lk]]
+    if available:
+        keyboard = [[fulfil_achievement], [back_to_achievements], [lk]]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def send_artifact_keyboard(language: str, cd: str):
+    """Генерирует клавиатуру на странице отправки артефактов."""
+    buttons = BUTTONS[language]
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    back_to_achievement = {
+        "text": buttons["back"],
+        "callback_data": f"back_to_chosen_achievement:{cd}",
+    }
+    keyboard = [[back_to_achievement], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
 
