@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from typing import Any, Callable, Dict, Union
 
 from aiogram import BaseMiddleware
 from aiogram.types import Message
+from typing import Callable, Dict, Any, Union
 
 logger = logging.getLogger(__name__)
 
