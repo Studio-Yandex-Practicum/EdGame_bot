@@ -83,8 +83,8 @@ async def _check_artifact_type(
 
 
 async def process_artifact(
-    message: Message, achievement_id: int, lexicon: dict
-):
+    message: Message, achievement_id: int, lexicon: dict, user: User
+) -> bool:
     """Сохраняет статус ачивки.
 
     Достает id из возможных типов сообщения и сохраняет в базе информацию об
@@ -100,10 +100,9 @@ async def process_artifact(
         files_id.append(artifact[-1].file_id)
     elif art_type != "text" and art_type != "image":
         files_id.append(artifact.file_id)
-    user_id = message.from_user.id
     text = message.text if message.text else message.caption
     try:
-        send_task(user_id, achievement_id, files_id, text)
+        send_task(user, achievement, files_id, text)
         return True
     except Exception as err:
         logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
@@ -111,8 +110,8 @@ async def process_artifact(
 
 
 async def process_artifact_group(
-    messages: list[Message], achievement_id: int, lexicon: dict
-):
+    messages: list[Message], achievement_id: int, lexicon: dict, user: User
+) -> bool:
     """Сохраняет статус ачивки.
 
     Достает id из возможных типов сообщения и сохраняет в базе информацию
@@ -129,10 +128,9 @@ async def process_artifact_group(
             files_id.append(artifact[-1].file_id)
         else:
             files_id.append(artifact.file_id)
-    user_id = messages[0].from_user.id
     text = messages[0].text if messages[0].text else messages[0].caption
     try:
-        send_task(user_id, achievement_id, files_id, text)
+        send_task(user, achievement, files_id, text)
         return True
     except Exception as err:
         logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
@@ -169,7 +167,24 @@ def get_achievement_info(
         f'{lexicon["task_type"]}: {lexicon[task_type]}\n'
         f'{lexicon["task_price"]}: {price}'
     )
-    return {"info": info, "image": image, "id": task.id}
+    return {"info": info, "image": image, "task": task}
+
+
+def generate_achievement_message_for_kid(
+    lexicon: dict, text: str, user: User, achievement: Achievement
+) -> str:
+    """Сообщение на странице отдельной ачивки в зависимости от роли ребенка."""
+    header = "achievement_chosen"
+    if achievement.achievement_type == "individual":
+        footer = "fulfil_individual_achievement"
+    else:
+        footer = (
+            "fulfil_team_achievement"
+            if user.captain_of_team_id
+            else "available_for_team_captain_only"
+        )
+    msg = message_pattern(lexicon, text, header, footer)
+    return msg
 
 
 def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
@@ -188,7 +203,7 @@ def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
         if status == "pending":
             count += 1
             task_info = (
-                f'{count}: {lexicon["pending_councelor"]}\n'
+                f'{count}: {lexicon["pending_counselor"]}\n'
                 f'{lexicon["task_name"]}: {task.name}\n'
                 f'{lexicon["task_description"]}: {task.description}'
             )
