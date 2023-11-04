@@ -42,7 +42,9 @@ router = Router()
 
 
 class TaskState(StatesGroup):
-    """Машина состояний для реализации сценариев диалогов с вожатым."""
+    """
+    Машина состояний для реализации сценариев диалогов с вожатым.
+    """
 
     group = State()
     user_id = State()
@@ -179,8 +181,7 @@ async def yes_handler(callback_query: types.CallbackQuery, state: FSMContext):
         await state.set_state(TaskState.reject_message)
         await state.set_data({"task_id": task_id})
         await callback_query.message.answer(
-            "Введите причину отказа следующим сообщением. Если передумаете - "
-            "введите 'Отмена'"
+            "Введите причину отказа следующим сообщением. Если передумаете - введите 'Отмена'"
         )
     except Exception:
         await callback_query.message.answer(
@@ -237,7 +238,7 @@ async def send_to_methodist(callback_query: types.CallbackQuery):
 async def display_task_review_requests(
     message: types.Message, state: FSMContext
 ):
-    """Отображение всех входящих заявок на проверку одного задания."""
+    """Отображение всех входящих заявок на проверку одного задания"""
     await state.set_state(TaskState.achievement_name)
     await message.answer("Введите название задания, которое хотите проверить")
 
@@ -252,8 +253,7 @@ async def display_task(message: types.Message, state: FSMContext):
         instruction = get_achievement_instruction(session, achievement_id)
         file_type = get_achievement_file_type(session, achievement_id)
         await message.answer(
-            f"Название задания: {name}\n\nОписание задания: {description}"
-            f"\n\nИнструкция к заданию: {instruction}"
+            f"Название задания: {name}\n\nОписание задания: {description}\n\nИнструкция к заданию: {instruction}"
         )
         achievements = get_achievement_status_by_id(session, achievement_id)
         for achievement in achievements:
@@ -283,7 +283,8 @@ async def display_task(message: types.Message, state: FSMContext):
 
 @router.message(Text("Узнать общий прогресс отряда"))
 async def display_troop_progress(message: types.Message, state: FSMContext):
-    """Возможность отображения общего прогресса отряда."""
+    """Возможность отображения общего прогресса отряда"""
+    print(1)
     await state.set_state(TaskState.children_group)
     await message.answer(
         "Введите номер отряда по которому хотите получить информацию"
@@ -294,10 +295,7 @@ async def display_troop_progress(message: types.Message, state: FSMContext):
 async def display_troop(message: types.Message, state: FSMContext):
     try:
         children = get_all_children_from_group(session, message.text)
-        message_text = (
-            f"Общая численно отряда номер {message.text} "
-            f"составляет {len(children)} детей."
-        )
+        message_text = f"Общая численно отряда номер {message.text} составляет {len(children)} детей."
         score = sum(child.score for child in children)
         message_text += f"\n\nОбщий прогресс отряда - {score} баллов.\n"
         message_text += (
@@ -321,7 +319,7 @@ async def display_troop(message: types.Message, state: FSMContext):
 
 @router.message(Text("Получить информацию о ребенке"))
 async def check_child_info(message: types.Message, state: FSMContext):
-    """Возможность проверки инфы о выбранном ребенке."""
+    """Возможность проверки инфы о выбранном ребенке"""
     await state.set_state(TaskState.child_info)
     await message.answer(
         "Введите имя ребенка и номер отряда. Например: Иван Иванов 1"
@@ -338,14 +336,12 @@ async def check_child(message: types.Message, state: FSMContext):
         achievements = available_achievements(child.id, child.score)
 
         message_text = [
-            f"Информация о ребенке по имени {name}:\n\nОчки: {child.score} "
-            f"Группа: {child.group}, Доступные ачивки для ребенка:\n",
+            f"Информация о ребенке по имени {name}:\n\nОчки: {child.score} Группа: {child.group}",
+            "Доступные ачивки для ребенка:\n",
         ]
         message_text.extend(
-            f"Название: {achievement.name}\n"
-            f"Необходимо баллов: {achievement.price}\n"
-            f"Вид: {achievement.achievement_type}\n"
-            f"Баллы за ачивку: {achievement.score}\n\n"
+            f"Название: {achievement.name}\nНеобходимо баллов: {achievement.price}\n"
+            f"Вид: {achievement.achievement_type}\nБаллы за ачивку: {achievement.score}\n\n"
             for achievement in achievements
         )
         await message.answer("\n".join(message_text))
@@ -361,11 +357,10 @@ async def check_child(message: types.Message, state: FSMContext):
 async def display_child_task_review_requests(
     message: types.Message, state: FSMContext
 ):
-    """Отображение всех входящих заявок на проверку заданий одного ребёнка."""
+    """Отображение всех входящих заявок на проверку заданий одного ребёнка"""
     await state.set_state(TaskState.child_name)
     await message.answer(
-        "Введите имя ребенка и номер отряда для проверки его заданий. "
-        "Например: Иван Иванов 1"
+        "Введите имя ребенка и номер отряда для проверки его заданий. Например: Иван Иванов 1"
     )
 
 
@@ -414,7 +409,7 @@ async def display_child_task_review(message: types.Message, state: FSMContext):
 async def display_troop_task_review_requests(
     message: types.Message, state: FSMContext
 ):
-    """Отображение всех входящих заявок на проверку заданий всего отряда."""
+    """Отображение всех входящих заявок на проверку заданий всего отряда"""
     await state.set_state(TaskState.group)
     await message.answer("Введите номер отряда для проверки всех заданий")
 

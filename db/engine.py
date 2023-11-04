@@ -23,8 +23,12 @@ url_object = URL.create(
     host=DB_HOST,
     database=POSTGRES_DB,
     port=POSTGRES_PORT,
-    query={"gssencmode": "disable"},
+    query={"gssencmode": "disable"}
 )
+# docker run --name postgres-container -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=qwerty -e POSTGRES_DB=EdGame_bot -p 5432:5432 -d postgres
+# Cоздать первую миграцию - alembic revision --autogenerate -m "Initial migration"
+# Применить миграции - alembic upgrade head
+
 
 engine = create_engine(url_object)
 session = scoped_session(sessionmaker(bind=engine))

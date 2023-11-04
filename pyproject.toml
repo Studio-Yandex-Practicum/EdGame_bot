@@ -1,8 +1,2 @@
 [tool.black]
 line-length = 79
-exclude = "migrations/"
-target_version = ["py310", "py311"]
-
-[tool.isort]
-profile = "black"
-line_length = 79
