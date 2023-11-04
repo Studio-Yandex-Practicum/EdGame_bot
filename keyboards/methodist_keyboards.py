@@ -153,21 +153,20 @@ def task_keyboard_methodist(language: str) -> InlineKeyboardMarkup:
     return markup
 
 
-def review_keyboard_methodist(language: str):
+def review_keyboard_methodist(language: str, cd: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру с кнопками проверки ачивки."""
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
-    tasks_for_review = InlineKeyboardButton(
-        text=buttons["tasks_for_review"], callback_data="tasks_for_review"
-    )
+    back = InlineKeyboardButton(text=buttons["back"], callback_data=cd)
     approve = InlineKeyboardButton(
         text=buttons["approve"], callback_data="approve"
     )
     reject = InlineKeyboardButton(
         text=buttons["reject"], callback_data="reject"
     )
-    keyboard = [[approve], [reject], [tasks_for_review], [lk]]
-    return keyboard
+    keyboard = [[approve], [reject], [back], [lk]]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
 
 
 def create_team_keyboard(language: str) -> InlineKeyboardMarkup:
@@ -284,5 +283,44 @@ def edit_team_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
         callback_data=f"back_to_team:{cd}",
     )
     keyboard = [[edit_team_name, edit_team_size], [complete]]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def choice_tasks_for_review_keyboard(language: str) -> InlineKeyboardMarkup:
+    """Выбор заданий на проверку."""
+    buttons = BUTTONS[language]
+    all_tasks = InlineKeyboardButton(
+        text=buttons["all_tasks"], callback_data="all_tasks"
+    )
+    achievement_category = InlineKeyboardButton(
+        text=buttons["achievement_category"],
+        callback_data="choice_category",
+    )
+    all_achievements = InlineKeyboardButton(
+        text=buttons["all_achievements"],
+        callback_data="choice_achievement",
+    )
+    keyboard = [
+        [all_tasks],
+        [achievement_category],
+        [all_achievements],
+    ]
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def continue_job_keyboard(language: str, cd: str) -> InlineKeyboardMarkup:
+    buttons = BUTTONS[language]
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    continue_btn = InlineKeyboardButton(
+        text=buttons["continue"],
+        callback_data=cd,
+    )
+    tasks_for_review = InlineKeyboardButton(
+        text=buttons["tasks_for_review"],
+        callback_data="back_tasks_for_review",
+    )
+    keyboard = [[continue_btn], [tasks_for_review], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup

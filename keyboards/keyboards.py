@@ -288,3 +288,14 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[[cancel_button]]
     )
     return cancel
+
+
+def yes_no_keyboard(language: str, cd: str) -> InlineKeyboardMarkup:
+    buttons = BUTTONS[language]
+    yes_button = InlineKeyboardButton(
+        text=buttons["yes"], callback_data=f"yes:{cd}"
+    )
+    no_button = InlineKeyboardButton(
+        text=buttons["no"], callback_data=f"no:{cd}"
+    )
+    return InlineKeyboardMarkup(inline_keyboard=[[yes_button], [no_button]])

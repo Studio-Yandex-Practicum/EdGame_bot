@@ -5,7 +5,14 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, Password, Team, User
+from db.models import (
+    Achievement,
+    AchievementStatus,
+    Category,
+    Password,
+    Team,
+    User,
+)
 
 from .pass_gen import counselor_pass, master_pass, methodist_pass
 
@@ -174,20 +181,9 @@ def get_achievement(
     return achievement if achievement else "Unknown Achievement"
 
 
-def get_all_achievements(status: str = None):
+def get_all_achievements():
     """Возвращает все ачивки из базы."""
     achievements = session.query(Achievement).all()
-    if status:
-        achievement_statuses = (
-            session.query(AchievementStatus)
-            .filter(AchievementStatus.status == status)
-            .all()
-        )
-        achievements = []
-        for achievement_status in achievement_statuses:
-            user = select_user(achievement_status.user_id)
-            task = get_achievement(achievement_status.achievement_id)
-            achievements.append((user, task, achievement_status))
     return achievements
 
 
@@ -435,3 +431,84 @@ def get_team(team_id: int = None, name: str = None):
         return session.query(Team).filter(Team.id == team_id).first()
     elif name:
         return session.query(Team).filter(Team.name == name).first()
+
+
+def get_tasks_by_status(status: str) -> list[tuple]:
+    """Задания по статусу."""
+    return (
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
+        .filter(AchievementStatus.status == status)
+        .all()
+    )
+
+
+def get_tasks_by_achievement_and_status(
+    achievement_id: int, status: str
+) -> list[tuple]:
+    """Задания на проверку для определенной ачивки."""
+    return (
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
+        .filter(
+            AchievementStatus.status == status,
+            AchievementStatus.achievement_id == achievement_id,
+        )
+        .all()
+    )
+
+
+def get_tasks_by_achievement_category_and_status(
+    category_id: int, status: str
+) -> list[tuple]:
+    """Задания на проверку в определенной категории."""
+    return (
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
+        .filter(
+            AchievementStatus.status == status,
+            Achievement.category_id == category_id,
+        )
+        .all()
+    )
+
+
+def get_categories_with_tasks(status: str) -> Category:
+    """Категории, в которых есть задания на проверку."""
+    return (
+        session.query(Category.id, Category.name)
+        .join(Achievement, Category.id == Achievement.category_id)
+        .join(
+            AchievementStatus,
+            Achievement.id == AchievementStatus.achievement_id,
+        )
+        .filter(AchievementStatus.status == status)
+        .distinct()
+        .all()
+    )
+
+
+def get_achievements_with_tasks(status: str) -> Achievement:
+    """Ачивки, которые сдали на проверку."""
+    return (
+        session.query(Achievement.id, Achievement.name)
+        .join(
+            AchievementStatus,
+            Achievement.id == AchievementStatus.achievement_id,
+        )
+        .filter(AchievementStatus.status == status)
+        .distinct()
+        .all()
+    )

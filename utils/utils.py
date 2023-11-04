@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 from aiogram.types import Message
 
@@ -183,11 +184,6 @@ def generate_achievement_message_for_kid(
             else "available_for_team_captain_only"
         )
     msg = message_pattern(lexicon, text, header, footer)
-    return msg
-
-
-def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
-    msg = f"{lexicon[header]}:\n\n" f"{text}\n\n" f"{lexicon[footer]}"
     return msg
 
 
@@ -407,3 +403,75 @@ def generate_teams_list(
         "msg": msg,
     }
     return page_info
+
+
+def generate_objects_list(
+    objects: list | list[tuple],
+    lexicon: dict,
+    msg: Callable,
+    obj_info: Callable,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+) -> dict:
+    """
+    Обрабатывает список доступных объектов моделей данных.
+
+    Выдает словарь с текстом для сообщения, словарем id объектов моделей
+    данных, информацию для пагинатора, если объектов моделей данных много,
+    и номер последнего элемента для клавиатуры.
+    """
+    objects_list = []
+    objects_ids = {}
+
+    if not pages:
+        for count, obj in enumerate(objects, start=1):
+            objects_ids[count] = obj[0]
+
+            info = obj_info(lexicon, count, obj)
+            objects_list.append(info)
+
+        pages = pagination_static(page_size, objects_list)
+
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+
+    text = "\n\n".join(new_page["objects"])
+    msg = f"{msg(lexicon, text)}"
+
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "objects": objects,
+        "objects_ids": objects_ids,
+        "msg": msg,
+    }
+    return page_info
+
+
+def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
+    msg = f"{lexicon[header]}:\n\n" f"{text}\n\n" f"{lexicon[footer]}"
+    return msg
+
+
+def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
+    *_, kid, achievement, category = obj
+    info = (
+        f"<b>{count}.</b>\n"
+        f"<b>{lexicon['category']}:</b> {category}\n"
+        f"<b>{lexicon['achievement']}:</b> {achievement}\n"
+        f"<b>{lexicon['sender']}:</b> {kid}\n"
+    )
+    return info
+
+
+def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+    *_, name = obj
+
+    info = f"{count}. {name}"
+    return info
