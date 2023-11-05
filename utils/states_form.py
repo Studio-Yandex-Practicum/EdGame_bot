@@ -16,7 +16,7 @@ class Data(StatesGroup):
     pagination_info = State()
     artifact = State()
     category = State()
-    category_achievement = State()
+ 
 
 
 class Profile(StatesGroup):
