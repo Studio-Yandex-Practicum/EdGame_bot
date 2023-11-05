@@ -11,6 +11,9 @@ LEXICON_EN = {
     'score': 'score',
     'group_number': 'Номер отряда',
     'team_number': 'Номер команды',
+    'no_category':'Категорий не существует',
+    'choose_achievement': 'Выбирайте задание',
+    'error_achievement': 'Произошла ошибка при поиске заданий',
     # Заготовленный текст сообщений
     'hello_ask_name': 'Привет! Я бот Эдгам.\n'
                         'Я помогу отслеживать накопленные тобой баллы и доступные достижения.\n'
@@ -177,12 +180,14 @@ BUTTONS_EN = {
     'reviewed_achievements': 'Reviewed achievements',
     'write_to_methodist': 'Write to methodist',
     'write_to_councelor': 'Написать вожатому',
+    'choose_category' : 'Выбери категорию заданий',
     # Редактирование профиля
     'edit_profile': 'Edit profile',
     'change_firstname': 'Name',
     'change_language': 'Bot`s language',
     'main_menu': 'Main menu',
     'councelor_chat': 'Написать вожатому',
+    'category': 'Выбери категорию заданий',
     # Личный кабинет методиста
     'add_task': 'Добавить задание',
     'edit_task': 'Редактировать задание',

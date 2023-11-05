@@ -164,20 +164,4 @@ async def change_language(query: CallbackQuery, state: FSMContext):
         logger.error(f'Ошибка при запросе языка: {err}')
 
 
-@methodist_router.callback_query(Data.change_language)
-async def process_change_language(query: CallbackQuery, state: FSMContext):
-    '''Обработчик для изменения языка интерфейса.'''
-    try:
-        await query.answer()
-        await state.clear()
-        user = select_user(query.from_user.id)
-        # Изменяем язык бота на новый
-        language = query.data
-        set_user_param(user, language=language)
-        await query.message.edit_text(
-            LEXICON[language]['language_changed'],
-            reply_markup=edit_profile_keyboard(language))
-    except KeyError as err:
-        logger.error(f'Ошибка в ключевом слове при изменении языка: {err}')
-    except Exception as err:
-        logger.error(f'Ошибка при изменении языка: {err}')
+

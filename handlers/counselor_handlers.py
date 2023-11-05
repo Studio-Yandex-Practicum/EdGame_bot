@@ -67,7 +67,6 @@ async def enter_profile(message: types.Message):
 
 @router.message(Text("Список детей"))
 async def show_children_list(message: types.Message):
-    print(201)
     try:
         children = get_all_children(session)
 
@@ -284,7 +283,6 @@ async def display_task(message: types.Message, state: FSMContext):
 @router.message(Text("Узнать общий прогресс отряда"))
 async def display_troop_progress(message: types.Message, state: FSMContext):
     """Возможность отображения общего прогресса отряда"""
-    print(1)
     await state.set_state(TaskState.children_group)
     await message.answer(
         "Введите номер отряда по которому хотите получить информацию"

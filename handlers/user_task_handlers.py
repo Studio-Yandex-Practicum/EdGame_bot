@@ -367,7 +367,10 @@ async def process_artefact(
         logger.error(f"Ошибка при обработке артефакта: {err}")
 
 
-@child_task_router.message(F.text.in_([BUTTONS["RU"]["category"]]))
+@child_task_router.message(F.text.in_([
+    BUTTONS["RU"]["category"],
+    BUTTONS["TT"]["category"],
+    BUTTONS["EN"]["category"]]))
 async def process_artefact(message: Message, state: FSMContext):
     try:
         category = get_category_child_all(session)
@@ -378,11 +381,10 @@ async def process_artefact(message: Message, state: FSMContext):
             t = category[i]
             button = InlineKeyboardButton(
                 text=t.name, callback_data=f'{t.id}')
-
             buttons.append([button])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await state.set_state(Data.category)
-        await message.answer(LEXICON["RU"]["choose_achievement"],  
+        await message.answer(LEXICON["RU"]["choose_category"],  
                              reply_markup=reply_markup)
     except Exception:
         await message.answer(LEXICON["RU"]["error_achievement"])
@@ -403,4 +405,3 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
         await query.message.answer(LEXICON["RU"]["error_achievements"])
     finally:
         session.close()
-    
