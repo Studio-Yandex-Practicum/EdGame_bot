@@ -54,6 +54,8 @@ LEXICON_EN = {
     "task_instruction": "Как нужно сделать",
     "artifact_type": "Что нужно прислать",
     "task_type": "Тип ачивки",
+    "task_category": "Текущая категория ачивки",
+    "task_not_category": "Категория не назначена!",
     "task_price": "Сколько баллов нужно для открытия ачивки",
     "artifact_sent": (
         "Артефакт отправлен, ты молодец! Хочешь сделать еще одну ачивку?"
@@ -166,6 +168,8 @@ LEXICON_EN = {
     "send_task_type": "Тип задания (индивидуальная или групповая)?",
     "send_task_artifact_type": "Тип артефактов (текст, фото, видео)?",
     "send_task_image": "И, конечно же, фото для ачивки!",
+    "send_task_category": "Назначим категорию для ачивки?",
+    "confirm_task_category": "Подтвердить категорию для ачивки?",
     "start_adding_over": (
         "Упс, кажется что-то пошло не по плану.. Начни создание задания "
         "заново=)"
@@ -396,4 +400,9 @@ BUTTONS_EN = {
     "complete_editing_category": "Завершить!",
     "back_to_category_list": "<< Назад к списку категорий",
     "category_list": "Посмотреть/Редактировать категории",
+    "add_achievements_category": "Добавить",
+    "skip": "Пропустить",
+    "confirm_achievements_category": "Подтвердить категорию",
+    "back_to_list_category": "<< Назад к списку категорий",
+    "edit_achievements_category": "Категорию",
 }

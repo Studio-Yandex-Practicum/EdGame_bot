@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, Team, User
+from db.models import Achievement, AchievementStatus, Category, Team, User
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +170,7 @@ def set_achievement_param(
     artifact_type: str = None,
     image: str = None,
     achievement_type: str = None,
+    achievements_category: int = None,
 ):
     """Сеттер для обновления свойств объекта Achievement."""
     achievement = get_achievement(achievement_id)
@@ -189,6 +190,8 @@ def set_achievement_param(
         achievement.artifact_type = artifact_type
     if achievement_type:
         achievement.achievement_type = achievement_type
+    if achievements_category:
+        achievement.category_id = achievements_category
     try:
         session.commit()
         logger.info("Ачивка обновлена")
@@ -314,6 +317,7 @@ def create_achievement(data: dict):
         score=data.get("score", 0),
         achievement_type=data.get("achievement_type", "individual"),
         artifact_type=data.get("artifact_type", "text"),
+        category_id=data.get("category_id"),
     )
     session.add(new_achievement)
     try:
@@ -321,7 +325,7 @@ def create_achievement(data: dict):
         logger.info("Ачивка добавлена")
         return True
     except IntegrityError as err:
-        session.rollback()  # откатываем session.add(user)
+        session.rollback()  # откатываем session.add(new_achievement)
         logger.error(f"Ошибка при сохранении ачивки: {err}")
         return False
 
@@ -342,8 +346,8 @@ def create_team(name: str, size: int):
     session.add(new_team)
     try:
         session.commit()
-        return new_team
         logger.info("Новая команда создана.")
+        return new_team
     except IntegrityError as err:
         session.rollback()
         logger.error(f"Ошибка при создании команды: {err}")
@@ -383,47 +387,46 @@ def get_team(team_id: int = None, name: str = None):
 def create_category(data: dict):
     """Метод для создания новой категории в базе."""
     new_category = Category(
-        name=data.get('name', 'test')
+        name=data.get("name")
     )
     session.add(new_category)
     try:
         session.commit()
-        logger.info('Категория добавлена')
+        logger.info("Категория добавлена")
         return True
     except IntegrityError as err:
-        session.rollback()  # откатываем session.add(user)
-        logger.error(f'Ошибка при сохранении категории: {err}')
+        session.rollback()  # откатываем session.add(new_category)
+        logger.error(f"Ошибка при сохранении категории: {err}")
         return False
 
 
 def get_category(category_id: int = None,
-                    name: str = None) -> Achievement:
-    '''Достаем категорию из базы по ее id.'''
+                    name: str = None) -> Category:
+    """Достаем категорию из базы по ее id."""
     category = (
         session.query(
             Category).filter(
             Category.id == category_id if category_id
             else Category.name == name
         ).first())
-    return category if category else "Unknown Achievement"
+    return category if category else "Unknown Category"
 
 
 def get_all_categories():
     """Возвращает все категории из базы."""
-    categories = session.query(Category).all()
-    return categories
+    return session.query(Category).all()
 
 
 def set_category_param(category_id: int, name: str = None):
-    '''Сеттер для обновления свойств объекта Category.'''
-    achievement = get_category(category_id)
+    """Сеттер для обновления свойств объекта Category."""
+    category = get_category(category_id)
     if name:
-        achievement.name = name
+        category.name = name
     try:
         session.commit()
-        logger.info('Категория обновлена')
+        logger.info("Категория обновлена")
         return True
     except IntegrityError as err:
-        logger.error(f'Ошибка при обновлении категории: {err}')
+        logger.error(f"Ошибка при обновлении категории: {err}")
         session.rollback()
         return False

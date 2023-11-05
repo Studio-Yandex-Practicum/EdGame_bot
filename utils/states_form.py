@@ -50,6 +50,7 @@ class AddTask(StatesGroup):
     artifact_type = State()
     achievement_type = State()
     confirm_task = State()
+    category = State()
 
 
 class EditTask(StatesGroup):
@@ -67,6 +68,7 @@ class EditTask(StatesGroup):
     achievement_type = State()
     confirm_task = State()
     query_id = State()
+    achievements_category = State()
 
 
 class ReviewTask(StatesGroup):

@@ -164,6 +164,9 @@ def get_achievement_info(
     task_type = task.achievement_type
     score = task.score
     price = task.price
+    category = task.category_id
+    if not category:
+        category = lexicon["task_not_category"]
     info = (
         f'{lexicon["task_name"]}: {name}\n'
         f'{lexicon["score_rate"]}: {score}\n'
@@ -171,6 +174,7 @@ def get_achievement_info(
         f'{lexicon["task_instruction"]}: {instruction}\n'
         f'{lexicon["artifact_type"]}: {lexicon[artifact_type]}\n'
         f'{lexicon["task_type"]}: {lexicon[task_type]}\n'
+        f'{lexicon["task_category"]}: {category}\n'
         f'{lexicon["task_price"]}: {price}'
     )
     return {"info": info, "image": image, "id": task.id}

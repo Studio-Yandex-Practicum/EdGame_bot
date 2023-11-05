@@ -100,7 +100,7 @@ def confirm_task_keyboard(language: str) -> InlineKeyboardMarkup:
 
 
 def edit_task_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
-    """Генерирует клавиатуру в разделе редактирования заявки."""
+    """Генерирует клавиатуру в разделе редактирования ачивки."""
     buttons = BUTTONS[language]
     name = InlineKeyboardButton(
         text=buttons["edit_name"], callback_data="edit_name"
@@ -126,6 +126,10 @@ def edit_task_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
     price = InlineKeyboardButton(
         text=buttons["edit_price"], callback_data="edit_price"
     )
+    achievements_category = InlineKeyboardButton(
+        text=buttons["edit_achievements_category"],
+        callback_data="edit_achievements_category"
+    )
     complete = InlineKeyboardButton(
         text=buttons["complete_editing_task"],
         callback_data=f"back_to_task:{cd}",
@@ -135,6 +139,7 @@ def edit_task_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
         [description, instruction],
         [task_type, artifact_type],
         [score, price],
+        [achievements_category],
         [complete],
     ]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -292,36 +297,50 @@ def edit_team_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
 
 
 def add_category_keyboard(language: str) -> InlineKeyboardMarkup:
-    '''Генерирует инлайн клавиатуру в разделе добавления категории.'''
+    """Генерирует инлайн клавиатуру в разделе добавления категории."""
     buttons = BUTTONS[language]
-    ready = InlineKeyboardButton(text=buttons["ready"], callback_data='ready')
+    ready = InlineKeyboardButton(
+        text=buttons["ready"],
+        callback_data="ready_category"
+    )
     lk = InlineKeyboardButton(
-        text=buttons["lk"], callback_data='profile')
+        text=buttons["lk"],
+        callback_data="profile"
+    )
     markup = InlineKeyboardMarkup(inline_keyboard=[[ready], [lk]])
     return markup
 
 
 def confirm_category_keyboard(language: str) -> InlineKeyboardMarkup:
-    '''Генерирует клавиатуру при подтверждении добавления категории.'''
+    """Генерирует клавиатуру при подтверждении добавления категории."""
     buttons = BUTTONS[language]
     confirm_adding_category = InlineKeyboardButton(
-        text=buttons["confirm_adding_category"], callback_data='confirm')
+        text=buttons["confirm_adding_category"],
+        callback_data="confirm"
+    )
     edit_category = InlineKeyboardButton(
-        text=buttons["edit_category"], callback_data='edit_category')
+        text=buttons["edit_category"],
+        callback_data="edit_category"
+    )
     markup = InlineKeyboardMarkup(
-        inline_keyboard=[[confirm_adding_category, edit_category]])
+        inline_keyboard=[[confirm_adding_category, edit_category]]
+    )
     return markup
 
 
-def edit_category_keyboard(language: str, cd: str = None) -> InlineKeyboardMarkup:
-    '''Генерирует клавиатуру в разделе редактирования категории.'''
+def edit_category_keyboard(
+    language: str, cd: str = None
+) -> InlineKeyboardMarkup:
+    """Генерирует клавиатуру в разделе редактирования категории."""
     buttons = BUTTONS[language]
     name = InlineKeyboardButton(
         text=buttons["edit_category_name"],
-        callback_data='edit_category_name')
+        callback_data="edit_category_name"
+    )
     complete = InlineKeyboardButton(
         text=buttons["complete_editing_category"],
-        callback_data=f'back_to_category:{cd}')
+        callback_data=f"back_to_category:{cd}"
+    )
     keyboard = [
         [name],
         [complete]
@@ -331,18 +350,61 @@ def edit_category_keyboard(language: str, cd: str = None) -> InlineKeyboardMarku
 
 
 def category_keyboard_methodist(language: str) -> InlineKeyboardMarkup:
-    '''Генерирует клавиатуру с кнопками в отдельной категории.'''
+    """Генерирует клавиатуру с кнопками в отдельной категории."""
     buttons = BUTTONS[language]
     lk = InlineKeyboardButton(
-        text=buttons["lk"], callback_data='profile')
+        text=buttons["lk"],
+        callback_data="profile"
+    )
     category_list = InlineKeyboardButton(
         text=buttons["back_to_category_list"],
-        callback_data='back_to_category_list')
+        callback_data="back_to_category_list"
+    )
     edit_category = InlineKeyboardButton(
-        text=buttons["edit_category"], callback_data='edit_category')
+        text=buttons["edit_category"],
+        callback_data="edit_category"
+    )
     keyboard = [
         [edit_category],
         [category_list],
-        [lk]]
+        [lk]
+    ]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+
+def add_achievements_category(language: str) -> InlineKeyboardMarkup:
+    """Генерирует клавиатуру в разделе добавления категории для ачивки."""
+    buttons = BUTTONS[language]
+    add_achievements_category = InlineKeyboardButton(
+        text=buttons["add_achievements_category"],
+        callback_data="add_achievements_category"
+    )
+    skip = InlineKeyboardButton(
+        text=buttons["skip"],
+        callback_data="skip"
+    )
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[[add_achievements_category], [skip]]
+    )
+    return markup
+
+
+def confirm_achievements_category(language: str) -> InlineKeyboardMarkup:
+    """Генерирует клавиатуру в разделе добавления категории для ачивки."""
+    buttons = BUTTONS[language]
+    confirm_achievements_category = InlineKeyboardButton(
+        text=buttons["confirm_achievements_category"],
+        callback_data="confirm_achievements_category"
+    )
+    back_to_list_category = InlineKeyboardButton(
+        text=buttons["back_to_list_category"],
+        callback_data="back_to_list_category"
+    )
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [confirm_achievements_category],
+            [back_to_list_category]
+        ]
+    )
     return markup
