@@ -15,7 +15,7 @@ def get_all_children(session: Session):
 
 
 def get_all_children_from_group(session: Session, group_id: int):
-    return (
+    return(
         session.query(User)
         .filter(User.group == group_id, User.role == "kid")
         .all()

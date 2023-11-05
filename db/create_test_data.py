@@ -3,8 +3,7 @@ import factory
 from db import models
 from db.engine import session
 
-# Указать здесь file_id фото из вашего бота.
-IMAGE = "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmAC2RrAQADAgADcwADMAQ"
+IMAGE = "AgACAgIAAxkBAAICRWUk24JzSwrQNimyH_Sc8W5DL44hAAK-zjEbdikpSUYKQGP_2OPLAQADAgADeAADMAQ"
 
 
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -69,7 +68,6 @@ class AchievementStatusFactory(BaseSQLAlchemyModelFactory):
     message_text = factory.Faker("paragraph")
     created_at = factory.Faker("date_time")
     rejection_reason = factory.Faker("paragraph")
-    team = factory.SubFactory(TeamFactory)
 
 
 def create_test_data():

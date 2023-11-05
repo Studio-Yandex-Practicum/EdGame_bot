@@ -404,8 +404,7 @@ async def show_teams_list(message: Message, state: FSMContext):
             teams=teams,
             lexicon=lexicon,
             current_page=current_page,
-            page_size=PAGE_SIZE,
-            methodist=True)
+            page_size=PAGE_SIZE)
         msg = page_info["msg"]
         team_ids = page_info["team_ids"]
         first_item = page_info["first_item"]
@@ -457,8 +456,7 @@ async def process_teams_list_pagination(query: CallbackQuery,
             teams=teams,
             lexicon=lexicon,
             current_page=current_page,
-            page_size=PAGE_SIZE,
-            methodist=True)
+            page_size=PAGE_SIZE)
         msg = page_info["msg"]
         first_item = page_info["first_item"]
         final_item = page_info["final_item"]

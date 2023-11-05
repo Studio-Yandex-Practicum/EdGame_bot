@@ -41,11 +41,11 @@ def generate_achievements_list(
     text = "\n\n".join(new_page["objects"])
     msg = (
         f'{lexicon["available_achievements"]}:\n\n'
-        f'{text}\n\n'
+        f"{text}\n\n"
         f'{lexicon["choose_achievement"]}:'
     )
     if methodist:
-        msg = f'{lexicon["available_achievements"]}:\n\n{text}\n\n'
+        msg = f'{lexicon["available_achievements"]}:\n\n' f"{text}\n\n"
     page_info = {
         "current_page": current_page,
         "first_item": new_page["first_item"],
@@ -312,10 +312,9 @@ def generate_team_info(team: Team, lexicon: dict):
     """Генерирует информацию о команде."""
     members = []
     if team.users:
-        members.append(f'{lexicon["team_members"]}\n')
         for user in team.users:
             user_info = (f'{lexicon["name"]} - {user.name}\n'
-                         f'{lexicon["group_number"]} - {user.group}')
+                         f'{lexicon["group_number"]} - {user.group}\n\n')
             members.append(user_info)
     text = (f'{lexicon["team_name"]} - {team.name}\n\n'
             f'{lexicon["team_size"]} - {team.team_size}\n\n')
@@ -330,8 +329,7 @@ def generate_teams_list(
     lexicon: dict,
     current_page: int = 1,
     page_size: int = 5,
-    pages: dict = None,
-    methodist=False
+    pages: dict = None
 ) -> dict:
     """
     Обрабатывает список команд и выдает словарь с текстом для
@@ -357,9 +355,7 @@ def generate_teams_list(
         current_page = 1
     new_page = pages[current_page]
     text = "\n\n".join(new_page["objects"])
-    msg = f'{lexicon["show_teams_for_child"]}\n\n{text}\n\n'
-    if methodist:
-        msg = f'{lexicon["show_teams_list"]}:\n\n{text}\n\n'
+    msg = f'{lexicon["show_teams_list"]}:\n\n{text}\n\n'
     page_info = {
         "current_page": current_page,
         "first_item": new_page["first_item"],

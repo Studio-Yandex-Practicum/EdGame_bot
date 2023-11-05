@@ -49,9 +49,7 @@ def set_user_param(
     language: str = None,
     score: int = None,
     team: Team = None,
-    delete_team: bool = False,
-    captain_of_team: int = None,
-    leave_captain_pos: bool = False
+    delete_team: bool = None
 ):
     """Сеттер для обновления свойств объекта User."""
     if name:
@@ -64,10 +62,6 @@ def set_user_param(
         user.team = team
     if delete_team:
         user.team = None
-    if captain_of_team:
-        user.captain_of_team_id = captain_of_team
-    if leave_captain_pos:
-        user.captain_of_team_id = None
     try:
         session.commit()
         logger.info('Пользователь обновлен')
