@@ -2,7 +2,8 @@ from aiogram import types
 from sqlalchemy.orm import Session
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, User
+from db.models import (Achievement, AchievementStatus,
+                       User, Category)
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -175,3 +176,15 @@ async def send_task(
         )
     else:
         await message.answer("Не удалось получить файл по id")
+
+
+def get_category_child_all(session: Session):
+    return session.query(Category).all()
+
+
+def get_category_id_achievement_all(session: Session, category_id):
+    return (
+        session.query(Achievement)
+        .filter(Achievement.category_id == category_id)
+        .all()
+    )

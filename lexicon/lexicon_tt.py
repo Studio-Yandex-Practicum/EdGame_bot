@@ -14,6 +14,10 @@ LEXICON_TT = {
     "group_number": "Номер отряда",
     "team_number": "Номер команды",
     "nothing": "Тут ничего нет",
+    "choose_category": "Выбери категорию заданий",
+    "no_category": "Категорий не существует",
+    "choose_achievement": "Выбирайте задание",
+    "error_achievement": "Произошла ошибка при поиске заданий",
     # Заготовленный текст сообщений
     "hello_ask_name": (
         "Привет! Я бот Эдгам.\n"
@@ -350,6 +354,7 @@ BUTTONS_TT = {
     "become_captain": "Стать капитаном",
     "leave_captain_position": "Уйти с поста капитана",
     "fulfil_achievement": "Выполнить ачивку",
+    'category': 'Выбери категорию заданий',
     # Редактирование профиля
     "edit_profile": "Редактировать профиль",
     "change_firstname": "Имя",
