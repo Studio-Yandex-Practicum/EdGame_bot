@@ -471,31 +471,34 @@ async def show_children_group(message: types.Message, state: FSMContext):
             await message.answer(LEXICON["RU"]["no_group"])
         buttons = []
         for i in range(len(user_ids)):
-            t=user_ids[i]
+            t = user_ids[i]
             button = InlineKeyboardButton(
                 text=t.name, callback_data=f'{t.name}, {t.group}, {t.score}')
             buttons.append([button])
             reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         paginator = Paginator(data=reply_markup, size=3)
         await state.set_state(TaskState.buttons_child_info)
-        await message.answer(LEXICON["RU"]["choose_child"],  reply_markup=paginator())
+        await message.answer(LEXICON["RU"]["choose_child"],  
+                             reply_markup=paginator())
     except IndexError:
         await message.answer(LEXICON["RU"]["not_child_group"])
     except Exception:
         await message.answer(LEXICON["RU"]["error_group"])
     finally:
         session.close()
-       
-    
+
+
 @router.callback_query(TaskState.buttons_child_info)
-async def check_child_buttons(call: types.CallbackQuery):
+async def check_child_buttons(call: types.CallbackQuery, state: FSMContext):
     try:
         action = call.data.split(",")
         name = action[0]
         group = int(action[1])
         score = int(action[2])
-        await call.answer(f'Ребенок Имя:{name}, группа: {group}, Очки:{score},')    
+        await call.answer(f'Ребенок Имя:{name}, группа: {group}, Очки:{score},')
+        await state.clear()
     except Exception:
         await call.answer(LEXICON["RU"]["error_child"])
+        await state.clear()
     finally:
         session.close()
