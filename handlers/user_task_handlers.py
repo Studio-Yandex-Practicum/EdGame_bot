@@ -498,9 +498,9 @@ async def check_child_categories(message: Message, state: FSMContext):
 @child_task_router.callback_query(Data.category)
 async def check_child_buttons(query: CallbackQuery, state: FSMContext):
     try:
-        t = query.data.split(",")
-        language = t[1]
-        category_id = int(t[0])
+        td = query.data.split(",")
+        language = td[1]
+        category_id = int(td[0])
         lexicon = LEXICON[language]
         achievements = get_achievement_by_category_id(session, category_id)
         if len(achievements) == 0:
