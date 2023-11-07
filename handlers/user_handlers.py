@@ -1,79 +1,70 @@
 import logging
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
-from aiogram.filters import CommandStart, Text, StateFilter
+from aiogram import F, Router
+from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
+from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
+from config_data.config import load_config
+from filters.custom_filters import IsStudent
+from keyboards.admin_keyboards import boss_pass_keyboard
 from keyboards.keyboards import (
-    menu_keyboard, profile_keyboard, edit_profile_keyboard,
-    create_welcome_keyboard, contacts_keyboard, help_keyboard)
-from keyboards.methodist_keyboards import methodist_profile_keyboard
-from keyboards.counselor_keyboard import create_profile_keyboard
-from lexicon.lexicon import LEXICON, LEXICON_COMMANDS, BUTTONS
+    contacts_keyboard,
+    create_welcome_keyboard,
+    edit_profile_keyboard,
+    help_keyboard,
+    menu_keyboard,
+    profile_keyboard,
+)
+from lexicon.lexicon import BUTTONS, LEXICON, LEXICON_COMMANDS
+from middlewares.custom_middlewares import AcceptMediaGroupMiddleware
 from utils.db_commands import (
-    register_user, select_user, is_user_in_db, set_user_param)
+    check_password,
+    is_user_in_db,
+    register_user,
+    select_user,
+    set_user_param,
+)
 from utils.states_form import Data, Profile
 from utils.utils import generate_profile_info
-from db.engine import session
-from filters.custom_filters import IsStudent
-from middlewares.custom_middlewares import AcceptMediaGroupMiddleware
+
+from .admin_handlers import admin_router
 from .methodist_handlers import methodist_router
 from .user_task_handlers import child_task_router
+from .user_team_handlers import child_team_router
 
 logger = logging.getLogger(__name__)
+config = load_config()
 
 router = Router()
 child_router = Router()
-child_router.include_router(child_task_router)
+child_router.include_routers(child_task_router, child_team_router)
 child_router.message.filter(IsStudent())
 child_router.callback_query.filter(IsStudent())
 child_router.message.middleware(AcceptMediaGroupMiddleware())
-router.include_routers(methodist_router, child_router)
-
-
-# Этот хэндлер срабатывает на кодовое слово и присваивает роль методиста
-@router.message(Text(text="methodist"))
-async def process_methodist_command(message: Message, state: FSMContext):
-    await state.clear()
-    user = select_user(message.chat.id)
-    user.role = "methodist"
-    session.add(user)
-    session.commit()
-    await message.answer(
-        text=LEXICON[user.language]["methodist"],
-        reply_markup=methodist_profile_keyboard(user.language)
-    )
-
-
-# Этот хэндлер срабатывает на кодовое слово и присваивает роль вожатого
-@router.message(Text(text="councelor"))
-async def process_councelor_command(message: Message, state: FSMContext):
-    await state.clear()
-    user = select_user(message.chat.id)
-    user.role = "councelor"
-    session.add(user)
-    session.commit()
-    if user.language == "ru":
-        await message.answer(text=LEXICON["RU"]["councelor"])
-    elif user.language == "tt":
-        await message.answer(text=LEXICON["TT"]["councelor"])
-    else:
-        await message.answer(
-            text=LEXICON[user.language]["councelor"],
-            reply_markup=create_profile_keyboard())
+router.include_routers(methodist_router, child_router, admin_router)
 
 
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message, state: FSMContext):
-    # Проверяем есть ли юзер в базе
+    # Проверяем установлены ли пароли на роли
+    check_password()
+
+    # Проверяем есть ли юзер в базе и если нет, то регистрируем
     user = select_user(message.chat.id)
-    if is_user_in_db(message.chat.id):
+    if message.chat.id == config.boss_id:
         await state.clear()
-        await message.answer(f'Добро пожаловать, {user.name}',
-                             reply_markup=menu_keyboard(user.language))
+        await message.answer(
+            "Добро пожаловать, босс", reply_markup=boss_pass_keyboard()
+        )
+    elif is_user_in_db(message.chat.id):
+        await state.clear()
+        await message.answer(
+            f"Добро пожаловать, {user.name}",
+            reply_markup=menu_keyboard(user.language),
+        )
     else:
         # Анкетируем и сохраняем пользователя в БД, роль по умолчанию 'kid'
         await message.answer(
@@ -145,10 +136,7 @@ async def profile_info(message: Message, state: FSMContext):
         lexicon = LEXICON[user.language]
         # Генерируем инфу для ЛК
         msg = generate_profile_info(user, lexicon)
-        await message.answer(
-            msg,
-            reply_markup=profile_keyboard(user.language)
-        )
+        await message.answer(msg, reply_markup=profile_keyboard(user.language))
         await message.delete()
     except KeyError as err:
         logger.error(
@@ -170,8 +158,7 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
         # Генерируем инфу для ЛК
         msg = generate_profile_info(user, lexicon)
         await query.message.answer(
-            msg,
-            reply_markup=profile_keyboard(user.language)
+            msg, reply_markup=profile_keyboard(user.language)
         )
         await query.message.delete()
     except KeyError as err:
@@ -184,22 +171,26 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
 
 @child_router.message(
     F.text.in_(
-        [BUTTONS["RU"]["write_to_councelor"],
-         BUTTONS["TT"]["write_to_councelor"],
-         BUTTONS["EN"]["write_to_councelor"]]))
-async def write_to_councelor(message: Message):
-    """
-    Обработчик кнопки Написать вожатому.
+        [
+            BUTTONS["RU"]["write_to_counselor"],
+            BUTTONS["TT"]["write_to_counselor"],
+            BUTTONS["EN"]["write_to_counselor"],
+        ]
+    )
+)
+async def write_to_counselor(message: Message):
+    """Обработчик кнопки 'Написать вожатому'.
+
     Отправляет инлайн кнопку со ссылкой на вожатого.
     """
     try:
         user = select_user(message.from_user.id)
         language = user.language
         # Как-то получаем username вожатого
-        councelor = message.from_user.username
+        counselor = message.from_user.username
         await message.answer(
-            LEXICON[language]["councelor_contact"],
-            reply_markup=contacts_keyboard(language, councelor)
+            LEXICON[language]["counselor_contact"],
+            reply_markup=contacts_keyboard(language, counselor),
         )
     except KeyError as err:
         logger.error(
@@ -211,16 +202,16 @@ async def write_to_councelor(message: Message):
 
 @child_router.message(
     F.text.in_(
-        [BUTTONS["RU"]["help"],
-         BUTTONS["TT"]["help"],
-         BUTTONS["EN"]["help"]]))
+        [BUTTONS["RU"]["help"], BUTTONS["TT"]["help"], BUTTONS["EN"]["help"]]
+    )
+)
 async def help_command(message: Message):
     try:
         user = select_user(message.from_user.id)
         language = user.language
         await message.answer(
             LEXICON[language]["help_info"],
-            reply_markup=help_keyboard(language)
+            reply_markup=help_keyboard(language),
         )
     except KeyError as err:
         logger.error(
@@ -233,9 +224,13 @@ async def help_command(message: Message):
 # Обработчики редактирования профиля
 @child_router.message(
     F.text.in_(
-        [BUTTONS["RU"]["edit_profile"],
-         BUTTONS["TT"]["edit_profile"],
-         BUTTONS["EN"]["edit_profile"]]))
+        [
+            BUTTONS["RU"]["edit_profile"],
+            BUTTONS["TT"]["edit_profile"],
+            BUTTONS["EN"]["edit_profile"],
+        ]
+    )
+)
 async def edit_profile(message: Message, state: FSMContext):
     """Обработчик для редактирования профиля ребенка."""
     try:
@@ -243,7 +238,7 @@ async def edit_profile(message: Message, state: FSMContext):
         user = select_user(message.chat.id)
         await message.answer(
             LEXICON[user.language]["edit_profile"],
-            reply_markup=edit_profile_keyboard(user.language)
+            reply_markup=edit_profile_keyboard(user.language),
         )
     except KeyError as err:
         logger.error(f"Ошибка в ключевом слове при изменении профиля: {err}")
@@ -253,9 +248,9 @@ async def edit_profile(message: Message, state: FSMContext):
 
 @child_router.callback_query(F.data == "change_name")
 async def change_name(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены имени, просит
-    прислать сообщение.
+    """Обработчик создает состояние для смены имени.
+
+    Просит прислать сообщение.
     """
     try:
         await query.answer()
@@ -281,7 +276,7 @@ async def process_change_name(message: Message, state: FSMContext):
         await state.clear()
         await message.answer(
             LEXICON[user.language]["name_changed"],
-            reply_markup=edit_profile_keyboard(user.language)
+            reply_markup=edit_profile_keyboard(user.language),
         )
     except KeyError as err:
         logger.error(f"Ошибка в ключевом слове при изменении имени: {err}")
@@ -291,9 +286,9 @@ async def process_change_name(message: Message, state: FSMContext):
 
 @child_router.callback_query(F.data == "change_language")
 async def change_language(query: CallbackQuery, state: FSMContext):
-    """
-    Обработчик создает состояние для смены языка, уточняет,
-    какой язык установить.
+    """Обработчик создает состояние для смены языка.
+
+    Уточняет, какой язык установить.
     """
     try:
         await query.answer()
@@ -301,7 +296,7 @@ async def change_language(query: CallbackQuery, state: FSMContext):
         user = select_user(query.from_user.id)
         await query.message.edit_text(
             LEXICON[user.language]["change_language"],
-            reply_markup=create_welcome_keyboard()
+            reply_markup=create_welcome_keyboard(),
         )
     except KeyError as err:
         logger.error(f"Ошибка в ключевом слове при запросе языка: {err}")
@@ -321,7 +316,7 @@ async def process_change_language(query: CallbackQuery, state: FSMContext):
         set_user_param(user, language=language)
         await query.message.edit_text(
             LEXICON[language]["language_changed"],
-            reply_markup=edit_profile_keyboard(language)
+            reply_markup=edit_profile_keyboard(language),
         )
     except KeyError as err:
         logger.error(f"Ошибка в ключевом слове при изменении языка: {err}")
