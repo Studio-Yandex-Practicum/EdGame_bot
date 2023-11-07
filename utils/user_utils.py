@@ -178,11 +178,11 @@ async def send_task(
         await message.answer("Не удалось получить файл по id")
 
 
-def get_category_child_all(session: Session):
+def get_all_categories(session: Session):
     return session.query(Category).all()
 
 
-def get_category_id_achievement_all(session: Session, category_id):
+def get_achievement_by_category_id(session: Session, category_id):
     return (
         session.query(Achievement)
         .filter(Achievement.category_id == category_id)

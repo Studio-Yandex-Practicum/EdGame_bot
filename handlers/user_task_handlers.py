@@ -30,8 +30,8 @@ from utils.utils import (
     process_artifact,
     process_artifact_group,
 )
-from utils.user_utils import (get_category_child_all,
-                              get_category_id_achievement_all)
+from utils.user_utils import (get_all_categories,
+                              get_achievement_by_category_id)
 from db.engine import session
 
 logger = logging.getLogger(__name__)
@@ -462,21 +462,24 @@ async def process_artefact(
     BUTTONS["EN"]["category"]]))
 async def process_artefact(message: Message, state: FSMContext):
     try:
-        category = get_category_child_all(session)
+        user = select_user(message.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        category = get_all_categories(session)
         if len(category) == 0:
-            await message.answer(LEXICON["RU"]['no_category'])
+            await message.answer(lexicon['no_category'])
         buttons = []
         for i in range(len(category)):
             t = category[i]
             button = InlineKeyboardButton(
-                text=t.name, callback_data=f'{t.id}')
+                text=t.name, callback_data=f'{t.id},{language}')
             buttons.append([button])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await state.set_state(Data.category)
-        await message.answer(LEXICON["RU"]["choose_category"],
+        await message.answer(lexicon["choose_category"],
                              reply_markup=reply_markup)
     except Exception:
-        await message.answer(LEXICON["RU"]["error_achievement"])
+        await message.answer(lexicon["error_achievement"])
     finally:
         session.close()
 
@@ -484,14 +487,20 @@ async def process_artefact(message: Message, state: FSMContext):
 @child_task_router.callback_query(Data.category)
 async def check_child_buttons(query: CallbackQuery, state: FSMContext):
     try:
-        category_id = int(query.data[0])
-        achievements = get_category_id_achievement_all(session, category_id)
-        result = ""
+        t = query.data.split(',')
+        language = t[1]
+        category_id = int(t[0])
+        lexicon = LEXICON[language]
+        achievements = get_achievement_by_category_id(session, category_id)
+
+        if len(achievements) == 0:
+            await query.message.answer(lexicon['no_available_achievements'])
+        messages = ""
         for achievement in achievements:
-            result += f"{achievement.name}\n"
-        await query.message.answer(result)
+            messages += f"{achievement.name}\n"
+        await query.message.answer(messages)
     except Exception:
-        await query.message.answer(LEXICON["RU"]["error_achievements"])
+        await query.message.answer(lexicon["error_achievement"])
         await state.clear()
     finally:
         session.close()
