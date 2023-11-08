@@ -488,9 +488,10 @@ async def check_child_categories(message: Message, state: FSMContext):
         await message.answer(
             lexicon["choose_category"], reply_markup=reply_markup
         )
-    except Exception:
+    except Exception as err:
         await message.answer(lexicon["error_achievement"])
         await state.clear()
+        logger.error(f"Произошла ошибка при поиске заданий: {err}")
     finally:
         session.close()
 
@@ -509,8 +510,10 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
         for achievement in achievements:
             messages += f"{achievement.name}\n"
         await query.message.answer(messages)
-    except Exception:
+        logger.info(f"Получено ачивки - {messages}")
+    except Exception as err:
         await query.message.answer(lexicon["error_achievement"])
+        logger.error(f"Произошла ошибка при поиске заданий: {err}")
     finally:
         session.close()
         await state.clear()
