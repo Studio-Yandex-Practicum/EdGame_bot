@@ -511,7 +511,6 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
         await query.message.answer(messages)
     except Exception:
         await query.message.answer(lexicon["error_achievement"])
-        await state.clear()
     finally:
         session.close()
         await state.clear()

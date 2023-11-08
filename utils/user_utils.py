@@ -2,8 +2,7 @@ from aiogram import types
 from sqlalchemy.orm import Session
 
 from db.engine import session
-from db.models import (Achievement, AchievementStatus,
-                       User, Category)
+from db.models import Achievement, AchievementStatus, Category, User
 
 
 def get_user_name(session: Session, user_id: int) -> str:
