@@ -1,4 +1,4 @@
-from models import Achievement, AchievementStatus, User, engine, Category, Team
+from models import Achievement, AchievementStatus, Category, Team, User, engine
 from sqlalchemy.orm import sessionmaker
 
 Session = sessionmaker(bind=engine)

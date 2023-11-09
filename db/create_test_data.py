@@ -4,7 +4,10 @@ from db import models
 from db.engine import session
 
 # Указать здесь file_id фото из вашего бота.
-IMAGE = "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmAC2RrAQADAgADcwADMAQ"
+IMAGE = (
+    "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmAC"
+    "2RrAQADAgADcwADMAQ"
+)
 
 
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -19,7 +22,7 @@ class TeamFactory(BaseSQLAlchemyModelFactory):
         model = models.Team
 
     name = factory.Sequence(lambda n: f"team{n}")
-    team_size = factory.Faker('pyint', min_value=5, max_value=10)
+    team_size = factory.Faker("pyint", min_value=5, max_value=10)
 
 
 class UserFactory(BaseSQLAlchemyModelFactory):
@@ -27,10 +30,10 @@ class UserFactory(BaseSQLAlchemyModelFactory):
         model = models.User
 
     name = factory.Faker("name")
-    role = factory.Iterator(("methodist", "councelor", "kid"))
+    role = factory.Iterator(("methodist", "counselor", "kid"))
     language = factory.Iterator(("RU", "EN", "TT"))
-    score = factory.Faker('pyint', min_value=0, max_value=100)
-    group = factory.Faker('pyint', min_value=1, max_value=5)
+    score = factory.Faker("pyint", min_value=0, max_value=100)
+    group = factory.Faker("pyint", min_value=1, max_value=5)
     team = factory.SubFactory(TeamFactory)
 
 
@@ -51,8 +54,8 @@ class AchievementFactory(BaseSQLAlchemyModelFactory):
     instruction = factory.Faker("paragraph")
     artifact_type = factory.Iterator(("text", "image", "video"))
     achievement_type = factory.Iterator(("individual", "teamwork"))
-    score = factory.Faker('pyint', min_value=0, max_value=100)
-    price = factory.Faker('pyint', min_value=0, max_value=100)
+    score = factory.Faker("pyint", min_value=0, max_value=100)
+    price = factory.Faker("pyint", min_value=0, max_value=100)
     category = factory.SubFactory(CategoryFactory)
 
 
