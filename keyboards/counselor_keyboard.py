@@ -16,6 +16,7 @@ def create_profile_keyboard():
         [KeyboardButton(text="Получить информацию о ребенке")],
         [KeyboardButton(text="Проверить задание конкретного ребенка")],
         [KeyboardButton(text="Проверить задание всего отряда")],
+        [KeyboardButton(text="Список детей в группе")],
     ]
     return ReplyKeyboardMarkup(keyboard=profile_keyboard, resize_keyboard=True)
 
