@@ -34,3 +34,4 @@ yarl==1.9.2
 pre-commit==3.5.0
 flake8==6.1.0
 black==23.7.0
+Sphinx==7.2.6
