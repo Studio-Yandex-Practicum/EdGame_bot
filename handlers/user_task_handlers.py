@@ -469,6 +469,7 @@ async def process_artefact(
     )
 )
 async def check_child_categories(message: Message, state: FSMContext):
+    """Получение категорий заданий для ребенка."""
     try:
         user = select_user(message.from_user.id)
         language = user.language
@@ -498,6 +499,7 @@ async def check_child_categories(message: Message, state: FSMContext):
 
 @child_task_router.callback_query(Data.category)
 async def check_child_buttons(query: CallbackQuery, state: FSMContext):
+    """Обработчик инлайн кнопки ачивки с выводом информации о ачивки."""
     try:
         td = query.data.split(",")
         language = td[1]
@@ -508,7 +510,12 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
             await query.message.answer(lexicon["no_available_achievements"])
         messages = ""
         for achievement in achievements:
-            messages += f"{achievement.name}\n"
+            messages += (
+                f"Название - {achievement.name}, "
+                f"Описание - {achievement.description}, "
+                f"Цена - {achievement.price}, "
+                f"начальные баллы - {achievement.score}\n"
+            )
         await query.message.answer(messages)
         logger.info(f"Получено ачивки - {messages}")
     except Exception as err:
