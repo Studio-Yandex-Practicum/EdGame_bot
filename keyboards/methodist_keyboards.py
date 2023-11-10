@@ -408,4 +408,3 @@ def confirm_achievements_category(language: str) -> InlineKeyboardMarkup:
         ]
     )
     return markup
-
