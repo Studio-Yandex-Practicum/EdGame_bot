@@ -1,4 +1,5 @@
 import logging
+from typing import Callable
 
 from aiogram.types import Message
 
@@ -87,8 +88,8 @@ async def _check_artifact_type(
 
 
 async def process_artifact(
-    message: Message, achievement_id: int, lexicon: dict
-):
+    message: Message, achievement_id: int, lexicon: dict, user: User
+) -> bool:
     """Сохраняет статус ачивки.
 
     Достает id из возможных типов сообщения и сохраняет в базе информацию об
@@ -104,10 +105,9 @@ async def process_artifact(
         files_id.append(artifact[-1].file_id)
     elif art_type != "text" and art_type != "image":
         files_id.append(artifact.file_id)
-    user_id = message.from_user.id
     text = message.text if message.text else message.caption
     try:
-        send_task(user_id, achievement_id, files_id, text)
+        send_task(user, achievement, files_id, text)
         return True
     except Exception as err:
         logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
@@ -115,8 +115,8 @@ async def process_artifact(
 
 
 async def process_artifact_group(
-    messages: list[Message], achievement_id: int, lexicon: dict
-):
+    messages: list[Message], achievement_id: int, lexicon: dict, user: User
+) -> bool:
     """Сохраняет статус ачивки.
 
     Достает id из возможных типов сообщения и сохраняет в базе информацию
@@ -133,10 +133,9 @@ async def process_artifact_group(
             files_id.append(artifact[-1].file_id)
         else:
             files_id.append(artifact.file_id)
-    user_id = messages[0].from_user.id
     text = messages[0].text if messages[0].text else messages[0].caption
     try:
-        send_task(user_id, achievement_id, files_id, text)
+        send_task(user, achievement, files_id, text)
         return True
     except Exception as err:
         logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
@@ -177,7 +176,24 @@ def get_achievement_info(
         f'{lexicon["task_category"]}: {category}\n'
         f'{lexicon["task_price"]}: {price}'
     )
-    return {"info": info, "image": image, "id": task.id}
+    return {"info": info, "image": image, "task": task}
+
+
+def generate_achievement_message_for_kid(
+    lexicon: dict, text: str, user: User, achievement: Achievement
+) -> str:
+    """Сообщение на странице отдельной ачивки в зависимости от роли ребенка."""
+    header = "achievement_chosen"
+    if achievement.achievement_type == "individual":
+        footer = "fulfil_individual_achievement"
+    else:
+        footer = (
+            "fulfil_team_achievement"
+            if user.captain_of_team_id
+            else "available_for_team_captain_only"
+        )
+    msg = message_pattern(lexicon, text, header, footer)
+    return msg
 
 
 def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
@@ -196,7 +212,7 @@ def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
         if status == "pending":
             count += 1
             task_info = (
-                f'{count}: {lexicon["pending_councelor"]}\n'
+                f'{count}: {lexicon["pending_counselor"]}\n'
                 f'{lexicon["task_name"]}: {task.name}\n'
                 f'{lexicon["task_description"]}: {task.description}'
             )
@@ -460,5 +476,78 @@ def generate_categories_list(
         "pages": pages,
         "categories": categories,
         "categories_ids": categories_ids,
-        "msg": msg}
+        "msg": msg
+    }
     return page_info
+
+
+def generate_objects_list(
+    objects: list | list[tuple],
+    lexicon: dict,
+    msg: Callable,
+    obj_info: Callable,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+) -> dict:
+    """
+    Обрабатывает список доступных объектов моделей данных.
+
+    Выдает словарь с текстом для сообщения, словарем id объектов моделей
+    данных, информацию для пагинатора, если объектов моделей данных много,
+    и номер последнего элемента для клавиатуры.
+    """
+    objects_list = []
+    objects_ids = {}
+
+    if not pages:
+        for count, obj in enumerate(objects, start=1):
+            objects_ids[count] = obj[0]
+
+            info = obj_info(lexicon, count, obj)
+            objects_list.append(info)
+
+        pages = pagination_static(page_size, objects_list)
+
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+
+    text = "\n\n".join(new_page["objects"])
+    msg = f"{msg(lexicon, text)}"
+
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "objects": objects,
+        "objects_ids": objects_ids,
+        "msg": msg,
+    }
+    return page_info
+
+
+def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
+    msg = f"{lexicon[header]}:\n\n" f"{text}\n\n" f"{lexicon[footer]}"
+    return msg
+
+
+def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
+    *_, kid, achievement, category = obj
+    info = (
+        f"<b>{count}.</b>\n"
+        f"<b>{lexicon['category']}:</b> {category}\n"
+        f"<b>{lexicon['achievement']}:</b> {achievement}\n"
+        f"<b>{lexicon['sender']}:</b> {kid}\n"
+    )
+    return info
+
+
+def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
+    *_, name = obj
+
+    info = f"{count}. {name}"
+    return info

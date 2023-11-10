@@ -13,7 +13,10 @@ class Data(StatesGroup):
     tasks = State()
     task_ids = State()
     pagination_info = State()
+    fulfil_achievement = State()
     artifact = State()
+    child = State()
+    query_id = State()
 
 
 class Profile(StatesGroup):
@@ -29,6 +32,7 @@ class TaskList(StatesGroup):
 
     language = State()
     tasks = State()
+    cd = State()
     tasks_for_review = State()
     task_ids = State()
     task_info = State()
@@ -164,3 +168,27 @@ class CategoryList(StatesGroup):
     category_info = State()
     current_page = State()
     query_id = State()
+
+
+class EnteringPassword(StatesGroup):
+    """Машина состояний для ввода пароля."""
+
+    psw2hash = State()
+
+
+class CounselorPassword(StatesGroup):
+    """Машина состояний для ввода пароля для вожатого."""
+
+    psw2hash = State()
+
+
+class MethodistPassword(StatesGroup):
+    """Машина состояний для ввода пароля для методиста."""
+
+    psw2hash = State()
+
+
+class MasterPassword(StatesGroup):
+    """Машина состояний для ввода мастер-пароля."""
+
+    psw2hash = State()
