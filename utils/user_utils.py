@@ -182,8 +182,12 @@ def get_all_categories(session: Session):
 
 
 def get_achievement_by_category_id(session: Session, category_id):
-    return (
+    achievement_by_category = (
         session.query(Achievement)
         .filter(Achievement.category_id == category_id)
         .all()
     )
+    available_achievements_list = []
+    for available_achievement in achievement_by_category:
+        available_achievements_list.append((available_achievement))
+    return available_achievements_list

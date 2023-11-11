@@ -13,6 +13,7 @@ from db.engine import session
 from keyboards.keyboards import (
     help_keyboard,
     pagination_keyboard,
+    pagination_keyboard_category,
     send_artifact_keyboard,
     task_keyboard,
     task_page_keyboard,
@@ -30,6 +31,7 @@ from utils.user_utils import get_achievement_by_category_id, get_all_categories
 from utils.utils import (
     generate_achievement_message_for_kid,
     generate_achievements_list,
+    generate_achievements_list_category,
     generate_text_with_reviewed_tasks,
     generate_text_with_tasks_in_review,
     get_achievement_info,
@@ -481,7 +483,7 @@ async def check_child_categories(message: Message, state: FSMContext):
         for i in range(len(category)):
             t = category[i]
             button = InlineKeyboardButton(
-                text=t.name, callback_data=f"{t.id},{language}"
+                text=t.name, callback_data=f"{t.id},{language},{t.name}"
             )
             buttons.append([button])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -497,30 +499,119 @@ async def check_child_categories(message: Message, state: FSMContext):
         session.close()
 
 
+@child_task_router.callback_query(
+    F.data.in_(["categories:next", "categories:previous"])
+)
+async def show_achievements_list_pagination(
+    query: CallbackQuery, state: FSMContext
+):
+    """
+    Обработчик инлайн кнопки Посмотреть доступные ачивки.
+
+    Отправляет список открытых ачивок, сохраняет открытые
+    ачивки и их id через Data.
+    """
+    try:
+        await query.answer()
+        data = await state.get_data()
+        tasks = data["tasks"]
+        pagination_info = data["pagination_info"]
+        current_page = pagination_info["current_page"]
+        pages = pagination_info["pages"]
+        language = data["language"]
+        lexicon = LEXICON[language]
+        if query.data == "categories:next":
+            current_page += 1
+        elif query.data == "categories:previous":
+            current_page -= 1
+        info = generate_achievements_list_category(
+            tasks=tasks,
+            lexicon=lexicon,
+            current_page=current_page,
+            page_size=PAGE_SIZE,
+            pages=pages,
+        )
+        msg = info["msg"]
+        first_item = info["first_item"]
+        final_item = info["final_item"]
+        lk_button = {
+            "text": BUTTONS[language]["lk"],
+            "callback_data": "profile",
+        }
+        await state.update_data(pagination_info=info)
+        await query.message.edit_text(
+            msg,
+            reply_markup=pagination_keyboard_category(
+                buttons_count=len(tasks),
+                start=first_item,
+                end=final_item,
+                cd="categories",
+                page_size=PAGE_SIZE,
+                extra_button=lk_button,
+            ),
+        )
+    except KeyError as err:
+        logger.error(f"Проверь правильность ключевых слов: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при отправке списка ачивок. {err}")
+
+
+@child_task_router.callback_query(
+    F.data.in_(
+        [
+            "back_to_available_achievements",
+            "categories:next",
+            "categories:previous",
+        ]
+    )
+)
 @child_task_router.callback_query(Data.category)
 async def check_child_buttons(query: CallbackQuery, state: FSMContext):
-    """Обработчик инлайн кнопки ачивки с выводом информации о ачивки."""
+    """Обработчик инлайн кнопки ачивки с выводом информации о ачивках."""
     try:
         td = query.data.split(",")
-        language = td[1]
         category_id = int(td[0])
+        language = td[1]
+        category_name = td[2]
         lexicon = LEXICON[language]
-        achievements = get_achievement_by_category_id(session, category_id)
-        if len(achievements) == 0:
+        achievement = get_achievement_by_category_id(session, category_id)
+        if len(achievement) == 0:
             await query.message.answer(lexicon["no_available_achievements"])
-        messages = ""
-        for achievement in achievements:
-            messages += (
-                f"Название - {achievement.name}, "
-                f"Описание - {achievement.description}, "
-                f"Цена - {achievement.price}, "
-                f"начальные баллы - {achievement.score}\n"
-            )
-        await query.message.answer(messages)
-        logger.info(f"Получено ачивки - {messages}")
+        info = generate_achievements_list_category(
+            tasks=achievement,
+            lexicon=lexicon,
+            current_page=1,
+            page_size=PAGE_SIZE,
+        )
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        first_item = info["first_item"]
+        final_item = info["final_item"]
+        lk_button = {
+            "text": BUTTONS[language]["lk"],
+            "callback_data": "profile",
+        }
+        await state.update_data(
+            tasks=achievement,
+            task_ids=task_ids,
+            pagination_info=info,
+            language=language,
+        )
+        await query.message.answer(f"Выбрана категория - {category_name}")
+        await query.message.edit_text(
+            msg,
+            reply_markup=pagination_keyboard_category(
+                buttons_count=len(achievement),
+                start=first_item,
+                end=final_item,
+                cd="categories",
+                page_size=PAGE_SIZE,
+                extra_button=lk_button,
+            ),
+        )
+        logger.info("Получен список ачивок")
     except Exception as err:
         await query.message.answer(lexicon["error_achievement"])
         logger.error(f"Произошла ошибка при поиске заданий: {err}")
     finally:
         session.close()
-        await state.clear()
