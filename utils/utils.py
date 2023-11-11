@@ -497,7 +497,7 @@ def generate_achievements_list_category(
         for i in range(len(tasks)):
             count += 1
             task_info = (
-                f"{count}: Название - {tasks[i].name}"
+                f"{count}: Название - {tasks[i].name}, "
                 f"Описание - {tasks[i].description}, "
                 f"Цена - {tasks[i].price}, "
                 f"начальные баллы - {tasks[i].score}\n"
