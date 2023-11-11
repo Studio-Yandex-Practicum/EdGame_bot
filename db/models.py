@@ -10,8 +10,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.schema import CheckConstraint
 
-from db.engine import engine
-
 DeclarativeBase = declarative_base()
 
 
@@ -184,12 +182,3 @@ class Password(DeclarativeBase):
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
-
-
-def create_db():
-    # Метод создания таблиц бд по коду сверху
-    DeclarativeBase.metadata.create_all(engine)
-
-
-if __name__ == "__main__":
-    create_db()
