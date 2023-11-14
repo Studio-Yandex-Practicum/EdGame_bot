@@ -477,8 +477,9 @@ async def check_child_categories(message: Message, state: FSMContext):
         language = user.language
         lexicon = LEXICON[language]
         category = get_all_categories(session)
-        if len(category) == 0:
+        if not category:
             await message.answer(lexicon["no_category"])
+            return
         buttons = []
         for i in range(len(category)):
             t = category[i]
@@ -493,7 +494,6 @@ async def check_child_categories(message: Message, state: FSMContext):
         )
     except Exception as err:
         await message.answer(lexicon["error_achievement"])
-        await state.clear()
         logger.error(f"Произошла ошибка при поиске заданий: {err}")
     finally:
         session.close()
@@ -554,12 +554,13 @@ async def show_achievements_list_pagination(
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:
         logger.error(f"Ошибка при отправке списка ачивок. {err}")
-
+    finally:
+        session.close()
+        
 
 @child_task_router.callback_query(
     F.data.in_(
         [
-            "back_to_available_achievements",
             "categories:next",
             "categories:previous",
         ]
@@ -575,8 +576,9 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
         category_name = td[2]
         lexicon = LEXICON[language]
         achievement = get_achievement_by_category_id(session, category_id)
-        if len(achievement) == 0:
-            await query.message.answer(lexicon["no_available_achievements"])
+        if not achievement:
+            await query.message.answer(f'В {category_name} - Нет доступных заданий')
+            return
         info = generate_achievements_list_category(
             tasks=achievement,
             lexicon=lexicon,
