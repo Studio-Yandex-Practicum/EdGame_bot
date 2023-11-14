@@ -1,3 +1,5 @@
+import random
+
 import factory
 
 from db import models
@@ -5,8 +7,8 @@ from db.engine import session
 
 # Указать здесь file_id фото из вашего бота.
 IMAGE = (
-    "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmAC"
-    "2RrAQADAgADcwADMAQ"
+    "AgACAgIAAxkBAAINs2U9E2g1IK6F2v8IFeoyMSSlsn7PAAIP0TEbm2DpSX8qIhX6pvPDAQA"
+    "DAgADeAADMAQ"
 )
 
 
@@ -75,10 +77,31 @@ class AchievementStatusFactory(BaseSQLAlchemyModelFactory):
     team = factory.SubFactory(TeamFactory)
 
 
+def create_users(max_number):
+    teams = TeamFactory.create_batch(2)
+    UserFactory.create_batch(max_number, team=factory.Iterator(teams))
+
+
+def create_users_achievements(min_number):
+    users = session.query(models.User).all()
+    achievements = session.query(models.Achievement).all()
+    for user in users:
+        achievement = random.choice(achievements)
+        AchievementStatusFactory.create_batch(
+            min_number,
+            user=user,
+            team=user.team,
+            achievement=achievement,
+        )
+
+
 def create_test_data():
+    min_number = 1
     max_number = 5
     try:
-        AchievementStatusFactory.create_batch(max_number)
+        create_users(max_number)
+        AchievementFactory.create_batch(max_number)
+        create_users_achievements(min_number)
 
     except Exception as error:
         print(f"{error}")
