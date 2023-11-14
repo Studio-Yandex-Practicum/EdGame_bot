@@ -556,7 +556,7 @@ async def show_achievements_list_pagination(
         logger.error(f"Ошибка при отправке списка ачивок. {err}")
     finally:
         session.close()
-        
+
 
 @child_task_router.callback_query(
     F.data.in_(
@@ -577,7 +577,9 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         achievement = get_achievement_by_category_id(session, category_id)
         if not achievement:
-            await query.message.answer(f'В {category_name} - Нет доступных заданий')
+            await query.message.answer(
+                f"В {category_name} - Нет доступных заданий"
+            )
             return
         info = generate_achievements_list_category(
             tasks=achievement,
