@@ -175,3 +175,11 @@ async def send_task(
         )
     else:
         await message.answer("Не удалось получить файл по id")
+
+
+def get_all_group(session: Session):
+    groups = session.query(User).filter(User.role == "kid").all()
+    group_list = set()
+    for group in groups:
+        group_list.add(group.group)
+    return list(group_list)
