@@ -14,6 +14,11 @@ LEXICON_RU = {
     "group_number": "Номер отряда",
     "team_number": "Номер команды",
     "nothing": "Тут ничего нет",
+    "children": "Дети",
+    "teams": "Команды",
+    "categories": "Категории",
+    "achievements": "Ачивки",
+    "tasks": "Заданий на проверку",
     # Заготовленный текст сообщений
     "hello_ask_name": (
         "Привет! Я бот Эдгам.\n"
