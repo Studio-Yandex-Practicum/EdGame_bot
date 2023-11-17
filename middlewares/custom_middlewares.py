@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import Any, Callable, Dict, Union
+from typing import Any, Awaitable, Callable, Dict, Union
 
 from aiogram import BaseMiddleware
 from aiogram.types import Message
@@ -27,7 +27,7 @@ class AcceptMediaGroupMiddleware(BaseMiddleware):
     async def _get_media_group(
         self,
         media_group_id: str,
-        handler: Callable[Message, Dict[str, Any]],
+        handler: Callable[[Message, Dict[str, Any]], Any],
         event: Message,
         data: Dict[str, Any],
     ):
@@ -38,7 +38,7 @@ class AcceptMediaGroupMiddleware(BaseMiddleware):
 
     async def __call__(
         self,
-        handler: Callable[Message, Dict[str, Any]],
+        handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
         event: Message,
         data: Dict[str, Any],
     ) -> Any:

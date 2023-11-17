@@ -414,11 +414,11 @@ async def process_artefact(
         language = data["language"]
         lexicon = LEXICON[language]
         query_id = data["query_id"]
-        councelors = get_users_by_role_and_group(
-            role="councelor", group=child.group
+        counsellors = get_users_by_role_and_group(
+            role="counsellor", group=child.group
         )
         # пока нет реальных пользователей вожатых подставляем свой id
-        councelor = councelors[0] if councelors else None
+        counsellor = counsellors[0] if counsellors else None
         if media_group:
             status_changed = await process_artifact_group(
                 messages=album,
@@ -446,11 +446,11 @@ async def process_artefact(
             lexicon["artifact_sent"],
             reply_markup=task_page_keyboard(language, available=False),
         )
-        if councelor:
+        if counsellor:
             await bot.send_message(
-                chat_id=councelor.id,
-                text=LEXICON[councelor.language]["new_artifact"],
-                reply_markup=art_list_keyboard(councelor.language),
+                chat_id=counsellor.id,
+                text=LEXICON[counsellor.language]["new_artifact"],
+                reply_markup=art_list_keyboard(counsellor.language),
             )
     except KeyError as err:
         logger.error(
