@@ -12,6 +12,7 @@ from aiogram.types import (
 
 from db.engine import session
 from db.models import AchievementStatus, User
+from filters.custom_filters import IsCounselour
 from keyboards.counselor_keyboard import (
     create_inline_keyboard,
     create_profile_keyboard,
@@ -47,6 +48,10 @@ from utils.user_utils import (
 logger = logging.getLogger(__name__)
 
 router = Router()
+counselor_router = Router()
+counselor_router.message.filter(IsCounselour())
+counselor_router.callback_query.filter(IsCounselour())
+router.include_routers(counselor_router)
 
 
 class TaskState(StatesGroup):
@@ -65,7 +70,7 @@ class TaskState(StatesGroup):
     buttons_child_info = State()
 
 
-@router.message(
+@counselor_router.message(
     F.text.in_([BUTTONS["RU"]["lk"], BUTTONS["TT"]["lk"], BUTTONS["EN"]["lk"]])
 )
 async def enter_profile(message: types.Message):
@@ -73,7 +78,7 @@ async def enter_profile(message: types.Message):
     await message.answer("Теперь ты в личном кабинете!", reply_markup=keyboard)
 
 
-@router.message(Text("Список детей"))
+@counselor_router.message(Text("Список детей"))
 async def show_children_list(message: types.Message):
     try:
         children = get_all_children(session)
@@ -88,7 +93,7 @@ async def show_children_list(message: types.Message):
         session.close()
 
 
-@router.message(Text("Проверить задания"))
+@counselor_router.message(Text("Проверить задания"))
 async def check_requests(message: types.Message):
     children = session.query(User).filter(User.role == "kid").all()
     try:
@@ -138,7 +143,7 @@ async def check_requests(message: types.Message):
         session.close()
 
 
-@router.callback_query(lambda c: c.data.startswith("accept:"))
+@counselor_router.callback_query(lambda c: c.data.startswith("accept:"))
 async def approve_handler(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
     name = str(callback_query.data.split(":")[2])
@@ -157,7 +162,7 @@ async def approve_handler(callback_query: types.CallbackQuery):
         session.close()
 
 
-@router.callback_query(lambda c: c.data.startswith("reject:"))
+@counselor_router.callback_query(lambda c: c.data.startswith("reject:"))
 async def reject_handler(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
     name = str(callback_query.data.split(":")[2])
@@ -180,8 +185,8 @@ async def reject_handler(callback_query: types.CallbackQuery):
         session.close()
 
 
-@router.callback_query(F.data == "yes_handler")
-@router.callback_query(lambda c: c.data.startswith("yes:"))
+@counselor_router.callback_query(F.data == "yes_handler")
+@counselor_router.callback_query(lambda c: c.data.startswith("yes:"))
 async def yes_handler(callback_query: types.CallbackQuery, state: FSMContext):
     task_id = int(callback_query.data.split(":")[1])
     try:
@@ -199,8 +204,8 @@ async def yes_handler(callback_query: types.CallbackQuery, state: FSMContext):
         session.close()
 
 
-@router.callback_query(F.data == "no_handler")
-@router.callback_query(lambda c: c.data.startswith("no:"))
+@counselor_router.callback_query(F.data == "no_handler")
+@counselor_router.callback_query(lambda c: c.data.startswith("no:"))
 async def no_handler(callback_query: types.CallbackQuery):
     try:
         await callback_query.message.answer(
@@ -214,7 +219,7 @@ async def no_handler(callback_query: types.CallbackQuery):
         session.close()
 
 
-@router.message(TaskState.reject_message)
+@counselor_router.message(TaskState.reject_message)
 async def rejection_reason(message: types.Message, state: FSMContext):
     task_data = await state.get_data()
     task_id = task_data.get("task_id")
@@ -232,7 +237,7 @@ async def rejection_reason(message: types.Message, state: FSMContext):
     session.close()
 
 
-@router.callback_query(lambda c: c.data.startswith("back:"))
+@counselor_router.callback_query(lambda c: c.data.startswith("back:"))
 async def send_to_methodist(callback_query: types.CallbackQuery):
     task_id = int(callback_query.data.split(":")[1])
     name = str(callback_query.data.split(":")[2])
@@ -242,7 +247,7 @@ async def send_to_methodist(callback_query: types.CallbackQuery):
         )
 
 
-@router.message(Text("Проверить конкретное задание"))
+@counselor_router.message(Text("Проверить конкретное задание"))
 async def display_task_review_requests(
     message: types.Message, state: FSMContext
 ):
@@ -251,7 +256,7 @@ async def display_task_review_requests(
     await message.answer("Введите название задания, которое хотите проверить")
 
 
-@router.message(TaskState.achievement_name)
+@counselor_router.message(TaskState.achievement_name)
 async def display_task(message: types.Message, state: FSMContext):
     achievement_name = message.text
     try:
@@ -290,7 +295,7 @@ async def display_task(message: types.Message, state: FSMContext):
         session.close()
 
 
-@router.message(Text("Узнать общий прогресс отряда"))
+@counselor_router.message(Text("Узнать общий прогресс отряда"))
 async def display_troop_progress(message: types.Message, state: FSMContext):
     """Возможность отображения общего прогресса отряда."""
     await state.set_state(TaskState.children_group)
@@ -299,7 +304,7 @@ async def display_troop_progress(message: types.Message, state: FSMContext):
     )
 
 
-@router.message(TaskState.children_group)
+@counselor_router.message(TaskState.children_group)
 async def display_troop(message: types.Message, state: FSMContext):
     try:
         children = get_all_children_from_group(session, message.text)
@@ -328,7 +333,7 @@ async def display_troop(message: types.Message, state: FSMContext):
         session.close()
 
 
-@router.message(Text("Получить информацию о ребенке"))
+@counselor_router.message(Text("Получить информацию о ребенке"))
 async def check_child_info(message: types.Message, state: FSMContext):
     """Возможность проверки инфы о выбранном ребенке."""
     await state.set_state(TaskState.child_info)
@@ -337,7 +342,7 @@ async def check_child_info(message: types.Message, state: FSMContext):
     )
 
 
-@router.message(TaskState.child_info)
+@counselor_router.message(TaskState.child_info)
 async def check_child(message: types.Message, state: FSMContext):
     try:
         search_child = message.text.split(" ")
@@ -366,7 +371,7 @@ async def check_child(message: types.Message, state: FSMContext):
         session.close()
 
 
-@router.message(Text("Проверить задание конкретного ребенка"))
+@counselor_router.message(Text("Проверить задание конкретного ребенка"))
 async def display_child_task_review_requests(
     message: types.Message, state: FSMContext
 ):
@@ -378,7 +383,7 @@ async def display_child_task_review_requests(
     )
 
 
-@router.message(TaskState.child_name)
+@counselor_router.message(TaskState.child_name)
 async def display_child_task_review(message: types.Message, state: FSMContext):
     search_child = message.text.split(" ")
     try:
@@ -419,7 +424,7 @@ async def display_child_task_review(message: types.Message, state: FSMContext):
         session.close()
 
 
-@router.message(Text("Проверить задание всего отряда"))
+@counselor_router.message(Text("Проверить задание всего отряда"))
 async def display_troop_task_review_requests(
     message: types.Message, state: FSMContext
 ):
@@ -428,7 +433,7 @@ async def display_troop_task_review_requests(
     await message.answer("Введите номер отряда для проверки всех заданий")
 
 
-@router.message(TaskState.group)
+@counselor_router.message(TaskState.group)
 async def display_troop_task_review(message: types.Message, state: FSMContext):
     try:
         user_ids = get_all_children_from_group(session, message.text)
@@ -471,7 +476,7 @@ async def display_troop_task_review(message: types.Message, state: FSMContext):
         session.close()
 
 
-@router.message(Text("Список детей в группе"))
+@counselor_router.message(F.text == "Список детей в группе")
 async def get_group_children(message: types.Message, state: FSMContext):
     """Возможность выбора группы, в которой есть ребенок."""
     try:
@@ -501,10 +506,12 @@ async def get_group_children(message: types.Message, state: FSMContext):
         session.close()
 
 
-@router.callback_query(TaskState.group_buttons)
+@counselor_router.callback_query(TaskState.group_buttons)
 async def show_children_group(query: CallbackQuery, state: FSMContext):
     """Возможность выбора информации о ребенке."""
     try:
+        await query.answer()
+        await state.clear()
         td = query.data.split(",")
         group_id = int(td[0])
         language = td[1]
@@ -541,21 +548,23 @@ async def show_children_group(query: CallbackQuery, state: FSMContext):
         session.close()
 
 
-@router.callback_query(TaskState.buttons_child_info)
-async def check_child_buttons(call: types.CallbackQuery, state: FSMContext):
+@counselor_router.callback_query(TaskState.buttons_child_info)
+async def check_child_buttons(query: CallbackQuery, state: FSMContext):
     """Вывод информации о ребенке."""
     try:
-        action = call.data.split(",")
+        await query.answer()
+        await state.clear()
+        action = query.data.split(",")
         name = action[0]
         group = int(action[1])
         score = int(action[2])
         language = action[3]
         lexicon = LEXICON[language]
-        await call.message.edit_text(
+        await query.message.answer(
             f"Ребенок, имя: {name}, группа: {group}, oчки: {score},"
         )
     except Exception as err:
-        await call.message.edit_text(lexicon["error_child"])
+        await query.message.answer(lexicon["error_child"])
         logger.error(f"Произошла ошибка : {err}")
     finally:
         session.close()

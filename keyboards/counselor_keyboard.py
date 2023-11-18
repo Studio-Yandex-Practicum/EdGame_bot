@@ -10,13 +10,13 @@ from aiogram.types import (
 def create_profile_keyboard():
     profile_keyboard = [
         [KeyboardButton(text="Список детей")],
+        [KeyboardButton(text="Список детей в группе")],
         [KeyboardButton(text="Проверить задания")],
         [KeyboardButton(text="Проверить конкретное задание")],
         [KeyboardButton(text="Узнать общий прогресс отряда")],
         [KeyboardButton(text="Получить информацию о ребенке")],
         [KeyboardButton(text="Проверить задание конкретного ребенка")],
         [KeyboardButton(text="Проверить задание всего отряда")],
-        [KeyboardButton(text="Список детей в группе")],
     ]
     return ReplyKeyboardMarkup(keyboard=profile_keyboard, resize_keyboard=True)
 
