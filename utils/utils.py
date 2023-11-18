@@ -466,6 +466,7 @@ def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
 
 def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
     *_, kid, achievement, category = obj
+    category = category if category is not None else lexicon["uncategorized"]
     info = (
         f"<b>{count}.</b>\n"
         f"<b>{lexicon['category']}:</b> {category}\n"

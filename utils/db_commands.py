@@ -454,7 +454,7 @@ def get_tasks_by_status(status: str) -> list[tuple]:
         )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
-        .join(Category, Category.id == Achievement.category_id)
+        .join(Category, Category.id == Achievement.category_id, isouter=True)
         .filter(AchievementStatus.status == status)
         .all()
     )
@@ -470,7 +470,7 @@ def get_tasks_by_achievement_and_status(
         )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
-        .join(Category, Category.id == Achievement.category_id)
+        .join(Category, Category.id == Achievement.category_id, isouter=True)
         .filter(
             AchievementStatus.status == status,
             AchievementStatus.achievement_id == achievement_id,
@@ -489,7 +489,7 @@ def get_tasks_by_achievement_category_and_status(
         )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
-        .join(Category, Category.id == Achievement.category_id)
+        .join(Category, Category.id == Achievement.category_id, isouter=True)
         .filter(
             AchievementStatus.status == status,
             Achievement.category_id == category_id,

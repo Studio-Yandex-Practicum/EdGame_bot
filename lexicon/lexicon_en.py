@@ -19,6 +19,7 @@ LEXICON_EN = {
     "categories": "Категории",
     "achievements": "Ачивки",
     "tasks": "Заданий на проверку",
+    "uncategorized": "Без категории",
     # Заготовленный текст сообщений
     "hello_ask_name": (
         "Привет! Я бот Эдгам.\n"
