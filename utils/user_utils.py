@@ -181,6 +181,8 @@ def get_all_group(session: Session):
     return (
         session.query(User.group).filter(User.role == "kid").distinct().all()
     )
+
+
 def get_all_categories(session: Session):
     return session.query(Category).all()
 
