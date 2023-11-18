@@ -2,7 +2,7 @@ from aiogram import types
 from sqlalchemy.orm import Session
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, User
+from db.models import Achievement, AchievementStatus, Category, User
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -181,3 +181,17 @@ def get_all_group(session: Session):
     return (
         session.query(User.group).filter(User.role == "kid").distinct().all()
     )
+def get_all_categories(session: Session):
+    return session.query(Category).all()
+
+
+def get_achievement_by_category_id(session: Session, category_id):
+    achievement_by_category = (
+        session.query(Achievement)
+        .filter(Achievement.category_id == category_id)
+        .all()
+    )
+    available_achievements_list = []
+    for available_achievement in achievement_by_category:
+        available_achievements_list.append((available_achievement))
+    return available_achievements_list
