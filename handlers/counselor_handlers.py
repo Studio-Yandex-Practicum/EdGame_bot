@@ -493,6 +493,7 @@ async def get_group_children(message: types.Message, state: FSMContext):
             buttons.append([button])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await state.set_state(TaskState.group_buttons)
+    
         await message.answer(
             lexicon["group_number"], reply_markup=reply_markup
         )
@@ -532,14 +533,14 @@ async def show_children_group(query: CallbackQuery, state: FSMContext):
             buttons.append([button])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await state.set_state(TaskState.buttons_child_info)
-        await query.message.answer(
+        await query.message.edit_text(
             lexicon["choose_child"], reply_markup=reply_markup
         )
     except IndexError:
         await query.message.answer(lexicon["not_child_group"])
         await state.clear()
     except Exception as err:
-        await query.message.answer(lexicon["error_group"])
+        await query.message.edit_text(lexicon["error_group"])
         logger.error(f"Произошла ошибка при поиске группы: {err}")
         await state.clear()
     finally:
@@ -558,7 +559,7 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
         score = int(action[2])
         language = action[3]
         lexicon = LEXICON[language]
-        await query.message.answer(
+        await query.message.edit_text(
             f"Ребенок, имя: {name}, группа: {group}, oчки: {score},"
         )
     except Exception as err:

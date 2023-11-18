@@ -178,4 +178,6 @@ async def send_task(
 
 
 def get_all_group(session: Session):
-    return session.query(User.group).filter(User.role == "kid").distinct().all()
+    return (
+        session.query(User.group).filter(User.role == "kid").distinct().all()
+    )
