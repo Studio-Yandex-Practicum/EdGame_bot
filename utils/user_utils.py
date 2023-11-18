@@ -178,8 +178,4 @@ async def send_task(
 
 
 def get_all_group(session: Session):
-    groups = (
-        session.query(User.group).filter(User.role == "kid").distinct().all()
-    )
-    a = [i.group for i in groups]
-    return a
+    return session.query(User.group).filter(User.role == "kid").distinct().all()
