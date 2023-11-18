@@ -14,6 +14,9 @@ LEXICON_EN = {
     "group_number": "Номер отряда",
     "team_number": "Номер команды",
     "nothing": "Тут ничего нет",
+    "choose_category": "Выбери категорию заданий",
+    "no_category": "Категорий не существует",
+    "error_achievement": "Произошла ошибка при поиске заданий",
     # Заготовленный текст сообщений
     "hello_ask_name": (
         "Привет! Я бот Эдгам.\n"
@@ -103,6 +106,7 @@ LEXICON_EN = {
     ),
     "ask_artifact_again": "Нужно прислать правильный тип артефакта",
     "achievement": "Ачивка",
+    "category_achievement": "Авички в выбранной категории",
     # Фразы в разделе изменения профиля
     "edit_profile": "Что ты хочешь изменить?",
     "change_name": "Ок, пришли свое новое имя!",
@@ -358,6 +362,7 @@ BUTTONS_EN = {
     "become_captain": "Стать капитаном",
     "leave_captain_position": "Уйти с поста капитана",
     "fulfil_achievement": "Выполнить ачивку",
+    "category": "Выбери категорию заданий",
     # Редактирование профиля
     "edit_profile": "Редактировать профиль",
     "change_firstname": "Имя",

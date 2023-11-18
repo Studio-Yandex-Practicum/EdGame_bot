@@ -59,10 +59,12 @@ def profile_keyboard(language: str) -> ReplyKeyboardMarkup:
     write_to_counselor = KeyboardButton(text=buttons["write_to_counselor"])
     help_button = KeyboardButton(text=buttons["help"])
     join_team = KeyboardButton(text=buttons["join_team"])
+    category = KeyboardButton(text=buttons["category"])
     keyboard = [
         [available_achievements, current_achievements],
         [reviewed_achievements, join_team],
         [edit_profile],
+        [category],
         [help_button, write_to_counselor],
     ]
     markup = ReplyKeyboardMarkup(
@@ -299,3 +301,36 @@ def yes_no_keyboard(language: str, cd: str) -> InlineKeyboardMarkup:
         text=buttons["no"], callback_data=f"no:{cd}"
     )
     return InlineKeyboardMarkup(inline_keyboard=[[yes_button], [no_button]])
+
+
+# Список ачивок
+def pagination_keyboard_category(
+    buttons_count: int,
+    start: int = 0,
+    end: int = 5,
+    cd: str = "categories",
+    page_size: int = 5,
+    extra_button: dict = None,
+) -> InlineKeyboardMarkup:
+    """Функция для генерации кнопок с номерами элементов."""
+    keyboard = []
+    buttons = []
+    nav_buttons = []
+    button_next = InlineKeyboardButton(text=">>", callback_data=f"{cd}:next")
+    button_prev = InlineKeyboardButton(
+        text="<<", callback_data=f"{cd}:previous"
+    )
+    info_button = InlineKeyboardButton(
+        text=f"{end}/{buttons_count}", callback_data=f"{cd}:info"
+    )
+    keyboard.append(buttons[start:end])
+    if buttons_count > page_size:
+        nav_buttons.append(button_prev)
+        nav_buttons.append(info_button)
+        nav_buttons.append(button_next)
+    if nav_buttons:
+        keyboard.append(nav_buttons)
+    if extra_button:
+        keyboard.append([InlineKeyboardButton(**extra_button)])
+    markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup

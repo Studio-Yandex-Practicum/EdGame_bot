@@ -14,3 +14,5 @@ __pycache__/
 .idea/
 *.log
 .git
+.pytest_cache/
+.DS_Store
