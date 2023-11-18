@@ -493,7 +493,7 @@ async def get_group_children(message: types.Message, state: FSMContext):
             buttons.append([button])
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await state.set_state(TaskState.group_buttons)
-    
+
         await message.answer(
             lexicon["group_number"], reply_markup=reply_markup
         )
