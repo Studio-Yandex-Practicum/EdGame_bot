@@ -196,7 +196,7 @@ def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
         if status == "pending":
             count += 1
             task_info = (
-                f'{count}: {lexicon["pending_councelor"]}\n'
+                f'{count}: {lexicon["pending_counsellor"]}\n'
                 f'{lexicon["task_name"]}: {task.name}\n'
                 f'{lexicon["task_description"]}: {task.description}'
             )

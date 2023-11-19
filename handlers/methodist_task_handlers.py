@@ -11,7 +11,7 @@ from aiogram.types import (
     Message,
 )
 
-from keyboards.counselor_keyboard import create_yes_no_keyboard
+from keyboards.counsellor_keyboard import create_yes_no_keyboard
 from keyboards.keyboards import pagination_keyboard
 from keyboards.methodist_keyboards import (
     add_achievements_category,

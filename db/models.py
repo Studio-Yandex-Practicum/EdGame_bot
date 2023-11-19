@@ -22,7 +22,7 @@ class User(DeclarativeBase):
     name = Column(String(50), nullable=False)
     role = Column(
         String,
-        CheckConstraint(r"role in ('methodist', 'councelor', 'kid')"),
+        CheckConstraint(r"role in ('methodist', 'counsellor', 'kid')"),
         nullable=False,
     )
     language = Column(

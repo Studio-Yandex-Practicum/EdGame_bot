@@ -5,7 +5,7 @@ from aiogram.fsm.state import State, StatesGroup
 
 from db.engine import session
 from db.models import AchievementStatus, User
-from keyboards.counselor_keyboard import (
+from keyboards.counsellor_keyboard import (
     create_inline_keyboard,
     create_profile_keyboard,
     create_yes_no_keyboard,

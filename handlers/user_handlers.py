@@ -8,7 +8,7 @@ from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
 from db.engine import session
 from filters.custom_filters import IsStudent
-from keyboards.counselor_keyboard import create_profile_keyboard
+from keyboards.counsellor_keyboard import create_profile_keyboard
 from keyboards.keyboards import (
     contacts_keyboard,
     create_welcome_keyboard,
@@ -59,20 +59,20 @@ async def process_methodist_command(message: Message, state: FSMContext):
 
 
 # Этот хэндлер срабатывает на кодовое слово и присваивает роль вожатого
-@router.message(Text(text="councelor"))
-async def process_councelor_command(message: Message, state: FSMContext):
+@router.message(Text(text="counsellor"))
+async def process_counsellor_command(message: Message, state: FSMContext):
     await state.clear()
     user = select_user(message.chat.id)
-    user.role = "councelor"
+    user.role = "counsellor"
     session.add(user)
     session.commit()
     if user.language == "ru":
-        await message.answer(text=LEXICON["RU"]["councelor"])
+        await message.answer(text=LEXICON["RU"]["counsellor"])
     elif user.language == "tt":
-        await message.answer(text=LEXICON["TT"]["councelor"])
+        await message.answer(text=LEXICON["TT"]["counsellor"])
     else:
         await message.answer(
-            text=LEXICON[user.language]["councelor"],
+            text=LEXICON[user.language]["counsellor"],
             reply_markup=create_profile_keyboard(),
         )
 
@@ -195,13 +195,13 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
 @child_router.message(
     F.text.in_(
         [
-            BUTTONS["RU"]["write_to_councelor"],
-            BUTTONS["TT"]["write_to_councelor"],
-            BUTTONS["EN"]["write_to_councelor"],
+            BUTTONS["RU"]["write_to_counsellor"],
+            BUTTONS["TT"]["write_to_counsellor"],
+            BUTTONS["EN"]["write_to_counsellor"],
         ]
     )
 )
-async def write_to_councelor(message: Message):
+async def write_to_counsellor(message: Message):
     """Обработчик кнопки 'Написать вожатому'.
 
     Отправляет инлайн кнопку со ссылкой на вожатого.
@@ -210,10 +210,10 @@ async def write_to_councelor(message: Message):
         user = select_user(message.from_user.id)
         language = user.language
         # Как-то получаем username вожатого
-        councelor = message.from_user.username
+        counsellor = message.from_user.username
         await message.answer(
-            LEXICON[language]["councelor_contact"],
-            reply_markup=contacts_keyboard(language, councelor),
+            LEXICON[language]["counsellor_contact"],
+            reply_markup=contacts_keyboard(language, counsellor),
         )
     except KeyError as err:
         logger.error(

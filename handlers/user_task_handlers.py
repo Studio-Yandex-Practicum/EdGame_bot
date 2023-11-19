@@ -348,9 +348,9 @@ async def process_artefact(
         task_id = data["task_id"]
         language = data["language"]
         lexicon = LEXICON[language]
-        councelors = get_users_by_role("councelor")
-        councelor = (
-            councelors[0] if councelors else select_user(message.from_user.id)
+        counsellors = get_users_by_role("counsellor")
+        counsellor = (
+            counsellors[0] if counsellors else select_user(message.from_user.id)
         )
         if media_group:
             status_changed = await process_artifact_group(
@@ -367,9 +367,9 @@ async def process_artefact(
             return
         elif status_changed:
             await bot.send_message(
-                chat_id=councelor.id,
-                text=LEXICON[councelor.language]["new_artifact"],
-                reply_markup=art_list_keyboard(councelor.language),
+                chat_id=counsellor.id,
+                text=LEXICON[counsellor.language]["new_artifact"],
+                reply_markup=art_list_keyboard(counsellor.language),
             )
         await message.answer(
             lexicon["artifact_sent"], reply_markup=task_keyboard(language)

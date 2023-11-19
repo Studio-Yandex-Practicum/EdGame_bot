@@ -27,7 +27,7 @@ class UserFactory(BaseSQLAlchemyModelFactory):
         model = models.User
 
     name = factory.Faker("name")
-    role = factory.Iterator(("methodist", "councelor", "kid"))
+    role = factory.Iterator(("methodist", "counsellor", "kid"))
     language = factory.Iterator(("RU", "EN", "TT"))
     score = factory.Faker('pyint', min_value=0, max_value=100)
     group = factory.Faker('pyint', min_value=1, max_value=5)

@@ -5,7 +5,7 @@ LEXICON_TT = {
         "Анкетирование завершено. Добро пожаловать в ваш личный кабинет."
     ),
     "methodist": "Вы получили права доступа методиста",
-    "councelor": "Вы получили права доступа вожатого",
+    "counsellor": "Вы получили права доступа вожатого",
     # Отдельные фразы или слова
     "hello": "Привет",
     "lk_info": "Общая информация",
@@ -60,7 +60,7 @@ LEXICON_TT = {
     "artifact_sent": (
         "Артефакт отправлен, ты молодец! Хочешь сделать еще одну ачивку?"
     ),
-    "pending_councelor": "На проверке у вожатого",
+    "pending_counsellor": "На проверке у вожатого",
     "pending_methodist": "На проверке у преподавателя",
     "status_approved": "Принятно",
     "status_rejected": "Не принято",
@@ -79,7 +79,7 @@ LEXICON_TT = {
     "cheer_up": "Продолжай в том же духе!",
     "reviewed_achievements": "Проверенные задания",
     "score_added": "Начислено баллов",
-    "councelor_contact": (
+    "counsellor_contact": (
         "Ок, вот реквизиты твоего вожатого. Нажми кнопку ниже, чтобы написать "
         "ему напрямую."
     ),
@@ -338,7 +338,7 @@ BUTTONS_TT = {
     "current_achievements": "Текущие задания",
     "reviewed_achievements": "Проверенные задания",
     "write_to_methodist": "Написать преподавателю",
-    "write_to_councelor": "Написать вожатому",
+    "write_to_counsellor": "Написать вожатому",
     "join_team": "Присоединиться к команде",
     "leave_team": "Уйти из команды",
     "become_captain": "Стать капитаном",
@@ -348,7 +348,7 @@ BUTTONS_TT = {
     "change_firstname": "Имя",
     "change_language": "Язык бота",
     "main_menu": "Главное меню",
-    "councelor_chat": "Написать вожатому",
+    "counsellor_chat": "Написать вожатому",
     # Личный кабинет методиста
     "add_task": "Добавить задание",
     "edit_task": "Редактировать задание",
