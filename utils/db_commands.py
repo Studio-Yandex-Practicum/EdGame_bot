@@ -5,7 +5,16 @@ from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, Category, Team, User
+from db.models import (
+    Achievement,
+    AchievementStatus,
+    Category,
+    Password,
+    Team,
+    User,
+)
+
+from .pass_gen import counselor_pass, master_pass, methodist_pass
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +37,23 @@ def register_user(data):
         return False
 
 
+def check_password():
+    password = session.query(Password).first()
+    if password is None:
+        password = Password(
+            master_pass=master_pass,
+            counselor_pass=counselor_pass,
+            methodist_pass=methodist_pass,
+        )
+        session.add(password)
+        try:
+            session.commit()
+            return True
+        except IntegrityError:
+            session.rollback()  # откатываем session.add(user)
+            return False
+
+
 def select_user(user_id) -> User:
     """Получаем пользователя по id."""
     user = session.query(User).filter(User.id == user_id).first()
@@ -44,6 +70,16 @@ def is_user_in_db(user_id):
 def get_users_by_role(role: str):
     """Получаем пользователей по статусу."""
     users = session.query(User).filter(User.role == role).all()
+    return users
+
+
+def get_users_by_role_and_group(role: str, group: int):
+    """Получаем пользователей по статусу и номеру отряда."""
+    users = (
+        session.query(User)
+        .filter(User.role == role, User.group == group)
+        .all()
+    )
     return users
 
 
@@ -81,11 +117,12 @@ def set_user_param(
 
 
 def user_achievements(user_id):
-    """Задания в кабинете ребенка.
+    """
+    Задания в кабинете ребенка.
 
-    Вставляем id текущего пользователя и получаем список кортежей, где у нас
-    имеется объект ачивки (вынимаем необходимые для бота данные), статус
-    проверки и причину отказа, если та имеется.
+    Вставляем id текущего пользователя и получаем список кортежей.
+    В кортежах у нас имеется объект ачивки (вынимаем необходимые
+    для бота данные), статус проверки и причину отказа, если та имеется.
     """
     user_achievements = session.query(AchievementStatus).filter(
         AchievementStatus.user_id == user_id
@@ -104,7 +141,8 @@ def user_achievements(user_id):
 
 
 def available_achievements(user_id, user_score) -> list:
-    """Доступные для ребенка ачивки.
+    """
+    Функция для получения доступных ачивок.
 
     Присылаем id пользователя, получаем список доступных ему по количеству
     баллов ачивок, среди которых нет находящихся на проверке или уже
@@ -143,20 +181,9 @@ def get_achievement(
     return achievement if achievement else "Unknown Achievement"
 
 
-def get_all_achievements(status: str = None):
+def get_all_achievements():
     """Возвращает все ачивки из базы."""
     achievements = session.query(Achievement).all()
-    if status:
-        achievement_statuses = (
-            session.query(AchievementStatus)
-            .filter(AchievementStatus.status == status)
-            .all()
-        )
-        achievements = []
-        for achievement_status in achievement_statuses:
-            user = select_user(achievement_status.user_id)
-            task = get_achievement(achievement_status.achievement_id)
-            achievements.append((user, task, achievement_status))
     return achievements
 
 
@@ -202,23 +229,33 @@ def set_achievement_param(
         return False
 
 
-def send_task(user_id, achievement_id, files_id, message_text):
-    """Сохраняет задание, отправленное на проверку.
+def send_task(
+    user: User, achievement: Achievement, files_id: list, message_text: str
+) -> bool:
+    """
+    Сохраняет задание, отправленное на проверку.
 
-    На вход: user_id текущего юзера, которого мы получили при старте бота в
-    select_user(), achievement_id, полученный из ачивки, на кнопку которой
+    Функция для создания объекта AchievementStatus.
+    На вход: user текущий юзер, которого мы получили при старте бота в
+    select_user(), achievement, полученная ачивка, на кнопку которой
     юзер нажмёт, files_id, список, который будет состоять из id
     отправленных юзером артефактов, message_text, сообщение, которое может
     прислать юзер вместе с заданием. Значения files_id и message_text могут
     быть None. На выходе получаем новую запись AchievementStatus.
     """
+    team = (
+        user.captain_of_team_id
+        if achievement.achievement_type == "teamwork"
+        else None
+    )
     task = AchievementStatus(
-        user_id=user_id,
-        achievement_id=achievement_id,
+        user_id=user.id,
+        achievement_id=achievement.id,
         files_id=files_id,
         message_text=message_text,
         status="pending",
         created_at=datetime.fromtimestamp(time.time()),
+        team_id=team,
     )
 
     session.add(task)
@@ -232,8 +269,12 @@ def send_task(user_id, achievement_id, files_id, message_text):
 
 
 def change_language(user_id, language):
-    # На вход: user_id текущего юзера, которого мы получили при старте бота в
-    # select_user(), язык на который хотим сменить.
+    """
+    Функция для обновления языка пользователя.
+
+    На вход: user_id текущего юзера, которого мы получили при старте бота в
+    select_user(), язык на который хотим сменить.
+    """
     session.query(User).filter(User.id == user_id).update(
         {"language": language}
     )
@@ -247,8 +288,12 @@ def change_language(user_id, language):
 
 
 def approve_task(user_achievement_id):
-    # На вход: user_achievement_id проверяемой ачивки. Для кнопки "одобрить"
-    # Переводит ачивку в статус одобренно и начисляет её баллы пользователю
+    """
+    Функция для изменения статуса ачивки (объект AchievementStatus).
+
+    На вход: user_achievement_id проверяемой ачивки. Для кнопки "одобрить"
+    Переводит ачивку в статус одобренно и начисляет её баллы пользователю.
+    """
     user_achievement = (
         session.query(AchievementStatus)
         .filter(AchievementStatus.id == user_achievement_id)
@@ -273,8 +318,12 @@ def approve_task(user_achievement_id):
 
 
 def reject_task(user_achievement_id):
-    # На вход: user_achievement_id проверяемой ачивки и причину отказа.
-    # Для кнопки "отказать".
+    """
+    Функция для отклонения задания.
+
+    На вход: user_achievement_id проверяемой ачивки и причину отказа.
+    Для кнопки "отказать".
+    """
     user_achievement = (
         session.query(AchievementStatus)
         .filter(AchievementStatus.id == user_achievement_id)
@@ -290,8 +339,12 @@ def reject_task(user_achievement_id):
 
 
 def send_to_methdist(user_achievement_id):
-    # На вход: user_achievement_id проверяемой ачивки.
-    # Для кнопки "отправить методисту".
+    """
+    Функция для передачи ачивки от вожатого методисту.
+
+    На вход: user_achievement_id проверяемой ачивки.
+    Для кнопки "отправить методисту".
+    """
     user_achievement = (
         session.query(AchievementStatus)
         .filter(AchievementStatus.id == user_achievement_id)
@@ -430,3 +483,84 @@ def set_category_param(category_id: int, name: str = None):
         logger.error(f"Ошибка при обновлении категории: {err}")
         session.rollback()
         return False
+
+
+def get_tasks_by_status(status: str) -> list[tuple]:
+    """Задания по статусу."""
+    return (
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
+        .filter(AchievementStatus.status == status)
+        .all()
+    )
+
+
+def get_tasks_by_achievement_and_status(
+    achievement_id: int, status: str
+) -> list[tuple]:
+    """Задания на проверку для определенной ачивки."""
+    return (
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
+        .filter(
+            AchievementStatus.status == status,
+            AchievementStatus.achievement_id == achievement_id,
+        )
+        .all()
+    )
+
+
+def get_tasks_by_achievement_category_and_status(
+    category_id: int, status: str
+) -> list[tuple]:
+    """Задания на проверку в определенной категории."""
+    return (
+        session.query(
+            AchievementStatus.id, User.name, Achievement.name, Category.name
+        )
+        .join(User, AchievementStatus.user_id == User.id)
+        .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
+        .join(Category, Category.id == Achievement.category_id)
+        .filter(
+            AchievementStatus.status == status,
+            Achievement.category_id == category_id,
+        )
+        .all()
+    )
+
+
+def get_categories_with_tasks(status: str) -> Category:
+    """Категории, в которых есть задания на проверку."""
+    return (
+        session.query(Category.id, Category.name)
+        .join(Achievement, Category.id == Achievement.category_id)
+        .join(
+            AchievementStatus,
+            Achievement.id == AchievementStatus.achievement_id,
+        )
+        .filter(AchievementStatus.status == status)
+        .distinct()
+        .all()
+    )
+
+
+def get_achievements_with_tasks(status: str) -> Achievement:
+    """Ачивки, которые сдали на проверку."""
+    return (
+        session.query(Achievement.id, Achievement.name)
+        .join(
+            AchievementStatus,
+            Achievement.id == AchievementStatus.achievement_id,
+        )
+        .filter(AchievementStatus.status == status)
+        .distinct()
+        .all()
+    )

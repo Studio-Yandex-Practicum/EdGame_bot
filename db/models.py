@@ -22,7 +22,7 @@ class User(DeclarativeBase):
     name = Column(String(50), nullable=False)
     role = Column(
         String,
-        CheckConstraint(r"role in ('methodist', 'counsellor', 'kid')"),
+        CheckConstraint(r"role in ('methodist', 'counselor', 'kid')"),
         nullable=False,
     )
     language = Column(
@@ -167,6 +167,20 @@ class Category(DeclarativeBase):
     achievements = relationship(
         Achievement, order_by=Achievement.id, back_populates="category"
     )
+
+    def __repr__(self):
+        return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
+
+
+class Password(DeclarativeBase):
+    """Модель для хранения паролей."""
+
+    __tablename__ = "passwords"
+
+    id = Column(Integer, nullable=False, primary_key=True)
+    master_pass = Column(String(256), nullable=False)
+    counselor_pass = Column(String(256), nullable=False)
+    methodist_pass = Column(String(256), nullable=False)
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)

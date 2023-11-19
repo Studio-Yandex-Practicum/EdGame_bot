@@ -1,14 +1,14 @@
 import logging
 
 from aiogram import F, Router
-from aiogram.filters import CommandStart, StateFilter, Text
+from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 
-from db.engine import session
+from config_data.config import load_config
 from filters.custom_filters import IsStudent
-from keyboards.counsellor_keyboard import create_profile_keyboard
+from keyboards.admin_keyboards import boss_pass_keyboard
 from keyboards.keyboards import (
     contacts_keyboard,
     create_welcome_keyboard,
@@ -17,10 +17,10 @@ from keyboards.keyboards import (
     menu_keyboard,
     profile_keyboard,
 )
-from keyboards.methodist_keyboards import methodist_profile_keyboard
 from lexicon.lexicon import BUTTONS, LEXICON, LEXICON_COMMANDS
 from middlewares.custom_middlewares import AcceptMediaGroupMiddleware
 from utils.db_commands import (
+    check_password,
     is_user_in_db,
     register_user,
     select_user,
@@ -29,11 +29,13 @@ from utils.db_commands import (
 from utils.states_form import Data, Profile
 from utils.utils import generate_profile_info
 
+from .admin_handlers import admin_router
 from .methodist_handlers import methodist_router
 from .user_task_handlers import child_task_router
 from .user_team_handlers import child_team_router
 
 logger = logging.getLogger(__name__)
+config = load_config()
 
 router = Router()
 child_router = Router()
@@ -41,48 +43,23 @@ child_router.include_routers(child_task_router, child_team_router)
 child_router.message.filter(IsStudent())
 child_router.callback_query.filter(IsStudent())
 child_router.message.middleware(AcceptMediaGroupMiddleware())
-router.include_routers(methodist_router, child_router)
-
-
-# Этот хэндлер срабатывает на кодовое слово и присваивает роль методиста
-@router.message(Text(text="methodist"))
-async def process_methodist_command(message: Message, state: FSMContext):
-    await state.clear()
-    user = select_user(message.chat.id)
-    user.role = "methodist"
-    session.add(user)
-    session.commit()
-    await message.answer(
-        text=LEXICON[user.language]["methodist"],
-        reply_markup=methodist_profile_keyboard(user.language),
-    )
-
-
-# Этот хэндлер срабатывает на кодовое слово и присваивает роль вожатого
-@router.message(Text(text="counsellor"))
-async def process_counsellor_command(message: Message, state: FSMContext):
-    await state.clear()
-    user = select_user(message.chat.id)
-    user.role = "counsellor"
-    session.add(user)
-    session.commit()
-    if user.language == "ru":
-        await message.answer(text=LEXICON["RU"]["counsellor"])
-    elif user.language == "tt":
-        await message.answer(text=LEXICON["TT"]["counsellor"])
-    else:
-        await message.answer(
-            text=LEXICON[user.language]["counsellor"],
-            reply_markup=create_profile_keyboard(),
-        )
+router.include_routers(methodist_router, child_router, admin_router)
 
 
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message, state: FSMContext):
-    # Проверяем есть ли юзер в базе
+    # Проверяем установлены ли пароли на роли
+    check_password()
+
+    # Проверяем есть ли юзер в базе и если нет, то регистрируем
     user = select_user(message.chat.id)
-    if is_user_in_db(message.chat.id):
+    if message.chat.id == config.boss_id:
+        await state.clear()
+        await message.answer(
+            "Добро пожаловать, босс", reply_markup=boss_pass_keyboard()
+        )
+    elif is_user_in_db(message.chat.id):
         await state.clear()
         await message.answer(
             f"Добро пожаловать, {user.name}",
@@ -195,13 +172,13 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
 @child_router.message(
     F.text.in_(
         [
-            BUTTONS["RU"]["write_to_counsellor"],
-            BUTTONS["TT"]["write_to_counsellor"],
-            BUTTONS["EN"]["write_to_counsellor"],
+            BUTTONS["RU"]["write_to_counselor"],
+            BUTTONS["TT"]["write_to_counselor"],
+            BUTTONS["EN"]["write_to_counselor"],
         ]
     )
 )
-async def write_to_counsellor(message: Message):
+async def write_to_counselor(message: Message):
     """Обработчик кнопки 'Написать вожатому'.
 
     Отправляет инлайн кнопку со ссылкой на вожатого.
@@ -210,10 +187,10 @@ async def write_to_counsellor(message: Message):
         user = select_user(message.from_user.id)
         language = user.language
         # Как-то получаем username вожатого
-        counsellor = message.from_user.username
+        counselor = message.from_user.username
         await message.answer(
-            LEXICON[language]["counsellor_contact"],
-            reply_markup=contacts_keyboard(language, counsellor),
+            LEXICON[language]["counselor_contact"],
+            reply_markup=contacts_keyboard(language, counselor),
         )
     except KeyError as err:
         logger.error(
