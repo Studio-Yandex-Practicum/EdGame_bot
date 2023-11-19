@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_table('passwords',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('master_pass', sa.String(length=256), nullable=False),
-    sa.Column('counselor_pass', sa.String(length=256), nullable=False),
+    sa.Column('counsellor_pass', sa.String(length=256), nullable=False),
     sa.Column('methodist_pass', sa.String(length=256), nullable=False),
     sa.PrimaryKeyConstraint('id')
     )

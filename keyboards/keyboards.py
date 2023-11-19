@@ -56,14 +56,14 @@ def profile_keyboard(language: str) -> ReplyKeyboardMarkup:
     reviewed_achievements = KeyboardButton(
         text=buttons["reviewed_achievements"]
     )
-    write_to_counselor = KeyboardButton(text=buttons["write_to_counselor"])
+    write_to_counsellor = KeyboardButton(text=buttons["write_to_counsellor"])
     help_button = KeyboardButton(text=buttons["help"])
     join_team = KeyboardButton(text=buttons["join_team"])
     keyboard = [
         [available_achievements, current_achievements],
         [reviewed_achievements, join_team],
         [edit_profile],
-        [help_button, write_to_counselor],
+        [help_button, write_to_counsellor],
     ]
     markup = ReplyKeyboardMarkup(
         keyboard=keyboard, resize_keyboard=True, one_time_keyboard=True
@@ -192,12 +192,12 @@ def send_artifact_keyboard(language: str, cd: str):
 def contacts_keyboard(language: str, username: str) -> InlineKeyboardMarkup:
     """Генерирует клавиатуру для связи с вожатым."""
     buttons = BUTTONS[language]
-    counselor_chat = InlineKeyboardButton(
-        text=buttons["counselor_chat"], url=f"https://t.me/{username}"
+    counsellor_chat = InlineKeyboardButton(
+        text=buttons["counsellor_chat"], url=f"https://t.me/{username}"
     )
     lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
 
-    keyboard = [[counselor_chat], [lk]]
+    keyboard = [[counsellor_chat], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
 

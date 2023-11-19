@@ -14,7 +14,7 @@ from db.models import (
     User,
 )
 
-from .pass_gen import counselor_pass, master_pass, methodist_pass
+from .pass_gen import counsellor_pass, master_pass, methodist_pass
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def check_password():
     if password is None:
         password = Password(
             master_pass=master_pass,
-            counselor_pass=counselor_pass,
+            counsellor_pass=counsellor_pass,
             methodist_pass=methodist_pass,
         )
         session.add(password)

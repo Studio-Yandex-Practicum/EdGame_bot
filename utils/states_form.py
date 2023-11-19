@@ -176,7 +176,7 @@ class EnteringPassword(StatesGroup):
     psw2hash = State()
 
 
-class CounselorPassword(StatesGroup):
+class counsellorPassword(StatesGroup):
     """Машина состояний для ввода пароля для вожатого."""
 
     psw2hash = State()
