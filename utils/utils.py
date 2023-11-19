@@ -551,3 +551,51 @@ def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
 
     info = f"{count}. {name}"
     return info
+
+
+def generate_achievements_list_category(
+    tasks: list[Achievement],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+) -> dict:
+    """Пагинированный список ачивок.
+
+    Обрабатывает список доступных ачивок и выдает словарь с текстом для
+    сообщения, словарем id ачивок, информацию для пагинатора,
+    если ачивок много, и номер последнего элемента для клавиатуры.
+    """
+    task_list = []
+    task_ids = {}
+    count = 0
+    if not pages:
+        for i in range(len(tasks)):
+            count += 1
+            task_info = (
+                f"{count}: Название - {tasks[i].name}, "
+                f"Описание - {tasks[i].description}, "
+                f"Цена - {tasks[i].price}, "
+                f"начальные баллы - {tasks[i].score}\n"
+            )
+            task_list.append(task_info)
+            task_ids[count] = tasks[i].id
+            # Список описаний, разбитый по страницам
+            pages = pagination_static(page_size, task_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
+    msg = f'{lexicon["category_achievement"]}:\n\n' f"{text}\n\n"
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "tasks": tasks,
+        "task_ids": task_ids,
+        "msg": msg,
+    }
+    return page_info

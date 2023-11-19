@@ -2,11 +2,18 @@ import logging
 
 from aiogram import Bot, F, Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+)
 
+from db.engine import session
 from keyboards.keyboards import (
     help_keyboard,
     pagination_keyboard,
+    pagination_keyboard_category,
     send_artifact_keyboard,
     task_keyboard,
     task_page_keyboard,
@@ -20,9 +27,11 @@ from utils.db_commands import (
 )
 from utils.pagination import PAGE_SIZE
 from utils.states_form import Data
+from utils.user_utils import get_achievement_by_category_id, get_all_categories
 from utils.utils import (
     generate_achievement_message_for_kid,
     generate_achievements_list,
+    generate_achievements_list_category,
     generate_text_with_reviewed_tasks,
     generate_text_with_tasks_in_review,
     get_achievement_info,
@@ -450,3 +459,163 @@ async def process_artefact(
         )
     except Exception as err:
         logger.error(f"Ошибка при обработке артефакта: {err}")
+
+
+@child_task_router.message(
+    F.text.in_(
+        [
+            BUTTONS["RU"]["category"],
+            BUTTONS["TT"]["category"],
+            BUTTONS["EN"]["category"],
+        ]
+    )
+)
+async def check_child_categories(message: Message, state: FSMContext):
+    """Получение категорий заданий для ребенка."""
+    try:
+        user = select_user(message.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        category = get_all_categories(session)
+        if not category:
+            await message.answer(lexicon["no_category"])
+            return
+        buttons = []
+        for i in range(len(category)):
+            t = category[i]
+            button = InlineKeyboardButton(
+                text=t.name, callback_data=f"{t.id},{language},{t.name}"
+            )
+            buttons.append([button])
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+        await state.set_state(Data.category)
+        await message.answer(
+            lexicon["choose_category"], reply_markup=reply_markup
+        )
+    except Exception as err:
+        await message.answer(lexicon["error_achievement"])
+        logger.error(f"Произошла ошибка при поиске заданий: {err}")
+    finally:
+        session.close()
+
+
+@child_task_router.callback_query(
+    F.data.in_(["categories:next", "categories:previous"])
+)
+async def show_achievements_list_pagination(
+    query: CallbackQuery, state: FSMContext
+):
+    """
+    Обработчик инлайн кнопки Посмотреть доступные ачивки.
+
+    Отправляет список открытых ачивок, сохраняет открытые
+    ачивки и их id через Data.
+    """
+    try:
+        await query.answer()
+        data = await state.get_data()
+        tasks = data["tasks"]
+        pagination_info = data["pagination_info"]
+        current_page = pagination_info["current_page"]
+        pages = pagination_info["pages"]
+        language = data["language"]
+        lexicon = LEXICON[language]
+        if query.data == "categories:next":
+            current_page += 1
+        elif query.data == "categories:previous":
+            current_page -= 1
+        info = generate_achievements_list_category(
+            tasks=tasks,
+            lexicon=lexicon,
+            current_page=current_page,
+            page_size=PAGE_SIZE,
+            pages=pages,
+        )
+        msg = info["msg"]
+        first_item = info["first_item"]
+        final_item = info["final_item"]
+        lk_button = {
+            "text": BUTTONS[language]["lk"],
+            "callback_data": "profile",
+        }
+        await state.update_data(pagination_info=info)
+        await query.message.edit_text(
+            msg,
+            reply_markup=pagination_keyboard_category(
+                buttons_count=len(tasks),
+                start=first_item,
+                end=final_item,
+                cd="categories",
+                page_size=PAGE_SIZE,
+                extra_button=lk_button,
+            ),
+        )
+    except KeyError as err:
+        logger.error(f"Проверь правильность ключевых слов: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при отправке списка ачивок. {err}")
+    finally:
+        session.close()
+
+
+@child_task_router.callback_query(
+    F.data.in_(
+        [
+            "categories:next",
+            "categories:previous",
+        ]
+    )
+)
+@child_task_router.callback_query(Data.category)
+async def check_child_buttons(query: CallbackQuery, state: FSMContext):
+    """Обработчик инлайн кнопки ачивки с выводом информации о ачивках."""
+    try:
+        td = query.data.split(",")
+        category_id = int(td[0])
+        language = td[1]
+        category_name = td[2]
+        lexicon = LEXICON[language]
+        achievement = get_achievement_by_category_id(session, category_id)
+        if not achievement:
+            await query.message.answer(
+                f"В {category_name} - Нет доступных заданий"
+            )
+            return
+        info = generate_achievements_list_category(
+            tasks=achievement,
+            lexicon=lexicon,
+            current_page=1,
+            page_size=PAGE_SIZE,
+        )
+        msg = info["msg"]
+        task_ids = info["task_ids"]
+        first_item = info["first_item"]
+        final_item = info["final_item"]
+        lk_button = {
+            "text": BUTTONS[language]["lk"],
+            "callback_data": "profile",
+        }
+        await state.update_data(
+            tasks=achievement,
+            task_ids=task_ids,
+            pagination_info=info,
+            language=language,
+        )
+        await query.message.answer(f"Выбрана категория - {category_name}")
+        await query.message.edit_text(
+            msg,
+            reply_markup=pagination_keyboard_category(
+                buttons_count=len(achievement),
+                start=first_item,
+                end=final_item,
+                cd="categories",
+                page_size=PAGE_SIZE,
+                extra_button=lk_button,
+            ),
+        )
+        logger.info("Получен список ачивок")
+    except Exception as err:
+        await query.message.answer(lexicon["error_achievement"])
+        logger.error(f"Произошла ошибка при поиске заданий: {err}")
+    finally:
+        session.close()

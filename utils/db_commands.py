@@ -300,15 +300,27 @@ def approve_task(user_achievement_id):
         .first()
     )
     user_achievement.status = "approved"
+
     achievement = (
         session.query(Achievement)
         .filter(Achievement.id == user_achievement.achievement_id)
         .first()
     )
+
     user = (
         session.query(User).filter(User.id == user_achievement.user_id).first()
     )
-    user.score += achievement.score
+
+    team = (
+        session.query(User)
+        .filter(User.team_id == user_achievement.team_id)
+        .all()
+    )
+    if achievement.achievement_type == "individual":
+        user.score += achievement.score
+    elif achievement.achievement_type == "teamwork":
+        for user in team:
+            user.score += achievement.score
     try:
         session.commit()
         return True

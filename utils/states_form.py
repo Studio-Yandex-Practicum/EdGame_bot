@@ -17,6 +17,7 @@ class Data(StatesGroup):
     artifact = State()
     child = State()
     query_id = State()
+    category = State()
 
 
 class Profile(StatesGroup):
