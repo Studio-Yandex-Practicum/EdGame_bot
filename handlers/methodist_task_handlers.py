@@ -13,8 +13,6 @@ from aiogram.types import (
     Message,
 )
 
-# from keyboards.counsellor_keyboard import create_yes_no_keyboard
-# from keyboards.keyboards import pagination_keyboard
 from handlers.handlers import BasePaginatedHandler
 from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
 from keyboards.methodist_keyboards import (
@@ -50,7 +48,6 @@ from utils.db_commands import (
 from utils.pagination import PAGE_SIZE
 from utils.states_form import (
     AddTask,
-    # CategoryList,
     EditTask,
     ReviewTask,
     TaskList,
