@@ -4,7 +4,10 @@ from db import models
 from db.engine import session
 
 # Указать здесь file_id фото из вашего бота.
-IMAGE = "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRuAtAAKe0jEb4nZQSUzRlbmAC2RrAQADAgADcwADMAQ"
+IMAGE = (
+    "AgACAgIAAxkBAAIMgGUqmZfZqdt88lziFbzptSZcRu"
+    "AtAAKe0jEb4nZQSUzRlbmAC2RrAQADAgADcwADMAQ"
+)
 
 
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):

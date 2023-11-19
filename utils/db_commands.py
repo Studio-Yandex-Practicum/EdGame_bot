@@ -465,8 +465,7 @@ def create_category(data: dict):
         return False
 
 
-def get_category(category_id: int = None,
-                    name: str = None) -> Category:
+def get_category(category_id: int = None, name: str = None) -> Category:
     """Достаем категорию из базы по ее id."""
     category = (
         session.query(

@@ -13,8 +13,8 @@ from aiogram.types import (
     Message,
 )
 
-from keyboards.counsellor_keyboard import create_yes_no_keyboard
-from keyboards.keyboards import pagination_keyboard
+# from keyboards.counsellor_keyboard import create_yes_no_keyboard
+# from keyboards.keyboards import pagination_keyboard
 from handlers.handlers import BasePaginatedHandler
 from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
 from keyboards.methodist_keyboards import (
@@ -50,7 +50,7 @@ from utils.db_commands import (
 from utils.pagination import PAGE_SIZE
 from utils.states_form import (
     AddTask,
-    CategoryList,
+    # CategoryList,
     EditTask,
     ReviewTask,
     TaskList,
@@ -770,11 +770,11 @@ async def process_add_category_for_task(
             await query.message.answer(
                 lexicon["confirm_task_category"],
                 reply_markup=confirm_achievements_category(language),
-                )
+            )
             return
         if (
-            query.data.startswith("add_achievements_category") or
-            query.data.startswith("back_to_list_category")
+            query.data.startswith("add_achievements_category")
+            or query.data.startswith("back_to_list_category")
         ):
             categories = get_all_categories()
             categories_list = generate_categories_list(
@@ -858,7 +858,7 @@ async def add_category_for_task(query: CallbackQuery, state: FSMContext):
         await query.message.answer(
             lexicon["confirm_task_category"],
             reply_markup=confirm_achievements_category(language),
-            )
+        )
     except KeyError as err:
         logger.error(
             f"Ошибка в ключе при запросе категории для ачивки: {err}"
@@ -923,7 +923,7 @@ async def saving_task_to_db(query: CallbackQuery, state: FSMContext):
             photo=image,
             caption=info,
             reply_markup=confirm_task_keyboard(language),
-        )        
+        )
     except KeyError as err:
         logger.error(f"Ошибка в ключе при сохранении ачивки в БД: {err}")
     except Exception as err:
@@ -1624,7 +1624,9 @@ async def process_change_artifact_type(
 
 
 @methodist_task_router.callback_query(F.data == "edit_achievements_category")
-async def change_achievements_category(query: CallbackQuery, state: FSMContext):
+async def change_achievements_category(
+    query: CallbackQuery, state: FSMContext
+):
     """Обработчик создает состояние для смены категории ачивки.
 
     Предлагает выбрать из кнопок.
@@ -1672,7 +1674,7 @@ async def change_achievements_category(query: CallbackQuery, state: FSMContext):
     EditTask.achievements_category,
     F.data.startswith("achievements_category:")
 )
-async def process_change_artifact_type(
+async def process_change_artifact_category(
     query: CallbackQuery, state: FSMContext
 ):
     """Принимает новую категорию ачивки."""
@@ -1683,9 +1685,9 @@ async def process_change_artifact_type(
         lexicon = LEXICON[language]
         query_id = data["query_id"]
         if (
-            query.data == "achievements_category:next" or
-            query.data == "achievements_category:previous"
-        ):            
+            query.data == "achievements_category:next"
+            or query.data == "achievements_category:previous"
+        ):
             categories = data["categories"]
             current_page = data["categories_list"]["current_page"]
             if query.data == "achievements_category:next":
@@ -1718,9 +1720,10 @@ async def process_change_artifact_type(
             )
         elif query.data.startswith("achievements_category:"):
             category_ids = int(query.data.split(":")[-1])
-            category_id = data["categories_list"]["categories_ids"][category_ids]
+            ids_for_catrgory_id = data["categories_list"]["categories_ids"]
+            category_id = ids_for_catrgory_id[category_ids]
             await state.update_data(category_id=category_id)
-            await state.set_state(EditTask.achievements_category)            
+            await state.set_state(EditTask.achievements_category)
             task_saved = set_achievement_param(
                 achievement_id=data["task_id"],
                 achievements_category=category_id
