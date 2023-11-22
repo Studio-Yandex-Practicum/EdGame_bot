@@ -14,7 +14,7 @@ from keyboards.methodist_keyboards import methodist_profile_keyboard
 from lexicon.lexicon import BUTTONS, LEXICON
 from utils.db_commands import select_user, set_user_param
 from utils.states_form import Data
-from utils.utils import generate_profile_info
+from utils.utils import methodist_profile_info
 
 from .methodist_categories_handlers import methodist_category_router
 from .methodist_task_handlers import methodist_task_router
@@ -23,9 +23,9 @@ from .methodist_team_handlers import methodist_team_router
 logger = logging.getLogger(__name__)
 
 methodist_router = Router()
-methodist_router.include_routers(methodist_category_router,
-                                 methodist_team_router,
-                                 methodist_task_router)
+methodist_router.include_routers(
+    methodist_category_router, methodist_team_router, methodist_task_router
+)
 methodist_router.message.filter(IsMethodist())
 methodist_router.callback_query.filter(IsMethodist())
 
@@ -42,7 +42,7 @@ async def profile_info(message: Message, state: FSMContext):
         language = user.language
         lexicon = LEXICON[language]
         # Генерируем инфу для ЛК
-        msg = generate_profile_info(user, lexicon)
+        msg = methodist_profile_info(lexicon, user)
         await message.answer(
             msg, reply_markup=methodist_profile_keyboard(language)
         )
@@ -66,7 +66,7 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
         language = user.language
         lexicon = LEXICON[user.language]
         # Генерируем инфу для ЛК
-        msg = generate_profile_info(user, lexicon)
+        msg = methodist_profile_info(lexicon, user)
         await query.message.answer(
             msg, reply_markup=methodist_profile_keyboard(language)
         )

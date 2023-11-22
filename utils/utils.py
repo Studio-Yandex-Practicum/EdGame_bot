@@ -3,10 +3,11 @@ from typing import Callable
 
 from aiogram.types import Message
 
-from db.models import Achievement, Category, User, Team
+from db.models import Achievement, Category, Team, User
 from utils.db_commands import (
     get_achievement,
     get_category,
+    get_info_for_methodist_profile,
     send_task,
     user_achievements,
 )
@@ -417,19 +418,14 @@ def generate_teams_list(
 def get_category_info(
     category_id: type(int or str), lexicon: dict
 ) -> dict[str, str]:
-    """
-    Возвращает словарь с названием категории для сообщения
-    пользователю.
-    """
+    """Возвращает словарь с названием категории для сообщения пользователю."""
     category = (
         get_category(category_id)
         if isinstance(category_id, int)
         else get_category(name=category_id)
     )
     name = category.name
-    info = (
-        f'{lexicon["category_name"]}: {name}'
-    )
+    info = f'{lexicon["category_name"]}: {name}'
     return {"info": info, "id": category.id}
 
 
@@ -441,10 +437,11 @@ def generate_categories_list(
     pages: dict = None,
     methodist=False,
 ) -> dict:
-    """
-    Обрабатывает список доступных категорий и выдает словарь с текстом для
-    сообщения, словарем id категорий, информацию для пагинатора,
-    если категорий много, и номер последнего элемента для клавиатуры.
+    """Обрабатывает список доступных категорий.
+
+    Выдает словарь с текстом для сообщения, словарем id категорий, информацию
+    для пагинатора, если категорий много, и номер последнего элемента для
+    клавиатуры.
     """
     categories_list = []
     categories_ids = {}
@@ -463,10 +460,7 @@ def generate_categories_list(
         current_page = 1
     new_page = pages[current_page]
     text = "\n\n".join(new_page["objects"])
-    msg = (
-        f'{lexicon["available_categories"]}:\n\n'
-        f'{text}\n\n'
-    )
+    msg = f'{lexicon["available_categories"]}:\n\n' f"{text}\n\n"
     if methodist:
         msg = f'{lexicon["available_categories"]}:\n\n{text}\n\n'
     page_info = {
@@ -476,7 +470,7 @@ def generate_categories_list(
         "pages": pages,
         "categories": categories,
         "categories_ids": categories_ids,
-        "msg": msg
+        "msg": msg,
     }
     return page_info
 
@@ -537,6 +531,7 @@ def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
 
 def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
     *_, kid, achievement, category = obj
+    category = category if category is not None else lexicon["uncategorized"]
     info = (
         f"<b>{count}.</b>\n"
         f"<b>{lexicon['category']}:</b> {category}\n"
@@ -550,6 +545,22 @@ def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
     *_, name = obj
 
     info = f"{count}. {name}"
+    return info
+
+
+def methodist_profile_info(lexicon: dict, user: User) -> str:
+    """Текст в профиле методиста."""
+    query = get_info_for_methodist_profile()
+
+    info = (
+        f"{lexicon['methodist_profile']}\n\n"
+        f"<b>{lexicon['name']}</b> - {user.name}\n"
+        f"<b>{lexicon['teams']}</b> - {query['teams_count']}\n"
+        f"<b>{lexicon['children']}</b> - {query['children_count']}\n"
+        f"<b>{lexicon['categories']}</b> - {query['categories_count']}\n"
+        f"<b>{lexicon['achievements']}</b> - {query['achievements_count']}\n"
+        f"<b>{lexicon['tasks']}</b> - {query['tasks_count']}\n"
+    )
     return info
 
 
