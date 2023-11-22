@@ -139,9 +139,8 @@ class JoinTeam(StatesGroup):
 
 
 class AddCategory(StatesGroup):
-    """
-    Машина состояний для добавления категории в базу методистом.
-    """
+    """Машина состояний для добавления категории в базу методистом."""
+
     language = State()
     category_id = State()
     name = State()
@@ -149,9 +148,8 @@ class AddCategory(StatesGroup):
 
 
 class EditCategory(StatesGroup):
-    """
-    Машина состояний для редактирования категории методистом.
-    """
+    """Машина состояний для редактирования категории методистом."""
+
     language = State()
     category_id = State()
     name = State()
@@ -160,9 +158,8 @@ class EditCategory(StatesGroup):
 
 
 class CategoryList(StatesGroup):
-    """
-    Машина состояний для отображения списка категорий у методиста.
-    """
+    """Машина состояний для отображения списка категорий у методиста."""
+
     language = State()
     categories = State()
     category_ids = State()
@@ -177,7 +174,7 @@ class EnteringPassword(StatesGroup):
     psw2hash = State()
 
 
-class counsellorPassword(StatesGroup):
+class CounsellorPassword(StatesGroup):
     """Машина состояний для ввода пароля для вожатого."""
 
     psw2hash = State()

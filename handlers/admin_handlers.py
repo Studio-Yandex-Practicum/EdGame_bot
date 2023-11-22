@@ -20,7 +20,7 @@ from keyboards.methodist_keyboards import methodist_profile_keyboard
 from lexicon.lexicon import LEXICON
 from utils.db_commands import select_user
 from utils.states_form import (
-    counsellorPassword,
+    CounsellorPassword,
     EnteringPassword,
     MasterPassword,
     MethodistPassword,
@@ -86,12 +86,12 @@ async def change_counsellor_pass(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(
         text=LEXICON["RU"]["counsellor_pass"], reply_markup=cancel_keyboard()
     )
-    await state.set_state(counsellorPassword.psw2hash)
+    await state.set_state(CounsellorPassword.psw2hash)
 
 
 # Обрабатываем пароль вожатого
 @admin_router.message(
-    StateFilter(counsellorPassword.psw2hash), F.text.isalpha()
+    StateFilter(CounsellorPassword.psw2hash), F.text.isalpha()
 )
 async def hashing_counsellor_password(message: Message, state: FSMContext):
     """Хешируем и сохраняем новый пароль вожатого."""
