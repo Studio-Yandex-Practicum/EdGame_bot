@@ -3,9 +3,10 @@ from typing import Callable
 
 from aiogram.types import Message
 
-from db.models import Achievement, Team, User
+from db.models import Achievement, Category, Team, User
 from utils.db_commands import (
     get_achievement,
+    get_category,
     get_info_for_methodist_profile,
     send_task,
     user_achievements,
@@ -163,6 +164,9 @@ def get_achievement_info(
     task_type = task.achievement_type
     score = task.score
     price = task.price
+    category = task.category_id
+    if not category:
+        category = lexicon["task_not_category"]
     info = (
         f'{lexicon["task_name"]}: {name}\n'
         f'{lexicon["score_rate"]}: {score}\n'
@@ -170,9 +174,10 @@ def get_achievement_info(
         f'{lexicon["task_instruction"]}: {instruction}\n'
         f'{lexicon["artifact_type"]}: {lexicon[artifact_type]}\n'
         f'{lexicon["task_type"]}: {lexicon[task_type]}\n'
+        f'{lexicon["task_category"]}: {category}\n'
         f'{lexicon["task_price"]}: {price}'
     )
-    return {"info": info, "image": image, "task": task}
+    return {"info": info, "image": image, "task": task, "id": task.id}
 
 
 def generate_achievement_message_for_kid(
@@ -208,7 +213,7 @@ def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
         if status == "pending":
             count += 1
             task_info = (
-                f'{count}: {lexicon["pending_counselor"]}\n'
+                f'{count}: {lexicon["pending_counsellor"]}\n'
                 f'{lexicon["task_name"]}: {task.name}\n'
                 f'{lexicon["task_description"]}: {task.description}'
             )
@@ -405,6 +410,66 @@ def generate_teams_list(
         "pages": pages,
         "teams": teams,
         "team_ids": team_ids,
+        "msg": msg,
+    }
+    return page_info
+
+
+def get_category_info(
+    category_id: type(int or str), lexicon: dict
+) -> dict[str, str]:
+    """Возвращает словарь с названием категории для сообщения пользователю."""
+    category = (
+        get_category(category_id)
+        if isinstance(category_id, int)
+        else get_category(name=category_id)
+    )
+    name = category.name
+    info = f'{lexicon["category_name"]}: {name}'
+    return {"info": info, "id": category.id}
+
+
+def generate_categories_list(
+    categories: list[Category],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+    methodist=False,
+) -> dict:
+    """Обрабатывает список доступных категорий.
+
+    Выдает словарь с текстом для сообщения, словарем id категорий, информацию
+    для пагинатора, если категорий много, и номер последнего элемента для
+    клавиатуры.
+    """
+    categories_list = []
+    categories_ids = {}
+    count = 0
+    if not pages:
+        for i in range(len(categories)):
+            count += 1
+            categories_info = f"{count}: {categories[i].name}"
+            categories_list.append(categories_info)
+            categories_ids[count] = categories[i].id
+            # Список описаний, разбитый по страницам
+            pages = pagination_static(page_size, categories_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
+    msg = f'{lexicon["available_categories"]}:\n\n' f"{text}\n\n"
+    if methodist:
+        msg = f'{lexicon["available_categories"]}:\n\n{text}\n\n'
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "categories": categories,
+        "categories_ids": categories_ids,
         "msg": msg,
     }
     return page_info

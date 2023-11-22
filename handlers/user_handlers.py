@@ -172,13 +172,13 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
 @child_router.message(
     F.text.in_(
         [
-            BUTTONS["RU"]["write_to_counselor"],
-            BUTTONS["TT"]["write_to_counselor"],
-            BUTTONS["EN"]["write_to_counselor"],
+            BUTTONS["RU"]["write_to_counsellor"],
+            BUTTONS["TT"]["write_to_counsellor"],
+            BUTTONS["EN"]["write_to_counsellor"],
         ]
     )
 )
-async def write_to_counselor(message: Message):
+async def write_to_counsellor(message: Message):
     """Обработчик кнопки 'Написать вожатому'.
 
     Отправляет инлайн кнопку со ссылкой на вожатого.
@@ -187,10 +187,10 @@ async def write_to_counselor(message: Message):
         user = select_user(message.from_user.id)
         language = user.language
         # Как-то получаем username вожатого
-        counselor = message.from_user.username
+        counsellor = message.from_user.username
         await message.answer(
-            LEXICON[language]["counselor_contact"],
-            reply_markup=contacts_keyboard(language, counselor),
+            LEXICON[language]["counsellor_contact"],
+            reply_markup=contacts_keyboard(language, counsellor),
         )
     except KeyError as err:
         logger.error(

@@ -13,7 +13,7 @@ from aiogram.types import (
 from db.engine import session
 from db.models import AchievementStatus, User
 from filters.custom_filters import IsCounselour
-from keyboards.counselor_keyboard import (
+from keyboards.counsellor_keyboard import (
     create_inline_keyboard,
     create_profile_keyboard,
     create_yes_no_keyboard,

@@ -14,13 +14,13 @@ from keyboards.admin_keyboards import (
     boss_pass_keyboard,
     henchman_pass_keyboard,
 )
-from keyboards.counselor_keyboard import create_profile_keyboard
+from keyboards.counsellor_keyboard import create_profile_keyboard
 from keyboards.keyboards import cancel_keyboard
 from keyboards.methodist_keyboards import methodist_profile_keyboard
 from lexicon.lexicon import LEXICON
 from utils.db_commands import select_user
 from utils.states_form import (
-    CounselorPassword,
+    CounsellorPassword,
     EnteringPassword,
     MasterPassword,
     MethodistPassword,
@@ -51,14 +51,14 @@ async def hashing_password(message: Message, state: FSMContext):
     r = conn.execute(s)
     row = r.fetchone()
     master_psw = row[1]
-    counselor_psw = row[2]
+    counsellor_psw = row[2]
     methodist_psw = row[3]
-    if psw == counselor_psw:
-        user.role = "counselor"
+    if psw == counsellor_psw:
+        user.role = "counsellor"
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON["RU"]["counselor"],
+            text=LEXICON["RU"]["counsellor"],
             reply_markup=create_profile_keyboard(),
         )
     elif psw == methodist_psw:
@@ -78,22 +78,22 @@ async def hashing_password(message: Message, state: FSMContext):
 
 
 @admin_router.callback_query(
-    F.data == "counselor_pass", StateFilter(default_state)
+    F.data == "counsellor_pass", StateFilter(default_state)
 )
-async def change_counselor_pass(callback: CallbackQuery, state: FSMContext):
+async def change_counsellor_pass(callback: CallbackQuery, state: FSMContext):
     """Смена пароля вожатого."""
     await callback.message.delete()
     await callback.message.answer(
-        text=LEXICON["RU"]["counselor_pass"], reply_markup=cancel_keyboard()
+        text=LEXICON["RU"]["counsellor_pass"], reply_markup=cancel_keyboard()
     )
-    await state.set_state(CounselorPassword.psw2hash)
+    await state.set_state(CounsellorPassword.psw2hash)
 
 
 # Обрабатываем пароль вожатого
 @admin_router.message(
-    StateFilter(CounselorPassword.psw2hash), F.text.isalpha()
+    StateFilter(CounsellorPassword.psw2hash), F.text.isalpha()
 )
-async def hashing_counselor_password(message: Message, state: FSMContext):
+async def hashing_counsellor_password(message: Message, state: FSMContext):
     """Хешируем и сохраняем новый пароль вожатого."""
     # Берем остальные пароли из базы
     conn = engine.connect()
@@ -107,11 +107,11 @@ async def hashing_counselor_password(message: Message, state: FSMContext):
     session.delete(i)
     session.commit()
     # Обновляем пароль вожатого
-    psw_counselor_hash = hashlib.sha256(message.text.encode())
-    counselor_psw = psw_counselor_hash.hexdigest()
+    psw_counsellor_hash = hashlib.sha256(message.text.encode())
+    counsellor_psw = psw_counsellor_hash.hexdigest()
     password = Password(
         master_pass=master_psw,
-        counselor_pass=counselor_psw,
+        counsellor_pass=counsellor_psw,
         methodist_pass=methodist_psw,
     )
     session.add(password)
@@ -144,7 +144,7 @@ async def hashing_methodist_password(message: Message, state: FSMContext):
     r = conn.execute(s)
     row = r.fetchone()
     master_psw = row[1]
-    counselor_psw = row[2]
+    counsellor_psw = row[2]
     # Удаляем старые пароли в базе
     i = session.query(Password).first()
     session.delete(i)
@@ -154,7 +154,7 @@ async def hashing_methodist_password(message: Message, state: FSMContext):
     methodist_psw = psw_methodist_hash.hexdigest()
     password = Password(
         master_pass=master_psw,
-        counselor_pass=counselor_psw,
+        counsellor_pass=counsellor_psw,
         methodist_pass=methodist_psw,
     )
     session.add(password)
@@ -184,7 +184,7 @@ async def hashing_master_password(message: Message, state: FSMContext):
     s = select(Password)
     r = conn.execute(s)
     row = r.fetchone()
-    counselor_psw = row[2]
+    counsellor_psw = row[2]
     methodist_psw = row[3]
     # Удаляем старые пароли в базе
     i = session.query(Password).first()
@@ -195,7 +195,7 @@ async def hashing_master_password(message: Message, state: FSMContext):
     master_psw = psw_master_hash.hexdigest()
     password = Password(
         master_pass=master_psw,
-        counselor_pass=counselor_psw,
+        counsellor_pass=counsellor_psw,
         methodist_pass=methodist_psw,
     )
     session.add(password)
