@@ -4,7 +4,12 @@ from typing import Callable
 from aiogram.types import Message
 
 from db.models import Achievement, Team, User
-from utils.db_commands import get_achievement, send_task, user_achievements
+from utils.db_commands import (
+    get_achievement,
+    get_info_for_methodist_profile,
+    send_task,
+    user_achievements,
+)
 
 from .pagination import pagination_static
 
@@ -461,6 +466,7 @@ def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
 
 def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
     *_, kid, achievement, category = obj
+    category = category if category is not None else lexicon["uncategorized"]
     info = (
         f"<b>{count}.</b>\n"
         f"<b>{lexicon['category']}:</b> {category}\n"
@@ -474,6 +480,22 @@ def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
     *_, name = obj
 
     info = f"{count}. {name}"
+    return info
+
+
+def methodist_profile_info(lexicon: dict, user: User) -> str:
+    """Текст в профиле методиста."""
+    query = get_info_for_methodist_profile()
+
+    info = (
+        f"{lexicon['methodist_profile']}\n\n"
+        f"<b>{lexicon['name']}</b> - {user.name}\n"
+        f"<b>{lexicon['teams']}</b> - {query['teams_count']}\n"
+        f"<b>{lexicon['children']}</b> - {query['children_count']}\n"
+        f"<b>{lexicon['categories']}</b> - {query['categories_count']}\n"
+        f"<b>{lexicon['achievements']}</b> - {query['achievements_count']}\n"
+        f"<b>{lexicon['tasks']}</b> - {query['tasks_count']}\n"
+    )
     return info
 
 

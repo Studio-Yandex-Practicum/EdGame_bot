@@ -222,14 +222,14 @@ async def rejection_reason(message: types.Message, state: FSMContext):
     task_data = await state.get_data()
     task_id = task_data.get("task_id")
 
-    if message.text in ["Отмена", "Нет"]:
+    if message.text.lower() in ["отмена", "нет"]:
         await message.answer(
             "Хорошо, сообщение об отмене будет доставлено без комментария"
         )
         await state.clear()
         session.close()
         return
-    save_rejection_reason_in_db(session, task_id, message.text)
+    save_rejection_reason_in_db(task_id, message.text)
     await message.answer("Причина отказа сохранена")
     await state.clear()
     session.close()

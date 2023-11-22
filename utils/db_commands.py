@@ -2,6 +2,7 @@ import logging
 import time
 from datetime import datetime
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from db.engine import session
@@ -453,7 +454,7 @@ def get_tasks_by_status(status: str) -> list[tuple]:
         )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
-        .join(Category, Category.id == Achievement.category_id)
+        .join(Category, Category.id == Achievement.category_id, isouter=True)
         .filter(AchievementStatus.status == status)
         .all()
     )
@@ -469,7 +470,7 @@ def get_tasks_by_achievement_and_status(
         )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
-        .join(Category, Category.id == Achievement.category_id)
+        .join(Category, Category.id == Achievement.category_id, isouter=True)
         .filter(
             AchievementStatus.status == status,
             AchievementStatus.achievement_id == achievement_id,
@@ -488,7 +489,7 @@ def get_tasks_by_achievement_category_and_status(
         )
         .join(User, AchievementStatus.user_id == User.id)
         .join(Achievement, Achievement.id == AchievementStatus.achievement_id)
-        .join(Category, Category.id == Achievement.category_id)
+        .join(Category, Category.id == Achievement.category_id, isouter=True)
         .filter(
             AchievementStatus.status == status,
             Achievement.category_id == category_id,
@@ -523,4 +524,37 @@ def get_achievements_with_tasks(status: str) -> Achievement:
         .filter(AchievementStatus.status == status)
         .distinct()
         .all()
+    )
+
+
+def get_info_for_methodist_profile() -> dict:
+    """Информация для профиля методиста."""
+    teams_count = session.query(
+        func.count(Team.id).label("teams_count")
+    ).subquery()
+    children_count = session.query(
+        func.count(User.id).filter(User.role == "kid").label("children_count")
+    ).subquery()
+    categories_count = session.query(
+        func.count(Category.id).label("categories_count")
+    ).subquery()
+    achievements_count = session.query(
+        func.count(Achievement.id).label("achievements_count")
+    ).subquery()
+    tasks_count = session.query(
+        func.count(AchievementStatus.id)
+        .filter(AchievementStatus.status == "pending_methodist")
+        .label("tasks_count")
+    ).subquery()
+
+    return (
+        session.query(
+            teams_count,
+            children_count,
+            categories_count,
+            achievements_count,
+            tasks_count,
+        )
+        .first()
+        ._asdict()
     )
