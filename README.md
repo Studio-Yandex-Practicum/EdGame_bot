@@ -49,7 +49,7 @@ pre-commit install
 - Привязка текста к языку пользователя и возможность менять язык
 
 ### Документация
-- Запустите *sphinx-apidoc -o ./source ..*   
-- Запустите *make html*     
+- Запустите **sphinx-apidoc -o ./source ..**   
+- Запустите **make html**     
 - Документация находиться в папке docs/build     
   
