@@ -1,0 +1,41 @@
+version: "3.8"
+volumes:
+  pg_data:
+
+services:
+  db:
+    image: postgres:15.3-alpine
+    container_name: edgame-bot-db-local
+    restart: always
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  test_db:
+    image: postgres:15.3-alpine
+    container_name: edgame-bot-db-test
+    restart: always
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB_TEST}
+      - POSTGRES_USER=${POSTGRES_USER_TEST}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_TEST}
+      - DB_HOST=${DB_HOST_TEST}
+      - DB_PORT=${POSTGRES_PORT_TEST}
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT_TEST}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER_TEST} -d
+      ${POSTGRES_DB_TEST}'"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

@@ -10,6 +10,7 @@ from aiogram.types import (
 def create_profile_keyboard():
     profile_keyboard = [
         [KeyboardButton(text="Список детей")],
+        [KeyboardButton(text="Список детей в группе")],
         [KeyboardButton(text="Проверить задания")],
         [KeyboardButton(text="Проверить конкретное задание")],
         [KeyboardButton(text="Узнать общий прогресс отряда")],
