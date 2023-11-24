@@ -50,7 +50,17 @@ pre-commit install
 
 ### Документация
 - Перейти в папку docs
-- Запустите **sphinx-apidoc -o ./source ..**   
-- Запустите **make html**     
-- Документация находиться в папке docs/build/html   
-  
+- Запустите:
+
+```bash
+sphinx-apidoc -o ./source ..
+``` 
+
+- Запустите **make html** 
+
+```bash
+make html
+```
+
+- Документация находиться в папке docs/build/html  
+
