@@ -56,7 +56,7 @@ pre-commit install
 sphinx-apidoc -o ./source ..
 ``` 
 
-- Запустите **make html** 
+- Запустите
 
 ```bash
 make html
