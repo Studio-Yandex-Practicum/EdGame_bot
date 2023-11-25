@@ -2,6 +2,7 @@ import logging
 from typing import Callable
 
 from aiogram.types import Message
+from sqlalchemy import Row
 
 from db.models import Achievement, Category, Team, User
 from utils.db_commands import (
@@ -476,7 +477,7 @@ def generate_categories_list(
 
 
 def generate_objects_list(
-    objects: list | list[tuple],
+    objects: list | list[Row],
     lexicon: dict,
     msg: Callable,
     obj_info: Callable,
@@ -490,6 +491,11 @@ def generate_objects_list(
     Выдает словарь с текстом для сообщения, словарем id объектов моделей
     данных, информацию для пагинатора, если объектов моделей данных много,
     и номер последнего элемента для клавиатуры.
+
+    :objects - запрос из базы, который нужно пагинировать. Первый элемент
+        должен быть id [Row(1, ),].
+    :msg - шаблон сообщения.
+    :obj_info - шаблон объекта для пагинации.
     """
     objects_list = []
     objects_ids = {}
