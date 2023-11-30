@@ -6,7 +6,7 @@ volumes:
 
 services:
   db:
-    image: postgres:15.4-bookworm
+    image: postgres:15.4-alpine
     container_name: edgame-bot-db-stage
     restart: always
     volumes:
@@ -26,7 +26,7 @@ services:
     container_name: edgame-bot
     restart: always
     volumes:
-      - ./logs:/edgame_bot/logs
+      - ./logs:/EdGame_bot/logs/
     depends_on:
       db:
         condition: service_healthy

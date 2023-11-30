@@ -314,7 +314,10 @@ def approve_task(user_achievement_id):
 
     team = (
         session.query(User)
-        .filter(User.team_id == user_achievement.team_id)
+        .filter(
+            User.team_id == user_achievement.team_id,
+            User.team_id.is_not(None),
+        )
         .all()
     )
     if achievement.achievement_type == "individual":
@@ -581,23 +584,25 @@ def get_achievements_with_tasks(status: str) -> Achievement:
 
 def get_info_for_methodist_profile() -> dict:
     """Информация для профиля методиста."""
-    teams_count = session.query(
-        func.count(Team.id).label("teams_count")
-    ).subquery()
+    teams_count = session.query(func.count(Team.id)).label("teams_count")
+
     children_count = session.query(
-        func.count(User.id).filter(User.role == "kid").label("children_count")
-    ).subquery()
-    categories_count = session.query(
-        func.count(Category.id).label("categories_count")
-    ).subquery()
-    achievements_count = session.query(
-        func.count(Achievement.id).label("achievements_count")
-    ).subquery()
+        func.count(User.id).filter(User.role == "kid")
+    ).label("children_count")
+
+    categories_count = session.query(func.count(Category.id)).label(
+        "categories_count"
+    )
+
+    achievements_count = session.query(func.count(Achievement.id)).label(
+        "achievements_count"
+    )
+
     tasks_count = session.query(
-        func.count(AchievementStatus.id)
-        .filter(AchievementStatus.status == "pending_methodist")
-        .label("tasks_count")
-    ).subquery()
+        func.count(AchievementStatus.id).filter(
+            AchievementStatus.status == "pending_methodist"
+        )
+    ).label("tasks_count")
 
     return (
         session.query(

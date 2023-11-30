@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
 from aiogram import Bot, Dispatcher
@@ -14,8 +15,13 @@ logger = logging.getLogger(__name__)
 async def main():
     """Функция конфигурирования и запуска бота."""
     # Конфигурируем логирование
+    log_dir = os.path.abspath("logs")
+    log_filename = os.path.join(log_dir, "bot_logfile.log")
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
+
     rotating_handler = RotatingFileHandler(
-        filename="bot_logfile.log",
+        filename=log_filename,
         maxBytes=50000000,
         backupCount=3,
         encoding="utf-8",
