@@ -91,8 +91,9 @@ async def process_select_language(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Profile.get_name)
 
 
-@router.message(StateFilter(Profile.get_name))
+@router.message(StateFilter(Profile.get_name), F.text.isalpha())
 async def process_get_name(message: Message, state: FSMContext):
+    """Ввод имени."""
     await state.update_data(name=message.text)
     user_language = await state.get_data()
     if user_language["language"] == "RU":
@@ -105,7 +106,21 @@ async def process_get_name(message: Message, state: FSMContext):
     await state.set_state(Profile.get_group)
 
 
-@router.message(StateFilter(Profile.get_group))
+@router.message(StateFilter(Profile.get_name))
+async def warning_not_name(message: Message, state: FSMContext):
+    """Проверка, что пользователь ввел буквы в имени."""
+    user_data = await state.get_data()
+    language = user_data["language"]
+    if language == "RU":
+        text = LEXICON["RU"]["err_name"]
+    elif language == "TT":
+        text = LEXICON["TT"]["err_name"]
+    else:
+        text = LEXICON["EN"]["err_name"]
+    await message.answer(text)
+
+
+@router.message(StateFilter(Profile.get_group), F.text.isdigit())
 async def process_get_group(message: Message, state: FSMContext):
     await state.update_data(group=message.text)
     await state.update_data(id=int(message.chat.id))
@@ -121,6 +136,20 @@ async def process_get_group(message: Message, state: FSMContext):
     # Вносим данные пользователь в БД
     register_user(user_data)
     await state.clear()
+
+
+@router.message(StateFilter(Profile.get_group))
+async def warning_not_group(message: Message, state: FSMContext):
+    """Проверка, что пользователь ввел цифры в группе."""
+    user_data = await state.get_data()
+    language = user_data["language"]
+    if language == "RU":
+        text = LEXICON["RU"]["err_group"]
+    elif language == "TT":
+        text = LEXICON["TT"]["err_group"]
+    else:
+        text = LEXICON["EN"]["err_group"]
+    await message.answer(text)
 
 
 # Меню ребенка
