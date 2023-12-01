@@ -91,8 +91,9 @@ async def process_select_language(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Profile.get_name)
 
 
-@router.message(StateFilter(Profile.get_name))
+@router.message(StateFilter(Profile.get_name), F.text.isalpha())
 async def process_get_name(message: Message, state: FSMContext):
+    """Ввод имени."""
     await state.update_data(name=message.text)
     user_language = await state.get_data()
     if user_language["language"] == "RU":
@@ -105,7 +106,21 @@ async def process_get_name(message: Message, state: FSMContext):
     await state.set_state(Profile.get_group)
 
 
-@router.message(StateFilter(Profile.get_group))
+@router.message(StateFilter(Profile.get_name))
+async def warning_not_name(message: Message, state: FSMContext):
+    """Проверка, что пользователь ввел буквы в имени."""
+    user_data = await state.get_data()
+    language = user_data["language"]
+    if language == "RU":
+        text = LEXICON["RU"]["err_name"]
+    elif language == "TT":
+        text = LEXICON["TT"]["err_name"]
+    else:
+        text = LEXICON["EN"]["err_name"]
+    await message.answer(text)
+
+
+@router.message(StateFilter(Profile.get_group), F.text.isdigit())
 async def process_get_group(message: Message, state: FSMContext):
     await state.update_data(group=message.text)
     await state.update_data(id=int(message.chat.id))
@@ -121,6 +136,20 @@ async def process_get_group(message: Message, state: FSMContext):
     # Вносим данные пользователь в БД
     register_user(user_data)
     await state.clear()
+
+
+@router.message(StateFilter(Profile.get_group))
+async def warning_not_group(message: Message, state: FSMContext):
+    """Проверка, что пользователь ввел цифры в группе."""
+    user_data = await state.get_data()
+    language = user_data["language"]
+    if language == "RU":
+        text = LEXICON["RU"]["err_group"]
+    elif language == "TT":
+        text = LEXICON["TT"]["err_group"]
+    else:
+        text = LEXICON["EN"]["err_group"]
+    await message.answer(text)
 
 
 # Меню ребенка
@@ -172,13 +201,13 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
 @child_router.message(
     F.text.in_(
         [
-            BUTTONS["RU"]["write_to_counselor"],
-            BUTTONS["TT"]["write_to_counselor"],
-            BUTTONS["EN"]["write_to_counselor"],
+            BUTTONS["RU"]["write_to_counsellor"],
+            BUTTONS["TT"]["write_to_counsellor"],
+            BUTTONS["EN"]["write_to_counsellor"],
         ]
     )
 )
-async def write_to_counselor(message: Message):
+async def write_to_counsellor(message: Message):
     """Обработчик кнопки 'Написать вожатому'.
 
     Отправляет инлайн кнопку со ссылкой на вожатого.
@@ -187,10 +216,10 @@ async def write_to_counselor(message: Message):
         user = select_user(message.from_user.id)
         language = user.language
         # Как-то получаем username вожатого
-        counselor = message.from_user.username
+        counsellor = message.from_user.username
         await message.answer(
-            LEXICON[language]["counselor_contact"],
-            reply_markup=contacts_keyboard(language, counselor),
+            LEXICON[language]["counsellor_contact"],
+            reply_markup=contacts_keyboard(language, counsellor),
         )
     except KeyError as err:
         logger.error(

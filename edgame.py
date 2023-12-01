@@ -1,12 +1,13 @@
 import asyncio
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 
 from config_data.config import load_config
-from handlers import counselor_handlers, user_handlers
+from handlers import counsellor_handlers, user_handlers
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,13 @@ logger = logging.getLogger(__name__)
 async def main():
     """Функция конфигурирования и запуска бота."""
     # Конфигурируем логирование
+    log_dir = os.path.abspath("logs")
+    log_filename = os.path.join(log_dir, "bot_logfile.log")
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
+
     rotating_handler = RotatingFileHandler(
-        filename="bot_logfile.log",
+        filename=log_filename,
         maxBytes=50000000,
         backupCount=3,
         encoding="utf-8",
@@ -40,7 +46,7 @@ async def main():
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню
     dp.include_router(user_handlers.router)
-    dp.include_router(counselor_handlers.router)
+    dp.include_router(counsellor_handlers.router)
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_my_commands()
     await bot.delete_webhook(drop_pending_updates=True)

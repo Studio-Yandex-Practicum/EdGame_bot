@@ -17,6 +17,7 @@ class Data(StatesGroup):
     artifact = State()
     child = State()
     query_id = State()
+    category = State()
 
 
 class Profile(StatesGroup):
@@ -54,6 +55,7 @@ class AddTask(StatesGroup):
     artifact_type = State()
     achievement_type = State()
     confirm_task = State()
+    category = State()
 
 
 class EditTask(StatesGroup):
@@ -71,6 +73,7 @@ class EditTask(StatesGroup):
     achievement_type = State()
     confirm_task = State()
     query_id = State()
+    achievements_category = State()
 
 
 class ReviewTask(StatesGroup):
@@ -135,13 +138,43 @@ class JoinTeam(StatesGroup):
     become_captain = State()
 
 
+class AddCategory(StatesGroup):
+    """Машина состояний для добавления категории в базу методистом."""
+
+    language = State()
+    category_id = State()
+    name = State()
+    confirm_task = State()
+
+
+class EditCategory(StatesGroup):
+    """Машина состояний для редактирования категории методистом."""
+
+    language = State()
+    category_id = State()
+    name = State()
+    confirm_task = State()
+    query_id = State()
+
+
+class CategoryList(StatesGroup):
+    """Машина состояний для отображения списка категорий у методиста."""
+
+    language = State()
+    categories = State()
+    category_ids = State()
+    category_info = State()
+    current_page = State()
+    query_id = State()
+
+
 class EnteringPassword(StatesGroup):
     """Машина состояний для ввода пароля."""
 
     psw2hash = State()
 
 
-class CounselorPassword(StatesGroup):
+class CounsellorPassword(StatesGroup):
     """Машина состояний для ввода пароля для вожатого."""
 
     psw2hash = State()

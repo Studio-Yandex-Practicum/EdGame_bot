@@ -20,7 +20,7 @@ class User(DeclarativeBase):
     name = Column(String(50), nullable=False)
     role = Column(
         String,
-        CheckConstraint(r"role in ('methodist', 'counselor', 'kid')"),
+        CheckConstraint(r"role in ('methodist', 'counsellor', 'kid')"),
         nullable=False,
     )
     language = Column(
@@ -177,7 +177,7 @@ class Password(DeclarativeBase):
 
     id = Column(Integer, nullable=False, primary_key=True)
     master_pass = Column(String(256), nullable=False)
-    counselor_pass = Column(String(256), nullable=False)
+    counsellor_pass = Column(String(256), nullable=False)
     methodist_pass = Column(String(256), nullable=False)
 
     def __repr__(self):

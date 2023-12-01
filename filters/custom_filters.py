@@ -38,7 +38,7 @@ class IsCounselour(BaseFilter):
         COUNSELOURS = [
             user.id
             for user in session.query(User)
-            .filter(User.role == "counselour")
+            .filter(User.role == "counsellor")
             .all()
         ]
         return message.from_user.id in COUNSELOURS

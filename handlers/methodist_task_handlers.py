@@ -16,9 +16,11 @@ from aiogram.types import (
 from handlers.handlers import BasePaginatedHandler
 from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
 from keyboards.methodist_keyboards import (
+    add_achievements_category,
     add_task_keyboard,
     artifact_type_keyboard,
     choice_tasks_for_review_keyboard,
+    confirm_achievements_category,
     confirm_task_keyboard,
     continue_job_keyboard,
     edit_task_keyboard,
@@ -33,6 +35,7 @@ from utils.db_commands import (
     create_achievement,
     get_achievements_with_tasks,
     get_all_achievements,
+    get_all_categories,
     get_categories_with_tasks,
     get_tasks_by_achievement_and_status,
     get_tasks_by_achievement_category_and_status,
@@ -43,10 +46,16 @@ from utils.db_commands import (
     set_achievement_param,
 )
 from utils.pagination import PAGE_SIZE
-from utils.states_form import AddTask, EditTask, ReviewTask, TaskList
+from utils.states_form import (
+    AddTask,
+    EditTask,
+    ReviewTask,
+    TaskList,
+)
 from utils.user_utils import save_rejection_reason_in_db
 from utils.utils import (
     generate_achievements_list,
+    generate_categories_list,
     get_achievement_info,
     message_pattern,
     object_info,
@@ -710,14 +719,9 @@ async def process_add_task_artifact_type(
 
 @methodist_task_router.message(AddTask.image)
 async def process_add_task_image(message: Message, state: FSMContext):
-    """Принимает изображение для ачивки, сохраняет ачивку в БД.
-
-    Отправляет собранные данные для подтверждения корректности или для
-    перехода к редактированию.
-    """
+    """Принимает изображение для ачивки, запрашивает категорию."""
     try:
         data = await state.get_data()
-        await state.clear()
         language = data["language"]
         lexicon = LEXICON[language]
         if not message.photo:
@@ -725,9 +729,159 @@ async def process_add_task_image(message: Message, state: FSMContext):
             await message.answer(lexicon["ask_image_again"])
             return
         data["image"] = message.photo[0].file_id
+        await state.update_data(image=data["image"])
+        await state.set_state(AddTask.category)
+        await message.answer(
+            LEXICON[language]["send_task_category"],
+            reply_markup=add_achievements_category(language),
+        )
+    except KeyError as err:
+        logger.error(f"Ошибка в ключе при запросе изображения ачивки: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при запросе изображения ачивки: {err}")
+
+
+@methodist_task_router.callback_query(
+    AddTask.category,
+    F.data.in_({
+        "add_achievements_category",
+        "achievements_category:next",
+        "achievements_category:previous",
+        "back_to_list_category",
+        "skip"
+    })
+)
+async def process_add_category_for_task(
+    query: CallbackQuery,
+    state: FSMContext
+):
+    """Запрашивает категорию для ачивки, отображает список категорий."""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        if query.data.startswith("skip"):
+            await state.set_state(AddTask.category)
+            await query.message.delete()
+            await query.message.answer(
+                lexicon["confirm_task_category"],
+                reply_markup=confirm_achievements_category(language),
+            )
+            return
+        if (
+            query.data.startswith("add_achievements_category")
+            or query.data.startswith("back_to_list_category")
+        ):
+            categories = get_all_categories()
+            categories_list = generate_categories_list(
+                categories=categories,
+                lexicon=lexicon,
+                current_page=0,
+                page_size=PAGE_SIZE
+            )
+            msg = categories_list["msg"]
+            first_item = categories_list["first_item"]
+            final_item = categories_list["final_item"]
+            await state.update_data(
+                categories=categories,
+                categories_list=categories_list
+            )
+            await state.set_state(AddTask.category)
+            await query.message.edit_text(
+                msg,
+                reply_markup=pagination_keyboard(
+                    buttons_count=len(categories),
+                    start=first_item,
+                    end=final_item,
+                    cd="achievements_category",
+                    page_size=PAGE_SIZE
+                )
+            )
+        elif query.data.startswith("achievements_category:"):
+            categories = data["categories"]
+            current_page = data["categories_list"]["current_page"]
+            if query.data == "achievements_category:next":
+                current_page += 1
+            elif query.data == "achievements_category:previous":
+                current_page -= 1
+            categories_list = generate_categories_list(
+                categories=categories,
+                lexicon=lexicon,
+                current_page=current_page,
+                page_size=PAGE_SIZE
+            )
+            msg = categories_list["msg"]
+            first_item = categories_list["first_item"]
+            final_item = categories_list["final_item"]
+            await state.update_data(
+                categories=categories,
+                categories_list=categories_list
+            )
+            await state.set_state(AddTask.category)
+            await query.message.edit_text(
+                msg,
+                reply_markup=pagination_keyboard(
+                    buttons_count=len(categories),
+                    start=first_item,
+                    end=final_item,
+                    cd="achievements_category",
+                    page_size=PAGE_SIZE
+                )
+            )
+    except KeyError as err:
+        logger.error(
+            f"Ошибка в ключе при запросе списка категорий для ачивки: {err}"
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при запросе списка категорий для ачивки: {err}")
+
+
+@methodist_task_router.callback_query(
+    AddTask.category, F.data.startswith("achievements_category:")
+)
+async def add_category_for_task(query: CallbackQuery, state: FSMContext):
+    """Принимает категорию для ачивки, переходит к сохранению ачивки в БД."""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        category_ids = int(query.data.split(":")[-1])
+        category_id = data["categories_list"]["categories_ids"][category_ids]
+        await state.update_data(category_id=category_id)
+        await state.set_state(AddTask.category)
+        await query.message.delete()
+        await query.message.answer(
+            lexicon["confirm_task_category"],
+            reply_markup=confirm_achievements_category(language),
+        )
+    except KeyError as err:
+        logger.error(
+            f"Ошибка в ключе при запросе категории для ачивки: {err}"
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при запросе категории для ачивки: {err}")
+
+
+@methodist_task_router.callback_query(
+    F.data == "confirm_achievements_category"
+)
+async def saving_task_to_db(query: CallbackQuery, state: FSMContext):
+    """Сохраняет ачивку в БД.
+
+    Отправляет собранные данные для подтверждения корректности или для
+    перехода к редактированию.
+    """
+    try:
+        await query.answer()
+        data = await state.get_data()
+        await state.clear()
+        language = data["language"]
+        lexicon = LEXICON[language]
         task_created = create_achievement(data)
         if not task_created:
-            await message.answer(
+            await query.message.answer(
                 lexicon["error_adding_task"],
                 reply_markup=methodist_profile_keyboard(language),
             )
@@ -759,18 +913,18 @@ async def process_add_task_image(message: Message, state: FSMContext):
             language=language,
         )
         # Сообщаем пользователю, что сейчас покажем, что получилось
-        await message.answer(lexicon["confirm_adding_task"])
+        await query.message.edit_text(lexicon["confirm_adding_task"])
         time.sleep(2)
         # Показываем, что получилось
-        await message.answer_photo(
+        await query.message.answer_photo(
             photo=image,
             caption=info,
             reply_markup=confirm_task_keyboard(language),
         )
     except KeyError as err:
-        logger.error(f"Ошибка в ключе при запросе подтверждения ачивки: {err}")
+        logger.error(f"Ошибка в ключе при сохранении ачивки в БД: {err}")
     except Exception as err:
-        logger.error(f"Ошибка при запросе подтверждения ачивки: {err}")
+        logger.error(f"Ошибка при сохранении ачивки в БД: {err}")
 
 
 @methodist_task_router.callback_query(
@@ -1464,3 +1618,125 @@ async def process_change_artifact_type(
         logger.error(f"Ошибка в ключе при изменении типа артефакта: {err}")
     except Exception as err:
         logger.error(f"Ошибка при сохранении типа артефакта: {err}")
+
+
+@methodist_task_router.callback_query(F.data == "edit_achievements_category")
+async def change_achievements_category(
+    query: CallbackQuery, state: FSMContext
+):
+    """Обработчик создает состояние для смены категории ачивки.
+
+    Предлагает выбрать из кнопок.
+    """
+    try:
+        await query.answer()
+        data = await state.get_data()
+        await state.set_state(EditTask.achievements_category)
+        language = data["language"]
+        lexicon = LEXICON[language]
+        categories = get_all_categories()
+        categories_list = generate_categories_list(
+            categories=categories,
+            lexicon=lexicon,
+            current_page=0,
+            page_size=PAGE_SIZE
+        )
+        msg = categories_list["msg"]
+        first_item = categories_list["first_item"]
+        final_item = categories_list["final_item"]
+        await state.update_data(
+            categories=categories,
+            categories_list=categories_list
+        )
+        await query.message.edit_text(
+            msg,
+            reply_markup=pagination_keyboard(
+                buttons_count=len(categories),
+                start=first_item,
+                end=final_item,
+                cd="achievements_category",
+                page_size=PAGE_SIZE
+            )
+        )
+    except KeyError as err:
+        logger.error(
+            "Ошибка в ключевом слове при запросе новой "
+            f"категории ачивки: {err}"
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при запросе новой категории ачивки: {err}")
+
+
+@methodist_task_router.callback_query(
+    EditTask.achievements_category,
+    F.data.startswith("achievements_category:")
+)
+async def process_change_artifact_category(
+    query: CallbackQuery, state: FSMContext
+):
+    """Принимает новую категорию ачивки."""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        query_id = data["query_id"]
+        if (
+            query.data == "achievements_category:next"
+            or query.data == "achievements_category:previous"
+        ):
+            categories = data["categories"]
+            current_page = data["categories_list"]["current_page"]
+            if query.data == "achievements_category:next":
+                current_page += 1
+            elif query.data == "achievements_category:previous":
+                current_page -= 1
+            categories_list = generate_categories_list(
+                categories=categories,
+                lexicon=lexicon,
+                current_page=current_page,
+                page_size=PAGE_SIZE
+            )
+            msg = categories_list["msg"]
+            first_item = categories_list["first_item"]
+            final_item = categories_list["final_item"]
+            await state.update_data(
+                categories=categories,
+                categories_list=categories_list
+            )
+            await state.set_state(EditTask.achievements_category)
+            await query.message.edit_text(
+                msg,
+                reply_markup=pagination_keyboard(
+                    buttons_count=len(categories),
+                    start=first_item,
+                    end=final_item,
+                    cd="achievements_category",
+                    page_size=PAGE_SIZE
+                )
+            )
+        elif query.data.startswith("achievements_category:"):
+            category_ids = int(query.data.split(":")[-1])
+            ids_for_catrgory_id = data["categories_list"]["categories_ids"]
+            category_id = ids_for_catrgory_id[category_ids]
+            await state.update_data(category_id=category_id)
+            await state.set_state(EditTask.achievements_category)
+            task_saved = set_achievement_param(
+                achievement_id=data["task_id"],
+                achievements_category=category_id
+            )
+            if not task_saved:
+                await query.message.answer(
+                    lexicon["error_adding_task"],
+                    reply_markup=methodist_profile_keyboard(language),
+                )
+                return
+            await query.message.delete()
+            await query.message.answer(
+                lexicon["task_edited"],
+                reply_markup=edit_task_keyboard(language, cd=query_id),
+            )
+    except KeyError as err:
+        logger.error(f"Ошибка в ключе при изменении категории ачивки: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при сохранении категории ачивки: {err}")

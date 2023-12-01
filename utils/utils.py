@@ -2,9 +2,16 @@ import logging
 from typing import Callable
 
 from aiogram.types import Message
+from sqlalchemy import Row
 
-from db.models import Achievement, Team, User
-from utils.db_commands import get_achievement, send_task, user_achievements
+from db.models import Achievement, Category, Team, User
+from utils.db_commands import (
+    get_achievement,
+    get_category,
+    get_info_for_methodist_profile,
+    send_task,
+    user_achievements,
+)
 
 from .pagination import pagination_static
 
@@ -158,6 +165,9 @@ def get_achievement_info(
     task_type = task.achievement_type
     score = task.score
     price = task.price
+    category = task.category_id
+    if not category:
+        category = lexicon["task_not_category"]
     info = (
         f'{lexicon["task_name"]}: {name}\n'
         f'{lexicon["score_rate"]}: {score}\n'
@@ -165,9 +175,10 @@ def get_achievement_info(
         f'{lexicon["task_instruction"]}: {instruction}\n'
         f'{lexicon["artifact_type"]}: {lexicon[artifact_type]}\n'
         f'{lexicon["task_type"]}: {lexicon[task_type]}\n'
+        f'{lexicon["task_category"]}: {category}\n'
         f'{lexicon["task_price"]}: {price}'
     )
-    return {"info": info, "image": image, "task": task}
+    return {"info": info, "image": image, "task": task, "id": task.id}
 
 
 def generate_achievement_message_for_kid(
@@ -203,7 +214,7 @@ def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
         if status == "pending":
             count += 1
             task_info = (
-                f'{count}: {lexicon["pending_counselor"]}\n'
+                f'{count}: {lexicon["pending_counsellor"]}\n'
                 f'{lexicon["task_name"]}: {task.name}\n'
                 f'{lexicon["task_description"]}: {task.description}'
             )
@@ -405,8 +416,68 @@ def generate_teams_list(
     return page_info
 
 
+def get_category_info(
+    category_id: type(int or str), lexicon: dict
+) -> dict[str, str]:
+    """Возвращает словарь с названием категории для сообщения пользователю."""
+    category = (
+        get_category(category_id)
+        if isinstance(category_id, int)
+        else get_category(name=category_id)
+    )
+    name = category.name
+    info = f'{lexicon["category_name"]}: {name}'
+    return {"info": info, "id": category.id}
+
+
+def generate_categories_list(
+    categories: list[Category],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+    methodist=False,
+) -> dict:
+    """Обрабатывает список доступных категорий.
+
+    Выдает словарь с текстом для сообщения, словарем id категорий, информацию
+    для пагинатора, если категорий много, и номер последнего элемента для
+    клавиатуры.
+    """
+    categories_list = []
+    categories_ids = {}
+    count = 0
+    if not pages:
+        for i in range(len(categories)):
+            count += 1
+            categories_info = f"{count}: {categories[i].name}"
+            categories_list.append(categories_info)
+            categories_ids[count] = categories[i].id
+            # Список описаний, разбитый по страницам
+            pages = pagination_static(page_size, categories_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
+    msg = f'{lexicon["available_categories"]}:\n\n' f"{text}\n\n"
+    if methodist:
+        msg = f'{lexicon["available_categories"]}:\n\n{text}\n\n'
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "categories": categories,
+        "categories_ids": categories_ids,
+        "msg": msg,
+    }
+    return page_info
+
+
 def generate_objects_list(
-    objects: list | list[tuple],
+    objects: list | list[Row],
     lexicon: dict,
     msg: Callable,
     obj_info: Callable,
@@ -420,6 +491,11 @@ def generate_objects_list(
     Выдает словарь с текстом для сообщения, словарем id объектов моделей
     данных, информацию для пагинатора, если объектов моделей данных много,
     и номер последнего элемента для клавиатуры.
+
+    :objects - запрос из базы, который нужно пагинировать. Первый элемент
+        должен быть id [Row(1, ),].
+    :msg - шаблон сообщения.
+    :obj_info - шаблон объекта для пагинации.
     """
     objects_list = []
     objects_ids = {}
@@ -461,6 +537,7 @@ def message_pattern(lexicon: dict, text: str, header: str, footer: str) -> str:
 
 def task_info(lexicon: dict, count: int, obj: tuple, *args, **kwargs) -> str:
     *_, kid, achievement, category = obj
+    category = category if category is not None else lexicon["uncategorized"]
     info = (
         f"<b>{count}.</b>\n"
         f"<b>{lexicon['category']}:</b> {category}\n"
@@ -475,3 +552,67 @@ def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
 
     info = f"{count}. {name}"
     return info
+
+
+def methodist_profile_info(lexicon: dict, user: User) -> str:
+    """Текст в профиле методиста."""
+    query = get_info_for_methodist_profile()
+
+    info = (
+        f"{lexicon['methodist_profile']}\n\n"
+        f"<b>{lexicon['name']}</b> - {user.name}\n"
+        f"<b>{lexicon['teams']}</b> - {query['teams_count']}\n"
+        f"<b>{lexicon['children']}</b> - {query['children_count']}\n"
+        f"<b>{lexicon['categories']}</b> - {query['categories_count']}\n"
+        f"<b>{lexicon['achievements']}</b> - {query['achievements_count']}\n"
+        f"<b>{lexicon['tasks']}</b> - {query['tasks_count']}\n"
+    )
+    return info
+
+
+def generate_achievements_list_category(
+    tasks: list[Achievement],
+    lexicon: dict,
+    current_page: int = 1,
+    page_size: int = 5,
+    pages: dict = None,
+) -> dict:
+    """Пагинированный список ачивок.
+
+    Обрабатывает список доступных ачивок и выдает словарь с текстом для
+    сообщения, словарем id ачивок, информацию для пагинатора,
+    если ачивок много, и номер последнего элемента для клавиатуры.
+    """
+    task_list = []
+    task_ids = {}
+    count = 0
+    if not pages:
+        for i in range(len(tasks)):
+            count += 1
+            task_info = (
+                f"{count}: Название - {tasks[i].name}, "
+                f"Описание - {tasks[i].description}, "
+                f"Цена - {tasks[i].price}, "
+                f"начальные баллы - {tasks[i].score}\n"
+            )
+            task_list.append(task_info)
+            task_ids[count] = tasks[i].id
+            # Список описаний, разбитый по страницам
+            pages = pagination_static(page_size, task_list)
+    if current_page < 1:
+        current_page = len(pages)
+    elif current_page > len(pages):
+        current_page = 1
+    new_page = pages[current_page]
+    text = "\n\n".join(new_page["objects"])
+    msg = f'{lexicon["category_achievement"]}:\n\n' f"{text}\n\n"
+    page_info = {
+        "current_page": current_page,
+        "first_item": new_page["first_item"],
+        "final_item": new_page["final_item"],
+        "pages": pages,
+        "tasks": tasks,
+        "task_ids": task_ids,
+        "msg": msg,
+    }
+    return page_info

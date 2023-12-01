@@ -1,19 +1,29 @@
+import logging
+
 from aiogram import F, Router, types
-from aiogram.filters import Command, Text
+from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
 
 from db.engine import session
 from db.models import AchievementStatus, User
-from keyboards.counselor_keyboard import (
+from filters.custom_filters import IsCounselour
+from keyboards.counsellor_keyboard import (
     create_inline_keyboard,
     create_profile_keyboard,
     create_yes_no_keyboard,
 )
+from lexicon.lexicon import BUTTONS, LEXICON
 from utils.db_commands import (
     approve_task,
     available_achievements,
     reject_task,
+    select_user,
     send_to_methdist,
 )
 from utils.user_utils import (
@@ -27,6 +37,7 @@ from utils.user_utils import (
     get_all_child_achievements,
     get_all_children,
     get_all_children_from_group,
+    get_all_group,
     get_child_by_name_and_group,
     get_message_text,
     get_user_name,
@@ -34,7 +45,11 @@ from utils.user_utils import (
     send_task,
 )
 
+logger = logging.getLogger(__name__)
+
 router = Router()
+router.message.filter(IsCounselour())
+router.callback_query.filter(IsCounselour())
 
 
 class TaskState(StatesGroup):
@@ -49,9 +64,13 @@ class TaskState(StatesGroup):
     reject_message = State()
     children_group = State()
     achievement_name = State()
+    group_buttons = State()
+    buttons_child_info = State()
 
 
-@router.message(Command("lk"))
+@router.message(
+    F.text.in_([BUTTONS["RU"]["lk"], BUTTONS["TT"]["lk"], BUTTONS["EN"]["lk"]])
+)
 async def enter_profile(message: types.Message):
     keyboard = create_profile_keyboard()
     await message.answer("Теперь ты в личном кабинете!", reply_markup=keyboard)
@@ -203,14 +222,14 @@ async def rejection_reason(message: types.Message, state: FSMContext):
     task_data = await state.get_data()
     task_id = task_data.get("task_id")
 
-    if message.text in ["Отмена", "Нет"]:
+    if message.text.lower() in ["отмена", "нет"]:
         await message.answer(
             "Хорошо, сообщение об отмене будет доставлено без комментария"
         )
         await state.clear()
         session.close()
         return
-    save_rejection_reason_in_db(session, task_id, message.text)
+    save_rejection_reason_in_db(task_id, message.text)
     await message.answer("Причина отказа сохранена")
     await state.clear()
     session.close()
@@ -453,3 +472,99 @@ async def display_troop_task_review(message: types.Message, state: FSMContext):
         await state.clear()
     finally:
         session.close()
+
+
+@router.message(F.text == "Список детей в группе")
+async def get_group_children(message: types.Message, state: FSMContext):
+    """Возможность выбора группы, в которой есть ребенок."""
+    try:
+        user = select_user(message.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        teams = get_all_group(session)
+        if not teams:
+            await message.answer(lexicon["no_group"])
+            return
+        buttons = []
+        for team in teams:
+            button = InlineKeyboardButton(
+                text=team.group, callback_data=f"{team.group},{language}"
+            )
+            buttons.append([button])
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+        await state.set_state(TaskState.group_buttons)
+
+        await message.answer(
+            lexicon["group_number"], reply_markup=reply_markup
+        )
+    except Exception as err:
+        await message.answer(lexicon["error_group"])
+        logger.error(f"Произошла ошибка при поиске группы: {err}")
+        await state.clear()
+    finally:
+        session.close()
+
+
+@router.callback_query(TaskState.group_buttons)
+async def show_children_group(query: CallbackQuery, state: FSMContext):
+    """Возможность выбора информации о ребенке."""
+    try:
+        await query.answer()
+        await state.clear()
+        td = query.data.split(",")
+        group_id = int(td[0])
+        language = td[1]
+        lexicon = LEXICON[language]
+        user_ids = get_all_children_from_group(session, group_id)
+        if not user_ids:
+            await query.message.answer(lexicon["not_child_group"])
+            return
+        buttons = []
+        for user in user_ids:
+            button = InlineKeyboardButton(
+                text=user.name,
+                callback_data=(
+                    f"{user.name}, "
+                    f"{user.group}, "
+                    f"{user.score},"
+                    f"{language}"
+                ),
+            )
+            buttons.append([button])
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+        await state.set_state(TaskState.buttons_child_info)
+        await query.message.edit_text(
+            lexicon["choose_child"], reply_markup=reply_markup
+        )
+    except IndexError:
+        await query.message.answer(lexicon["not_child_group"])
+        await state.clear()
+    except Exception as err:
+        await query.message.edit_text(lexicon["error_group"])
+        logger.error(f"Произошла ошибка при поиске группы: {err}")
+        await state.clear()
+    finally:
+        session.close()
+
+
+@router.callback_query(TaskState.buttons_child_info)
+async def check_child_buttons(query: CallbackQuery, state: FSMContext):
+    """Вывод информации о ребенке."""
+    try:
+        await query.answer()
+        await state.clear()
+        action = query.data.split(",")
+        name = action[0]
+        group = int(action[1])
+        score = int(action[2])
+        language = action[3]
+        lexicon = LEXICON[language]
+        await query.message.edit_text(
+            f"Ребенок, имя: {name}, группа: {group}, oчки: {score},"
+        )
+    except Exception as err:
+        await query.message.answer(lexicon["error_child"])
+        logger.error(f"Произошла ошибка : {err}")
+    finally:
+        session.close()
+        await state.clear()
