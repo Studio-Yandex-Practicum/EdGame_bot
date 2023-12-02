@@ -456,8 +456,8 @@ def statistics_for_keyboard(language: str) -> InlineKeyboardMarkup:
         callback_data="user_statistics"
     )
     achievements_statistics = InlineKeyboardButton(
-        text=buttons["back_to_list_category"],
-        callback_data="back_to_list_category"
+        text=buttons["achievements_statistics"],
+        callback_data="achievements_statistics"
     )
     markup = InlineKeyboardMarkup(
         inline_keyboard=[

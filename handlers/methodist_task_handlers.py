@@ -1753,9 +1753,62 @@ async def change_statistics(
         language = user.language
         lexicon = LEXICON[language]
         await query.answer(
-                text=lexicon["choice_tasks"],
+                text=lexicon["data_selection"],
                 reply_markup=statistics_for_keyboard(language),
             )
         await query.event.delete()
     except Exception as err:
-            logger.error(f"Ошибка при выборе заданий методистом: {err}")
+            logger.error(f"Ошибка при выборе статистических данных: {err}")
+
+
+@methodist_task_router.callback_query(F.data =="statistics") 
+async def change_statistics(
+    query: CallbackQuery
+):
+    """Выбор статистических данных."""
+    try:
+        user = select_user(query.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        await query.answer(
+                text=lexicon["data_selection"],
+                reply_markup=statistics_for_keyboard(language),
+            )
+        await query.event.delete()
+    except Exception as err:
+            logger.error(f"Ошибка при выборе статистических данных: {err}")
+
+@methodist_task_router.callback_query(F.data =="statistics") 
+async def change_user_statistics(
+    query: CallbackQuery
+):
+    """Выбор статистических данных пользователей."""
+    try:
+        user = select_user(query.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        await query.answer(
+                text=lexicon["data_selection"],
+                reply_markup=statistics_for_keyboard(language),
+            )
+        await query.event.delete()
+    except Exception as err:
+            logger.error(f"Ошибка при выборе статистических данных: {err}")
+
+
+@methodist_task_router.callback_query(F.data =="statistics") 
+async def change_user_statistics(
+    query: CallbackQuery
+):
+    """Выбор статистических данных пользователей."""
+    try:
+        user = select_user(query.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        await query.answer(
+                text=lexicon["data_selection"],
+                reply_markup=statistics_for_keyboard(language),
+            )
+        await query.event.delete()
+    except Exception as err:
+            logger.error(f"Ошибка при выборе статистических данных: {err}")
