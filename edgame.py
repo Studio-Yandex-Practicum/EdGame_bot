@@ -38,10 +38,10 @@ async def main():
 
     # Загружаем конфиг в переменную config
     config = load_config()
-
+    print(2)
     # Инициализируем бот и диспетчер
     bot = Bot(token=config.tg_bot.token, parse_mode=ParseMode.HTML)
-
+    print(bot, 3)
     dp = Dispatcher()
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню

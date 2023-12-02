@@ -36,7 +36,7 @@ def methodist_profile_keyboard(language: str) -> ReplyKeyboardMarkup:
     help_button = KeyboardButton(text=buttons["help"])
     add_category = KeyboardButton(text=buttons["add_category"])
     category_list = KeyboardButton(text=buttons["category_list"])
-
+    statistics = KeyboardButton(text=buttons["statistics"])
     keyboard = [
         [add_task, add_category, create_team],
         [tasks_for_review],
@@ -44,6 +44,7 @@ def methodist_profile_keyboard(language: str) -> ReplyKeyboardMarkup:
         [category_list],
         [team_list],
         [edit_profile],
+        [statistics],
         [help_button],
     ]
     markup = ReplyKeyboardMarkup(
@@ -445,4 +446,23 @@ def continue_job_keyboard(language: str, cd: str) -> InlineKeyboardMarkup:
     )
     keyboard = [[continue_btn], [tasks_for_review], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return markup
+
+def statistics_for_keyboard(language: str) -> InlineKeyboardMarkup:
+    """Генерирует клавиатуру в разделе добавления категории для ачивки."""
+    buttons = BUTTONS[language]
+    user_statistics = InlineKeyboardButton(
+        text=buttons["user_statistics"],
+        callback_data="user_statistics"
+    )
+    achievements_statistics = InlineKeyboardButton(
+        text=buttons["back_to_list_category"],
+        callback_data="back_to_list_category"
+    )
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [user_statistics],
+            [achievements_statistics]
+        ]
+    )
     return markup

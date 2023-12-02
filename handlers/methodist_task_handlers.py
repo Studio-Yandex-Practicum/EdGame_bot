@@ -28,6 +28,7 @@ from keyboards.methodist_keyboards import (
     review_keyboard_methodist,
     task_keyboard_methodist,
     task_type_keyboard,
+    statistics_for_keyboard,
 )
 from lexicon.lexicon import BUTTONS, LEXICON
 from utils.db_commands import (
@@ -1740,3 +1741,21 @@ async def process_change_artifact_category(
         logger.error(f"Ошибка в ключе при изменении категории ачивки: {err}")
     except Exception as err:
         logger.error(f"Ошибка при сохранении категории ачивки: {err}")
+
+
+@methodist_task_router.callback_query(F.data =="statistics") 
+async def change_statistics(
+    query: CallbackQuery
+):
+    """Выбор статистических данных."""
+    try:
+        user = select_user(query.from_user.id)
+        language = user.language
+        lexicon = LEXICON[language]
+        await query.answer(
+                text=lexicon["choice_tasks"],
+                reply_markup=statistics_for_keyboard(language),
+            )
+        await query.event.delete()
+    except Exception as err:
+            logger.error(f"Ошибка при выборе заданий методистом: {err}")
