@@ -7,12 +7,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
     Chat,
+    FSInputFile,
     InlineKeyboardMarkup,
     InputMediaPhoto,
     InputMediaVideo,
     Message,
 )
 
+from db.engine import session
 from handlers.handlers import BasePaginatedHandler
 from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
 from keyboards.methodist_keyboards import (
@@ -26,9 +28,9 @@ from keyboards.methodist_keyboards import (
     edit_task_keyboard,
     methodist_profile_keyboard,
     review_keyboard_methodist,
+    statistics_for_keyboard,
     task_keyboard_methodist,
     task_type_keyboard,
-    statistics_for_keyboard,
 )
 from lexicon.lexicon import BUTTONS, LEXICON
 from utils.db_commands import (
@@ -47,13 +49,13 @@ from utils.db_commands import (
     set_achievement_param,
 )
 from utils.pagination import PAGE_SIZE
-from utils.states_form import (
-    AddTask,
-    EditTask,
-    ReviewTask,
-    TaskList,
+from utils.states_form import AddTask, EditTask, ReviewTask, TaskList
+from utils.user_utils import (
+    export_xls,
+    get_achievement_statistics,
+    get_user_statistics,
+    save_rejection_reason_in_db,
 )
-from utils.user_utils import save_rejection_reason_in_db
 from utils.utils import (
     generate_achievements_list,
     generate_categories_list,
@@ -744,17 +746,18 @@ async def process_add_task_image(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(
     AddTask.category,
-    F.data.in_({
-        "add_achievements_category",
-        "achievements_category:next",
-        "achievements_category:previous",
-        "back_to_list_category",
-        "skip"
-    })
+    F.data.in_(
+        {
+            "add_achievements_category",
+            "achievements_category:next",
+            "achievements_category:previous",
+            "back_to_list_category",
+            "skip",
+        }
+    ),
 )
 async def process_add_category_for_task(
-    query: CallbackQuery,
-    state: FSMContext
+    query: CallbackQuery, state: FSMContext
 ):
     """Запрашивает категорию для ачивки, отображает список категорий."""
     try:
@@ -770,23 +773,21 @@ async def process_add_category_for_task(
                 reply_markup=confirm_achievements_category(language),
             )
             return
-        if (
-            query.data.startswith("add_achievements_category")
-            or query.data.startswith("back_to_list_category")
-        ):
+        if query.data.startswith(
+            "add_achievements_category"
+        ) or query.data.startswith("back_to_list_category"):
             categories = get_all_categories()
             categories_list = generate_categories_list(
                 categories=categories,
                 lexicon=lexicon,
                 current_page=0,
-                page_size=PAGE_SIZE
+                page_size=PAGE_SIZE,
             )
             msg = categories_list["msg"]
             first_item = categories_list["first_item"]
             final_item = categories_list["final_item"]
             await state.update_data(
-                categories=categories,
-                categories_list=categories_list
+                categories=categories, categories_list=categories_list
             )
             await state.set_state(AddTask.category)
             await query.message.edit_text(
@@ -796,8 +797,8 @@ async def process_add_category_for_task(
                     start=first_item,
                     end=final_item,
                     cd="achievements_category",
-                    page_size=PAGE_SIZE
-                )
+                    page_size=PAGE_SIZE,
+                ),
             )
         elif query.data.startswith("achievements_category:"):
             categories = data["categories"]
@@ -810,14 +811,13 @@ async def process_add_category_for_task(
                 categories=categories,
                 lexicon=lexicon,
                 current_page=current_page,
-                page_size=PAGE_SIZE
+                page_size=PAGE_SIZE,
             )
             msg = categories_list["msg"]
             first_item = categories_list["first_item"]
             final_item = categories_list["final_item"]
             await state.update_data(
-                categories=categories,
-                categories_list=categories_list
+                categories=categories, categories_list=categories_list
             )
             await state.set_state(AddTask.category)
             await query.message.edit_text(
@@ -827,8 +827,8 @@ async def process_add_category_for_task(
                     start=first_item,
                     end=final_item,
                     cd="achievements_category",
-                    page_size=PAGE_SIZE
-                )
+                    page_size=PAGE_SIZE,
+                ),
             )
     except KeyError as err:
         logger.error(
@@ -858,9 +858,7 @@ async def add_category_for_task(query: CallbackQuery, state: FSMContext):
             reply_markup=confirm_achievements_category(language),
         )
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключе при запросе категории для ачивки: {err}"
-        )
+        logger.error(f"Ошибка в ключе при запросе категории для ачивки: {err}")
     except Exception as err:
         logger.error(f"Ошибка при запросе категории для ачивки: {err}")
 
@@ -1640,14 +1638,13 @@ async def change_achievements_category(
             categories=categories,
             lexicon=lexicon,
             current_page=0,
-            page_size=PAGE_SIZE
+            page_size=PAGE_SIZE,
         )
         msg = categories_list["msg"]
         first_item = categories_list["first_item"]
         final_item = categories_list["final_item"]
         await state.update_data(
-            categories=categories,
-            categories_list=categories_list
+            categories=categories, categories_list=categories_list
         )
         await query.message.edit_text(
             msg,
@@ -1656,8 +1653,8 @@ async def change_achievements_category(
                 start=first_item,
                 end=final_item,
                 cd="achievements_category",
-                page_size=PAGE_SIZE
-            )
+                page_size=PAGE_SIZE,
+            ),
         )
     except KeyError as err:
         logger.error(
@@ -1669,8 +1666,7 @@ async def change_achievements_category(
 
 
 @methodist_task_router.callback_query(
-    EditTask.achievements_category,
-    F.data.startswith("achievements_category:")
+    EditTask.achievements_category, F.data.startswith("achievements_category:")
 )
 async def process_change_artifact_category(
     query: CallbackQuery, state: FSMContext
@@ -1696,14 +1692,13 @@ async def process_change_artifact_category(
                 categories=categories,
                 lexicon=lexicon,
                 current_page=current_page,
-                page_size=PAGE_SIZE
+                page_size=PAGE_SIZE,
             )
             msg = categories_list["msg"]
             first_item = categories_list["first_item"]
             final_item = categories_list["final_item"]
             await state.update_data(
-                categories=categories,
-                categories_list=categories_list
+                categories=categories, categories_list=categories_list
             )
             await state.set_state(EditTask.achievements_category)
             await query.message.edit_text(
@@ -1713,8 +1708,8 @@ async def process_change_artifact_category(
                     start=first_item,
                     end=final_item,
                     cd="achievements_category",
-                    page_size=PAGE_SIZE
-                )
+                    page_size=PAGE_SIZE,
+                ),
             )
         elif query.data.startswith("achievements_category:"):
             category_ids = int(query.data.split(":")[-1])
@@ -1724,7 +1719,7 @@ async def process_change_artifact_category(
             await state.set_state(EditTask.achievements_category)
             task_saved = set_achievement_param(
                 achievement_id=data["task_id"],
-                achievements_category=category_id
+                achievements_category=category_id,
             )
             if not task_saved:
                 await query.message.answer(
@@ -1743,72 +1738,56 @@ async def process_change_artifact_category(
         logger.error(f"Ошибка при сохранении категории ачивки: {err}")
 
 
-@methodist_task_router.callback_query(F.data =="statistics") 
-async def change_statistics(
-    query: CallbackQuery
-):
+@methodist_task_router.message(F.text == "Статистика")
+async def change_statistics(message: Message):
     """Выбор статистических данных."""
     try:
-        user = select_user(query.from_user.id)
+        user = select_user(message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
-        await query.answer(
-                text=lexicon["data_selection"],
-                reply_markup=statistics_for_keyboard(language),
-            )
-        await query.event.delete()
+        await message.answer(
+            text=lexicon["data_selection"],
+            reply_markup=statistics_for_keyboard(language),
+        )
+        await message.event.delete()
+    except KeyError as err:
+        logger.error(f"Ошибка в ключе статистических данных: {err}")
     except Exception as err:
-            logger.error(f"Ошибка при выборе статистических данных: {err}")
+        logger.error(f"Ошибка при выборе статистических данных: {err}")
 
 
-@methodist_task_router.callback_query(F.data =="statistics") 
-async def change_statistics(
-    query: CallbackQuery
-):
-    """Выбор статистических данных."""
+@methodist_task_router.message(F.text == "Статистика пользователей")
+async def change_statistics_user(message: Message, bot):
     try:
-        user = select_user(query.from_user.id)
-        language = user.language
-        lexicon = LEXICON[language]
-        await query.answer(
-                text=lexicon["data_selection"],
-                reply_markup=statistics_for_keyboard(language),
-            )
-        await query.event.delete()
+        """Выбор статистических данных пользователя."""
+        user = get_user_statistics(session)
+        column_names = ["Имя, фамилия", "роль", "Очки", "Группа"]
+        name_file = "user_statistics.xls"
+        export_xls(user, column_names, name_file)
+        await bot.send_document(message.chat.id, FSInputFile(name_file))
+    except FileNotFoundError as err:
+        logger.error(f"Файл не создан: {err}")
     except Exception as err:
-            logger.error(f"Ошибка при выборе статистических данных: {err}")
+        logger.error(f"Ошибка при выборе статистических данных: {err}")
 
-@methodist_task_router.callback_query(F.data =="statistics") 
-async def change_user_statistics(
-    query: CallbackQuery
-):
-    """Выбор статистических данных пользователей."""
+
+@methodist_task_router.message(F.text == "Статистика заданий")
+async def change_statistics_achievement(message: Message, bot):
+    """Выбор статистических данных заданий."""
     try:
-        user = select_user(query.from_user.id)
-        language = user.language
-        lexicon = LEXICON[language]
-        await query.answer(
-                text=lexicon["data_selection"],
-                reply_markup=statistics_for_keyboard(language),
-            )
-        await query.event.delete()
+        achievement = get_achievement_statistics(session)
+        column_names = [
+            "Имя",
+            "Описание",
+            "Инструкция",
+            "Тип артефакта",
+            "Начальный балл",
+            "Цена",
+        ]
+        name_file = "achievement_statistic.xls"
+        export_xls(achievement, column_names, name_file)
+        await bot.send_document(message.chat.id, FSInputFile(name_file))
+    except FileNotFoundError as err:
+        logger.error(f"Файл не создан: {err}")
     except Exception as err:
-            logger.error(f"Ошибка при выборе статистических данных: {err}")
-
-
-@methodist_task_router.callback_query(F.data =="statistics") 
-async def change_user_statistics(
-    query: CallbackQuery
-):
-    """Выбор статистических данных пользователей."""
-    try:
-        user = select_user(query.from_user.id)
-        language = user.language
-        lexicon = LEXICON[language]
-        await query.answer(
-                text=lexicon["data_selection"],
-                reply_markup=statistics_for_keyboard(language),
-            )
-        await query.event.delete()
-    except Exception as err:
-            logger.error(f"Ошибка при выборе статистических данных: {err}")
+        logger.error(f"Ошибка при выборе статистических данных: {err}")

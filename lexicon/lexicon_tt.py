@@ -393,7 +393,7 @@ LEXICON_TT = {
     "counsellor_pass": "Введите новый пароль для вожатого:",
     "methodist_pass": "Введите новый пароль для методиста:",
     "master_pass": "Введите новый мастер-пароль:",
-    #Фразы для статистики
+    # Фразы для статистики
     "data_selection": "Выбор статистических данных",
 }
 
@@ -482,4 +482,6 @@ BUTTONS_TT = {
     "achievement_category": "Категории",
     "all_achievements": "Ачивки",
     "statistics": "Статистика",
+    "user_statistics": "Статистика пользователей",
+    "achievements_statistics": "Статистика заданий",
 }

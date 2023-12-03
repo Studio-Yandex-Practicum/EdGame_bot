@@ -1,3 +1,4 @@
+import xlwt
 from aiogram import types
 from sqlalchemy.orm import Session
 
@@ -197,3 +198,44 @@ def get_achievement_by_category_id(session: Session, category_id):
     for available_achievement in achievement_by_category:
         available_achievements_list.append((available_achievement))
     return available_achievements_list
+
+
+def get_user_statistics(session: Session):
+    users = session.query(User).all()
+    users_data = []
+    for i in users:
+        user = [i.name, i.role, i.score, i.group]
+        users_data.append(user)
+    return users_data
+
+
+def get_achievement_statistics(session: Session):
+    achievements = session.query(Achievement).all()
+    achievements_data = []
+    for i in achievements:
+        achievement = [
+            i.name,
+            i.description,
+            i.instruction,
+            i.artifact_type,
+            i.score,
+            i.price,
+        ]
+        achievements_data.append(achievement)
+    return achievements_data
+
+
+def export_xls(a, column_names, name_file):
+    workbook = xlwt.Workbook()
+    sheet = workbook.add_sheet("contacts")
+    header_font = xlwt.Font()
+    header_font.name = "Arial"
+    header_font.bold = True
+    header_style = xlwt.XFStyle()
+    header_style.font = header_font
+    for i, name in enumerate(column_names):
+        sheet.write(0, i, name)
+    for i, t in enumerate(a, start=1):
+        for j in range(len(column_names)):
+            sheet.write(i, j, f"{t[j]}")
+    workbook.save(name_file)
