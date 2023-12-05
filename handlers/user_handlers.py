@@ -1,3 +1,4 @@
+import hashlib
 import logging
 
 from aiogram import F, Router
@@ -5,10 +6,17 @@ from aiogram.filters import CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
+from sqlalchemy import select
 
 from config_data.config import load_config
+from db.engine import engine, session
+from db.models import Password
 from filters.custom_filters import IsStudent
-from keyboards.admin_keyboards import boss_pass_keyboard
+from keyboards.admin_keyboards import (
+    boss_pass_keyboard,
+    henchman_pass_keyboard,
+)
+from keyboards.counsellor_keyboard import create_profile_keyboard
 from keyboards.keyboards import (
     contacts_keyboard,
     create_welcome_keyboard,
@@ -17,6 +25,7 @@ from keyboards.keyboards import (
     menu_keyboard,
     profile_keyboard,
 )
+from keyboards.methodist_keyboards import methodist_profile_keyboard
 from lexicon.lexicon import BUTTONS, LEXICON, LEXICON_COMMANDS
 from middlewares.custom_middlewares import AcceptMediaGroupMiddleware
 from utils.db_commands import (
@@ -26,7 +35,7 @@ from utils.db_commands import (
     select_user,
     set_user_param,
 )
-from utils.states_form import Data, Profile
+from utils.states_form import Data, EnteringPassword, Profile
 from utils.utils import generate_profile_info
 
 from .admin_handlers import admin_router
@@ -122,6 +131,7 @@ async def warning_not_name(message: Message, state: FSMContext):
 
 @router.message(StateFilter(Profile.get_group), F.text.isdigit())
 async def process_get_group(message: Message, state: FSMContext):
+    """Приглашаем ввести пароль."""
     await state.update_data(group=message.text)
     await state.update_data(id=int(message.chat.id))
     user_data = await state.get_data()
@@ -132,10 +142,10 @@ async def process_get_group(message: Message, state: FSMContext):
         text = LEXICON["TT"]["get_group"]
     else:
         text = LEXICON["EN"]["get_group"]
-    await message.answer(text=text, reply_markup=menu_keyboard(language))
+    await message.answer(text=text)
     # Вносим данные пользователь в БД
     register_user(user_data)
-    await state.clear()
+    await state.set_state(EnteringPassword.psw2hash)
 
 
 @router.message(StateFilter(Profile.get_group))
@@ -150,6 +160,54 @@ async def warning_not_group(message: Message, state: FSMContext):
     else:
         text = LEXICON["EN"]["err_group"]
     await message.answer(text)
+
+
+@admin_router.message(StateFilter(EnteringPassword.psw2hash))
+async def hashing_password(message: Message, state: FSMContext):
+    """Обрабатываем пароль."""
+    user = select_user(message.chat.id)
+    # переводим введенный юзером пароль в хеш
+    psw_hash = hashlib.sha256(message.text.encode())
+    psw = psw_hash.hexdigest()
+    # сравниваем с паролем из базы
+    conn = engine.connect()
+    s = select(Password)
+    r = conn.execute(s)
+    row = r.fetchone()
+    kid_psw = row[1]
+    counsellor_psw = row[2]
+    methodist_psw = row[3]
+    master_psw = row[4]
+    if psw == kid_psw:
+        user.role = "kid"
+        session.add(user)
+        session.commit()
+        await message.answer(
+            text=LEXICON["RU"]["kid"],
+            reply_markup=menu_keyboard(user.language),
+        )
+    elif psw == counsellor_psw:
+        user.role = "counsellor"
+        session.add(user)
+        session.commit()
+        await message.answer(
+            text=LEXICON["RU"]["counsellor"],
+            reply_markup=create_profile_keyboard(),
+        )
+    elif psw == methodist_psw:
+        user.role = "methodist"
+        session.add(user)
+        session.commit()
+        await message.answer(
+            text=LEXICON["RU"]["methodist"],
+            reply_markup=methodist_profile_keyboard(user.language),
+        )
+    elif psw == master_psw:
+        await message.answer(
+            text=LEXICON["RU"]["henchman_pass"],
+            reply_markup=henchman_pass_keyboard(),
+        )
+    await state.clear()
 
 
 # Меню ребенка

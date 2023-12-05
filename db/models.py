@@ -176,9 +176,10 @@ class Password(DeclarativeBase):
     __tablename__ = "passwords"
 
     id = Column(Integer, nullable=False, primary_key=True)
-    master_pass = Column(String(256), nullable=False)
+    kid_pass = Column(String(256), nullable=False)
     counsellor_pass = Column(String(256), nullable=False)
     methodist_pass = Column(String(256), nullable=False)
+    master_pass = Column(String(256), nullable=False)
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
