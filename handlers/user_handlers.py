@@ -70,12 +70,28 @@ async def process_start_command(message: Message, state: FSMContext):
         )
     elif is_user_in_db(message.chat.id):
         await state.clear()
-        await message.answer(
-            f"Добро пожаловать, {user.name}",
-            reply_markup=menu_keyboard(user.language),
-        )
+        if user.role == "kid":
+            await message.answer(
+                f"Добро пожаловать, {user.name}",
+                reply_markup=menu_keyboard(user.language),
+            )
+        elif user.role == "counsellor":
+            await message.answer(
+                f"Добро пожаловать, {user.name}",
+                reply_markup=create_profile_keyboard(),
+            )
+        elif user.role == "methodist":
+            await message.answer(
+                f"Добро пожаловать, {user.name}",
+                reply_markup=methodist_profile_keyboard(user.language),
+            )
+        else:
+            await message.answer(
+                f"Добро пожаловать, {user.name}",
+                reply_markup=henchman_pass_keyboard(),
+            )
     else:
-        # Анкетируем и сохраняем пользователя в БД, роль по умолчанию 'kid'
+        # Анкетируем и сохраняем пользователя в БД
         await message.answer(
             text=f"{LEXICON_COMMANDS['/start']}",
             reply_markup=create_welcome_keyboard(),
@@ -203,6 +219,9 @@ async def hashing_password(message: Message, state: FSMContext):
             reply_markup=methodist_profile_keyboard(user.language),
         )
     elif psw == master_psw:
+        user.role = "master"
+        session.add(user)
+        session.commit()
         await message.answer(
             text=LEXICON["RU"]["henchman_pass"],
             reply_markup=henchman_pass_keyboard(),

@@ -1,3 +1,4 @@
+import datetime
 import hashlib
 
 from aiogram import F, Router
@@ -9,7 +10,7 @@ from sqlalchemy import select
 
 from config_data.config import load_config
 from db.engine import engine, session
-from db.models import Password
+from db.models import Password, Season
 from keyboards.admin_keyboards import (
     boss_pass_keyboard,
     henchman_pass_keyboard,
@@ -209,3 +210,30 @@ async def cancel_pass(callback: CallbackQuery, state: FSMContext):
             reply_markup=henchman_pass_keyboard()
         )
     await state.clear()
+
+
+@admin_router.callback_query(F.data == "open_season")
+async def open_season(callback: CallbackQuery):
+    """Открываем сезон."""
+    season = Season(
+        open_season=datetime.datetime.now(),
+    )
+    session.add(season)
+    session.commit()
+    await callback.message.edit_reply_markup(
+        text="Сезон открыт.", reply_markup=henchman_pass_keyboard()
+    )
+
+
+@admin_router.callback_query(F.data == "close_season")
+async def close_season(callback: CallbackQuery):
+    """Закрываем сезон."""
+    season = session.query(Season).first()
+    season.close_season = datetime.datetime.now()
+    session.add(season)
+    session.commit()
+    # todo Здесь код экспорта в эксель
+    # todo Удаление таблиц
+    await callback.message.edit_reply_markup(
+        text="Сезон закрыт.", reply_markup=henchman_pass_keyboard()
+    )

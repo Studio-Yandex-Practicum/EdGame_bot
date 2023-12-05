@@ -3,6 +3,7 @@ from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
     Column,
+    DateTime,
     ForeignKey,
     Integer,
     String,
@@ -20,7 +21,9 @@ class User(DeclarativeBase):
     name = Column(String(50), nullable=False)
     role = Column(
         String,
-        CheckConstraint(r"role in ('methodist', 'counsellor', 'kid')"),
+        CheckConstraint(
+            r"role in ('methodist', 'counsellor', 'kid', 'master')"
+        ),
         nullable=False,
     )
     language = Column(
@@ -180,6 +183,19 @@ class Password(DeclarativeBase):
     counsellor_pass = Column(String(256), nullable=False)
     methodist_pass = Column(String(256), nullable=False)
     master_pass = Column(String(256), nullable=False)
+
+    def __repr__(self):
+        return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
+
+
+class Season(DeclarativeBase):
+    """Модель для дат открытия и завершения сезонов."""
+
+    __tablename__ = "season"
+
+    id = Column(Integer, nullable=False, primary_key=True)
+    open_season = Column(DateTime(timezone=True))
+    close_season = Column(DateTime(timezone=True))
 
     def __repr__(self):
         return "<{0.__class__.__name__}(id={0.id!r})>".format(self)
