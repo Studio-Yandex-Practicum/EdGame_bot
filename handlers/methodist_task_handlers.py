@@ -55,6 +55,7 @@ from utils.user_utils import (
     get_achievement_statistics,
     get_user_statistics,
     save_rejection_reason_in_db,
+    delete_bd
 )
 from utils.utils import (
     generate_achievements_list,
@@ -1764,7 +1765,12 @@ async def change_statistics_user(message: Message, bot):
         column_names = ["Имя, фамилия", "роль", "Очки", "Группа"]
         name_file = "user_statistics.xls"
         export_xls(user, column_names, name_file)
+        print(10)
         await bot.send_document(message.chat.id, FSInputFile(name_file))
+        delete_bd(session)
+        print(20)
+       
+
     except FileNotFoundError as err:
         logger.error(f"Файл не создан: {err}")
     except Exception as err:

@@ -3,7 +3,7 @@ from aiogram import types
 from sqlalchemy.orm import Session
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, Category, User
+from db.models import Achievement, AchievementStatus, Category, User, Password, Team
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -201,28 +201,19 @@ def get_achievement_by_category_id(session: Session, category_id):
 
 
 def get_user_statistics(session: Session):
-    users = session.query(User).all()
-    users_data = []
-    for i in users:
-        user = [i.name, i.role, i.score, i.group]
-        users_data.append(user)
-    return users_data
+    return session.query(User.name, User.role, User.score, User.group).all()
 
 
 def get_achievement_statistics(session: Session):
-    achievements = session.query(Achievement).all()
-    achievements_data = []
-    for i in achievements:
-        achievement = [
-            i.name,
-            i.description,
-            i.instruction,
-            i.artifact_type,
-            i.score,
-            i.price,
-        ]
-        achievements_data.append(achievement)
-    return achievements_data
+    return session.query(
+            Achievement.name,
+            Achievement.description,
+            Achievement.instruction,
+            Achievement.artifact_type,
+            Achievement.score,
+            Achievement.price,
+    ).all()
+   
 
 
 def export_xls(a, column_names, name_file):
@@ -239,3 +230,9 @@ def export_xls(a, column_names, name_file):
         for j in range(len(column_names)):
             sheet.write(i, j, f"{t[j]}")
     workbook.save(name_file)
+def delete_bd(session: Session):
+    db = [User, Achievement, AchievementStatus, Team,  Category, Password]
+    for i in db:
+       session.query(i).delete() 
+    session.commit()
+    session.close()
