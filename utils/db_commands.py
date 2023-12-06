@@ -15,7 +15,7 @@ from db.models import (
     User,
 )
 
-from .pass_gen import counsellor_pass, master_pass, methodist_pass
+from .pass_gen import counsellor_pass, kid_pass, master_pass, methodist_pass
 
 logger = logging.getLogger(__name__)
 
@@ -42,16 +42,17 @@ def check_password():
     password = session.query(Password).first()
     if password is None:
         password = Password(
-            master_pass=master_pass,
+            kid_pass=kid_pass,
             counsellor_pass=counsellor_pass,
             methodist_pass=methodist_pass,
+            master_pass=master_pass,
         )
         session.add(password)
         try:
             session.commit()
             return True
         except IntegrityError:
-            session.rollback()  # откатываем session.add(user)
+            session.rollback()
             return False
 
 

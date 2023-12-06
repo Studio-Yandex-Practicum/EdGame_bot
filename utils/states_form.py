@@ -174,6 +174,12 @@ class EnteringPassword(StatesGroup):
     psw2hash = State()
 
 
+class KidPassword(StatesGroup):
+    """Машина состояний для ввода пароля для ребенка."""
+
+    psw2hash = State()
+
+
 class CounsellorPassword(StatesGroup):
     """Машина состояний для ввода пароля для вожатого."""
 
