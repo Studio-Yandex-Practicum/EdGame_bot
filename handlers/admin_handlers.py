@@ -234,6 +234,11 @@ async def close_season(callback: CallbackQuery):
     session.commit()
     # todo Здесь код экспорта в эксель
     # todo Удаление таблиц
-    await callback.message.edit_reply_markup(
-        text="Сезон закрыт.", reply_markup=henchman_pass_keyboard()
-    )
+    await callback.message.answer(text="Сезон закрыт.")
+
+
+@admin_router.callback_query(F.data == "export_xls")
+async def export_excel(callback: CallbackQuery):
+    """Экспорт в эксель."""
+    # todo Экспорт в эксель
+    pass
