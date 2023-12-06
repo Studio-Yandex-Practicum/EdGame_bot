@@ -27,9 +27,8 @@ def create_welcome_keyboard() -> InlineKeyboardMarkup:
     return welcome_keyboard
 
 
-# Текст на кнопках
-# Главное меню
-def menu_keyboard(language: str) -> InlineKeyboardMarkup:
+# Создание клавиатуры для роли ребенка
+def menu_keyboard(language: str) -> ReplyKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в главном меню."""
     buttons = BUTTONS[language]
     write_to_methodist = KeyboardButton(text=buttons["write_to_methodist"])
