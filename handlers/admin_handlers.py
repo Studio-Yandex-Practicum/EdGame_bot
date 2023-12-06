@@ -242,3 +242,5 @@ async def export_excel(callback: CallbackQuery):
     """Экспорт в эксель."""
     # todo Экспорт в эксель
     pass
+
+
