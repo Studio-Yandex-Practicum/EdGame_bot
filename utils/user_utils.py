@@ -3,7 +3,15 @@ from aiogram import types
 from sqlalchemy.orm import Session
 
 from db.engine import session
-from db.models import Achievement, AchievementStatus, Category, User, Password, Team
+from db.models import (
+    Achievement,
+    AchievementStatus,
+    Category,
+    Password,
+    Season,
+    Team,
+    User,
+)
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -206,14 +214,13 @@ def get_user_statistics(session: Session):
 
 def get_achievement_statistics(session: Session):
     return session.query(
-            Achievement.name,
-            Achievement.description,
-            Achievement.instruction,
-            Achievement.artifact_type,
-            Achievement.score,
-            Achievement.price,
+        Achievement.name,
+        Achievement.description,
+        Achievement.instruction,
+        Achievement.artifact_type,
+        Achievement.score,
+        Achievement.price,
     ).all()
-   
 
 
 def export_xls(a, column_names, name_file):
@@ -230,9 +237,33 @@ def export_xls(a, column_names, name_file):
         for j in range(len(column_names)):
             sheet.write(i, j, f"{t[j]}")
     workbook.save(name_file)
-def delete_bd(session: Session):
-    db = [User, Achievement, AchievementStatus, Team,  Category, Password]
-    for i in db:
-       session.query(i).delete() 
+
+
+def delete_bd():
+    session.query(User).delete()
+    session.query(Achievement).delete()
+    session.query(AchievementStatus).delete()
+    session.query(Team).delete()
+    session.query(Category).delete()
+    session.query(Password).delete()
+    session.query(Season).delete()
     session.commit()
     session.close()
+
+
+def statistics():
+    user = get_user_statistics(session)
+    column_names = ["Имя, фамилия", "роль", "Очки", "Группа"]
+    user_file = "user_statistics.xls"
+    export_xls(user, column_names, user_file)
+    achievement = get_achievement_statistics(session)
+    column_names = [
+        "Имя",
+        "Описание",
+        "Инструкция",
+        "Тип артефакта",
+        "Начальный балл",
+        "Цена",
+    ]
+    achievement_file = "achievement_statistic.xls"
+    export_xls(achievement, column_names, achievement_file)

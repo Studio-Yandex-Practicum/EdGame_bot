@@ -1,11 +1,12 @@
 import datetime
 import hashlib
+import logging
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, FSInputFile, Message
 from sqlalchemy import select
 
 from config_data.config import load_config
@@ -23,9 +24,11 @@ from utils.states_form import (
     MasterPassword,
     MethodistPassword,
 )
+from utils.user_utils import delete_bd, statistics
 
 admin_router = Router()
 config = load_config()
+logger = logging.getLogger(__name__)
 
 
 @admin_router.callback_query(F.data == "kid_pass", StateFilter(default_state))
@@ -226,21 +229,37 @@ async def open_season(callback: CallbackQuery):
 
 
 @admin_router.callback_query(F.data == "close_season")
-async def close_season(callback: CallbackQuery):
+async def close_season(callback: CallbackQuery, bot):
     """Закрываем сезон."""
     season = session.query(Season).first()
     season.close_season = datetime.datetime.now()
     session.add(season)
     session.commit()
-    # todo Здесь код экспорта в эксель
-    # todo Удаление таблиц
+    user_file = "user_statistics.xls"
+    achievement_file = "achievement_statistic.xls"
+    statistics()
+    await bot.send_document(callback.message.chat.id, FSInputFile(user_file))
+    await bot.send_document(
+        callback.message.chat.id, FSInputFile(achievement_file)
+    )
+    delete_bd()
     await callback.message.answer(text="Сезон закрыт.")
 
 
 @admin_router.callback_query(F.data == "export_xls")
-async def export_excel(callback: CallbackQuery):
+async def export_excel(callback: CallbackQuery, bot):
     """Экспорт в эксель."""
-    # todo Экспорт в эксель
-    pass
-
-
+    try:
+        user_file = "user_statistics.xls"
+        achievement_file = "achievement_statistic.xls"
+        statistics()
+        await bot.send_document(
+            callback.message.chat.id, FSInputFile(user_file)
+        )
+        await bot.send_document(
+            callback.message.chat.id, FSInputFile(achievement_file)
+        )
+    except FileNotFoundError as err:
+        logger.error(f"Файл не создан: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при выборе статистических данных: {err}")

@@ -7,14 +7,12 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
     Chat,
-    FSInputFile,
     InlineKeyboardMarkup,
     InputMediaPhoto,
     InputMediaVideo,
     Message,
 )
 
-from db.engine import session
 from handlers.handlers import BasePaginatedHandler
 from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
 from keyboards.methodist_keyboards import (
@@ -28,7 +26,6 @@ from keyboards.methodist_keyboards import (
     edit_task_keyboard,
     methodist_profile_keyboard,
     review_keyboard_methodist,
-    statistics_for_keyboard,
     task_keyboard_methodist,
     task_type_keyboard,
 )
@@ -51,11 +48,7 @@ from utils.db_commands import (
 from utils.pagination import PAGE_SIZE
 from utils.states_form import AddTask, EditTask, ReviewTask, TaskList
 from utils.user_utils import (
-    export_xls,
-    get_achievement_statistics,
-    get_user_statistics,
     save_rejection_reason_in_db,
-    delete_bd
 )
 from utils.utils import (
     generate_achievements_list,
@@ -1737,63 +1730,3 @@ async def process_change_artifact_category(
         logger.error(f"Ошибка в ключе при изменении категории ачивки: {err}")
     except Exception as err:
         logger.error(f"Ошибка при сохранении категории ачивки: {err}")
-
-
-@methodist_task_router.message(F.text == "Статистика")
-async def change_statistics(message: Message):
-    """Выбор статистических данных."""
-    try:
-        user = select_user(message.from_user.id)
-        language = user.language
-        lexicon = LEXICON[language]
-        await message.answer(
-            text=lexicon["data_selection"],
-            reply_markup=statistics_for_keyboard(language),
-        )
-        await message.event.delete()
-    except KeyError as err:
-        logger.error(f"Ошибка в ключе статистических данных: {err}")
-    except Exception as err:
-        logger.error(f"Ошибка при выборе статистических данных: {err}")
-
-
-@methodist_task_router.message(F.text == "Статистика пользователей")
-async def change_statistics_user(message: Message, bot):
-    try:
-        """Выбор статистических данных пользователя."""
-        user = get_user_statistics(session)
-        column_names = ["Имя, фамилия", "роль", "Очки", "Группа"]
-        name_file = "user_statistics.xls"
-        export_xls(user, column_names, name_file)
-        print(10)
-        await bot.send_document(message.chat.id, FSInputFile(name_file))
-        delete_bd(session)
-        print(20)
-       
-
-    except FileNotFoundError as err:
-        logger.error(f"Файл не создан: {err}")
-    except Exception as err:
-        logger.error(f"Ошибка при выборе статистических данных: {err}")
-
-
-@methodist_task_router.message(F.text == "Статистика заданий")
-async def change_statistics_achievement(message: Message, bot):
-    """Выбор статистических данных заданий."""
-    try:
-        achievement = get_achievement_statistics(session)
-        column_names = [
-            "Имя",
-            "Описание",
-            "Инструкция",
-            "Тип артефакта",
-            "Начальный балл",
-            "Цена",
-        ]
-        name_file = "achievement_statistic.xls"
-        export_xls(achievement, column_names, name_file)
-        await bot.send_document(message.chat.id, FSInputFile(name_file))
-    except FileNotFoundError as err:
-        logger.error(f"Файл не создан: {err}")
-    except Exception as err:
-        logger.error(f"Ошибка при выборе статистических данных: {err}")
