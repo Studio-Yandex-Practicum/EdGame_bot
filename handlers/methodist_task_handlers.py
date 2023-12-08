@@ -47,9 +47,7 @@ from utils.db_commands import (
 )
 from utils.pagination import PAGE_SIZE
 from utils.states_form import AddTask, EditTask, ReviewTask, TaskList
-from utils.user_utils import (
-    save_rejection_reason_in_db,
-)
+from utils.user_utils import save_rejection_reason_in_db
 from utils.utils import (
     generate_achievements_list,
     generate_categories_list,
