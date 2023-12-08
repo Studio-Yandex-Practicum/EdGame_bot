@@ -424,4 +424,3 @@ def continue_job_keyboard(language: str, cd: str) -> InlineKeyboardMarkup:
     keyboard = [[continue_btn], [tasks_for_review], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
-
