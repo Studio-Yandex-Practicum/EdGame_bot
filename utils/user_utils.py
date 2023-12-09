@@ -270,7 +270,7 @@ def delete_bd():
 
 def statistics():
     user = get_user_statistics(session)
-    column_names = [
+    column_user = [
         "Номер пользователя",
         "Имя, фамилия",
         "Роль",
@@ -278,9 +278,9 @@ def statistics():
         "Группа",
     ]
     user_file = "user_statistics.xls"
-    export_xls(user, column_names, user_file)
+    export_xls(user,  column_user, user_file)
     achievement = get_achievement_statistics(session)
-    column_names = [
+    column_achievement = [
         "Номер ачивки",
         "Имя",
         "Описание",
@@ -294,7 +294,7 @@ def statistics():
         "Причина отклонения",
     ]
     achievement_file = "achievement_statistic.xls"
-    export_xls(achievement, column_names, achievement_file)
+    export_xls(achievement, column_achievement, achievement_file)
     list_files = [user_file, achievement_file]
     zip_files(list_files)
 
