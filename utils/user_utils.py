@@ -278,7 +278,7 @@ def statistics():
         "Группа",
     ]
     user_file = "user_statistics.xls"
-    export_xls(user,  column_user, user_file)
+    export_xls(user, column_user, user_file)
     achievement = get_achievement_statistics(session)
     column_achievement = [
         "Номер ачивки",
