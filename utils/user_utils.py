@@ -1,3 +1,5 @@
+import zipfile
+
 import xlwt
 from aiogram import types
 from sqlalchemy.orm import Session
@@ -209,18 +211,33 @@ def get_achievement_by_category_id(session: Session, category_id):
 
 
 def get_user_statistics(session: Session):
-    return session.query(User.name, User.role, User.score, User.group).all()
+    a = session.query(
+        User.id, User.name, User.role, User.score, User.group
+    ).all()
+    return a
 
 
 def get_achievement_statistics(session: Session):
-    return session.query(
-        Achievement.name,
-        Achievement.description,
-        Achievement.instruction,
-        Achievement.artifact_type,
-        Achievement.score,
-        Achievement.price,
-    ).all()
+    return (
+        session.query(
+            Achievement.id,
+            Achievement.name,
+            Achievement.description,
+            Achievement.instruction,
+            Achievement.artifact_type,
+            Achievement.score,
+            Achievement.price,
+            AchievementStatus.user_id,
+            AchievementStatus.status,
+            AchievementStatus.message_text,
+            AchievementStatus.rejection_reason,
+        )
+        .join(
+            AchievementStatus,
+            Achievement.id == AchievementStatus.achievement_id,
+        )
+        .all()
+    )
 
 
 def export_xls(a, column_names, name_file):
@@ -253,17 +270,36 @@ def delete_bd():
 
 def statistics():
     user = get_user_statistics(session)
-    column_names = ["Имя, фамилия", "роль", "Очки", "Группа"]
+    column_names = [
+        "Номер пользователя",
+        "Имя, фамилия",
+        "Роль",
+        "Очки",
+        "Группа",
+    ]
     user_file = "user_statistics.xls"
     export_xls(user, column_names, user_file)
     achievement = get_achievement_statistics(session)
     column_names = [
+        "Номер ачивки",
         "Имя",
         "Описание",
         "Инструкция",
         "Тип артефакта",
         "Начальный балл",
         "Цена",
+        "Номер Пользователя",
+        "Статус ачивки",
+        "Ответ",
+        "Причина отклонения",
     ]
     achievement_file = "achievement_statistic.xls"
     export_xls(achievement, column_names, achievement_file)
+    list_files = [user_file, achievement_file]
+    zip_files(list_files)
+
+
+def zip_files(list_files):
+    with zipfile.ZipFile("statistic.zip", "w") as zipF:
+        for file in list_files:
+            zipF.write(file, compress_type=zipfile.ZIP_DEFLATED)

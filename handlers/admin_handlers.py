@@ -235,13 +235,9 @@ async def close_season(callback: CallbackQuery, bot):
     season.close_season = datetime.datetime.now()
     session.add(season)
     session.commit()
-    user_file = "user_statistics.xls"
-    achievement_file = "achievement_statistic.xls"
     statistics()
-    await bot.send_document(callback.message.chat.id, FSInputFile(user_file))
-    await bot.send_document(
-        callback.message.chat.id, FSInputFile(achievement_file)
-    )
+    file = "statistic.zip"
+    await bot.send_document(callback.message.chat.id, FSInputFile(file))
     delete_bd()
     await callback.message.answer(text="Сезон закрыт.")
 
@@ -250,15 +246,9 @@ async def close_season(callback: CallbackQuery, bot):
 async def export_excel(callback: CallbackQuery, bot):
     """Экспорт в эксель."""
     try:
-        user_file = "user_statistics.xls"
-        achievement_file = "achievement_statistic.xls"
         statistics()
-        await bot.send_document(
-            callback.message.chat.id, FSInputFile(user_file)
-        )
-        await bot.send_document(
-            callback.message.chat.id, FSInputFile(achievement_file)
-        )
+        file = "statistic.zip"
+        await bot.send_document(callback.message.chat.id, FSInputFile(file))
     except FileNotFoundError as err:
         logger.error(f"Файл не создан: {err}")
     except Exception as err:
