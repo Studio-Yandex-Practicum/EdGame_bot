@@ -3,6 +3,7 @@ import logging
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
+from sqlalchemy.orm import Session
 
 from keyboards.keyboards import (
     become_cap_or_leave_team_keyboard,
@@ -37,14 +38,16 @@ child_team_router = Router()
         ]
     )
 )
-async def show_teams_list(message: Message, state: FSMContext):
+async def show_teams_list(
+    message: Message, state: FSMContext, session: Session
+):
     """Показывает список команд с возможностью выбора команды."""
     try:
         await state.clear()
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
-        teams = get_all_teams()
+        teams = get_all_teams(session)
         if not teams:
             await message.answer(
                 lexicon["no_teams_yet"],
@@ -158,7 +161,9 @@ async def process_team_info_button(query: CallbackQuery, state: FSMContext):
     JoinTeam.team_chosen, F.data.startswith("team")
 )
 # @child_team_router.callback_query(F.data.startswith('back_to_team'))
-async def process_choose_team(query: CallbackQuery, state: FSMContext):
+async def process_choose_team(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Показывает информацию о команде и предлагает присоединиться к ней."""
     try:
         await query.answer()
@@ -169,7 +174,7 @@ async def process_choose_team(query: CallbackQuery, state: FSMContext):
         team_ids = data["team_ids"]
         query_id = int(query.data.split(":")[-1])
         team_id = team_ids[query_id]
-        team = get_team(team_id)
+        team = get_team(session, team_id)
         team_info = generate_team_info(team, lexicon)
         msg = team_info
         await state.update_data(team=team, query_id=query_id)
@@ -221,7 +226,9 @@ async def process_choose_team(query: CallbackQuery, state: FSMContext):
 
 @child_team_router.callback_query(JoinTeam.join_team, F.data == "join_team")
 @child_team_router.callback_query(F.data == "join_team")
-async def process_join_team(query: CallbackQuery, state: FSMContext):
+async def process_join_team(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обрабатывает кнопку Присоединиться к команде."""
     try:
         await query.answer()
@@ -229,7 +236,9 @@ async def process_join_team(query: CallbackQuery, state: FSMContext):
         language = data["language"]
         lexicon = LEXICON[language]
         team = data["team"]
-        set_user_param(data["child"], team=team, leave_captain_pos=True)
+        set_user_param(
+            session, data["child"], team=team, leave_captain_pos=True
+        )
         team_info = generate_team_info(team, lexicon)
         msg = f'{team_info}\n\n{lexicon["leave_team_instruction"]}'
         cap_pos_available = False
@@ -259,7 +268,9 @@ async def process_join_team(query: CallbackQuery, state: FSMContext):
     JoinTeam.become_captain, F.data == "become_captain"
 )
 @child_team_router.callback_query(F.data == "become_captain")
-async def process_become_captain(query: CallbackQuery, state: FSMContext):
+async def process_become_captain(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обрабатывает кнопку Стать капитаном."""
     try:
         await query.answer()
@@ -267,7 +278,7 @@ async def process_become_captain(query: CallbackQuery, state: FSMContext):
         language = data["language"]
         lexicon = LEXICON[language]
         team = data["team"]
-        set_user_param(data["child"], captain_of_team=team.id)
+        set_user_param(session, data["child"], captain_of_team=team.id)
         team_info = generate_team_info(team, lexicon)
         msg = (
             f"{team_info}\n\n"
@@ -287,7 +298,7 @@ async def process_become_captain(query: CallbackQuery, state: FSMContext):
 
 @child_team_router.callback_query(F.data == "leave_captain_position")
 async def process_leave_captain_position(
-    query: CallbackQuery, state: FSMContext
+    query: CallbackQuery, state: FSMContext, session: Session
 ):
     """Обрабатывает кнопку Уйти с позиции капитана."""
     try:
@@ -296,7 +307,7 @@ async def process_leave_captain_position(
         language = data["language"]
         lexicon = LEXICON[language]
         team = data["team"]
-        set_user_param(data["child"], leave_captain_pos=True)
+        set_user_param(session, data["child"], leave_captain_pos=True)
         team_info = generate_team_info(team, lexicon)
         msg = (
             f"{team_info}\n\n"
@@ -315,7 +326,9 @@ async def process_leave_captain_position(
 
 
 @child_team_router.callback_query(F.data == "leave_team")
-async def process_leave_team(query: CallbackQuery, state: FSMContext):
+async def process_leave_team(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обрабатывает кнопку Уйти из команды."""
     try:
         await query.answer()
@@ -323,7 +336,7 @@ async def process_leave_team(query: CallbackQuery, state: FSMContext):
         language = data["language"]
         lexicon = LEXICON[language]
         team = data["team"]
-        set_user_param(data["child"], delete_team=True)
+        set_user_param(session, data["child"], delete_team=True)
         team_info = generate_team_info(team, lexicon)
         msg = f"{team_info}\n\n" f'{lexicon["you_left_team"]}'
         await query.message.edit_text(

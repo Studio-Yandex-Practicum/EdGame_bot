@@ -90,14 +90,14 @@ async def _check_artifact_type(
 
 
 async def process_artifact(
-    message: Message, achievement_id: int, lexicon: dict, user: User
+    message: Message, achievement_id: int, lexicon: dict, user: User, session
 ) -> bool:
     """Сохраняет статус ачивки.
 
     Достает id из возможных типов сообщения и сохраняет в базе информацию об
     ачивке с новым статусом.
     """
-    achievement = get_achievement(achievement_id)
+    achievement = get_achievement(session, achievement_id)
     art_type = achievement.artifact_type
     artifact = await _check_artifact_type(message, art_type, lexicon)
     if not artifact:
@@ -109,7 +109,7 @@ async def process_artifact(
         files_id.append(artifact.file_id)
     text = message.text if message.text else message.caption
     try:
-        send_task(user, achievement, files_id, text)
+        send_task(session, user, achievement, files_id, text)
         return True
     except Exception as err:
         logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
@@ -117,14 +117,18 @@ async def process_artifact(
 
 
 async def process_artifact_group(
-    messages: list[Message], achievement_id: int, lexicon: dict, user: User
+    messages: list[Message],
+    achievement_id: int,
+    lexicon: dict,
+    user: User,
+    session,
 ) -> bool:
     """Сохраняет статус ачивки.
 
     Достает id из возможных типов сообщения и сохраняет в базе информацию
     об ачивке с новым статусом.
     """
-    achievement = get_achievement(achievement_id)
+    achievement = get_achievement(session, achievement_id)
     art_type = achievement.artifact_type
     files_id = []
     for message in messages:
@@ -137,7 +141,7 @@ async def process_artifact_group(
             files_id.append(artifact.file_id)
     text = messages[0].text if messages[0].text else messages[0].caption
     try:
-        send_task(user, achievement, files_id, text)
+        send_task(session, user, achievement, files_id, text)
         return True
     except Exception as err:
         logger.error(f"Ошибка при сохранении статуса ачивки в базе: {err}")
@@ -145,7 +149,7 @@ async def process_artifact_group(
 
 
 def get_achievement_info(
-    task_id: type(int or str), lexicon: dict
+    task_id: type(int or str), lexicon: dict, session
 ) -> dict[str, str]:
     """Информация об ачивке.
 
@@ -153,9 +157,9 @@ def get_achievement_info(
     id изображения и id ачивки.
     """
     task = (
-        get_achievement(task_id)
+        get_achievement(session, task_id)
         if isinstance(task_id, int)
-        else get_achievement(name=task_id)
+        else get_achievement(session, name=task_id)
     )
     name = task.name
     image = task.image
@@ -198,13 +202,15 @@ def generate_achievement_message_for_kid(
     return msg
 
 
-def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
+def generate_text_with_tasks_in_review(
+    user_id: int, lexicon: dict[str, str], session
+):
     """Ачивки, сданные на проверку.
 
     Принимает id пользователя и возвращает текст с инфой об ачивках на
     проверке для сообщения.
     """
-    achievements = user_achievements(user_id)
+    achievements = user_achievements(session, user_id)
     in_review = []
     count = 0
     for achievement in achievements:
@@ -240,13 +246,15 @@ def generate_text_with_tasks_in_review(user_id: int, lexicon: dict[str, str]):
     return msg
 
 
-def generate_text_with_reviewed_tasks(user_id: int, lexicon: dict[str, str]):
+def generate_text_with_reviewed_tasks(
+    user_id: int, lexicon: dict[str, str], session
+):
     """Список проверенных ачивок.
 
     Принимает id пользователя и возвращает текст с инфой о проверенных
     ачивках для сообщения.
     """
-    achievements = user_achievements(user_id)
+    achievements = user_achievements(session, user_id)
     reviewed = []
     count = 0
     for achievement in achievements:
@@ -417,13 +425,13 @@ def generate_teams_list(
 
 
 def get_category_info(
-    category_id: type(int or str), lexicon: dict
+    category_id: type(int or str), lexicon: dict, session
 ) -> dict[str, str]:
     """Возвращает словарь с названием категории для сообщения пользователю."""
     category = (
-        get_category(category_id)
+        get_category(session, category_id)
         if isinstance(category_id, int)
-        else get_category(name=category_id)
+        else get_category(session, name=category_id)
     )
     name = category.name
     info = f'{lexicon["category_name"]}: {name}'
@@ -554,9 +562,9 @@ def object_info(lexicon: dict, count: int, obj, *args, **kwargs) -> str:
     return info
 
 
-def methodist_profile_info(lexicon: dict, user: User) -> str:
+def methodist_profile_info(lexicon: dict, user: User, session) -> str:
     """Текст в профиле методиста."""
-    query = get_info_for_methodist_profile()
+    query = get_info_for_methodist_profile(session)
 
     info = (
         f"{lexicon['methodist_profile']}\n\n"

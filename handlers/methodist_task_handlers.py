@@ -12,6 +12,7 @@ from aiogram.types import (
     InputMediaVideo,
     Message,
 )
+from sqlalchemy.orm import Session
 
 from handlers.handlers import BasePaginatedHandler
 from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
@@ -46,12 +47,7 @@ from utils.db_commands import (
     set_achievement_param,
 )
 from utils.pagination import PAGE_SIZE
-from utils.states_form import (
-    AddTask,
-    EditTask,
-    ReviewTask,
-    TaskList,
-)
+from utils.states_form import AddTask, EditTask, ReviewTask, TaskList
 from utils.user_utils import save_rejection_reason_in_db
 from utils.utils import (
     generate_achievements_list,
@@ -117,8 +113,9 @@ class ChoiceTasksForReview(handlers.MessageHandler):
     async def handle(self) -> Any:
         try:
             fsm_state = self.data["state"]
+            session = self.data["session"]
             await fsm_state.clear()
-            user = select_user(self.from_user.id)
+            user = select_user(session, self.from_user.id)
             language = user.language
             lexicon = LEXICON[language]
 
@@ -169,8 +166,8 @@ class ChoiceCategoryForReviewCallback(BasePaginatedTaskHandler):
 
     cd = "choice_category"
 
-    def get_queryset(self) -> Any:
-        return get_categories_with_tasks("pending_methodist")
+    def get_queryset(self, session) -> Any:
+        return get_categories_with_tasks(session, "pending_methodist")
 
     @staticmethod
     def message_view(lexicon, text) -> str:
@@ -205,9 +202,9 @@ class TasksForReviewByCategoryCallback(BasePaginatedTaskHandler):
 
     cd = "tasks_by_category"
 
-    def get_queryset(self) -> Any:
+    def get_queryset(self, session) -> Any:
         return get_tasks_by_achievement_category_and_status(
-            self.query_id, "pending_methodist"
+            session, self.query_id, "pending_methodist"
         )
 
     @staticmethod
@@ -243,8 +240,8 @@ class ChoiceAchievementForReviewCallback(BasePaginatedTaskHandler):
 
     cd = "choice_achievement"
 
-    def get_queryset(self) -> Any:
-        return get_achievements_with_tasks("pending_methodist")
+    def get_queryset(self, session) -> Any:
+        return get_achievements_with_tasks(session, "pending_methodist")
 
     @staticmethod
     def message_view(lexicon, text) -> str:
@@ -279,9 +276,9 @@ class TasksForReviewByAchievementCallback(BasePaginatedTaskHandler):
 
     cd = "tasks_by_achievement"
 
-    def get_queryset(self) -> Any:
+    def get_queryset(self, session) -> Any:
         return get_tasks_by_achievement_and_status(
-            self.query_id, "pending_methodist"
+            session, self.query_id, "pending_methodist"
         )
 
     @staticmethod
@@ -315,8 +312,8 @@ class TasksForReviewCallback(BasePaginatedTaskHandler):
 
     cd = "all_tasks"
 
-    def get_queryset(self) -> Any:
-        return get_tasks_by_status("pending_methodist")
+    def get_queryset(self, session) -> Any:
+        return get_tasks_by_status(session, "pending_methodist")
 
     @staticmethod
     def message_view(lexicon, text) -> str:
@@ -345,7 +342,9 @@ class TasksForReviewCallback(BasePaginatedTaskHandler):
 @methodist_task_router.callback_query(
     TaskList.tasks_for_review, F.data.startswith("tasks_by_category")
 )
-async def show_review_task(query: CallbackQuery, state: FSMContext):
+async def show_review_task(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик кнопок выбора отдельной ачивки на проверку.
 
     Получаем условный id ачивки из callback_data, достаем реальный id из
@@ -368,7 +367,7 @@ async def show_review_task(query: CallbackQuery, state: FSMContext):
         cd = data["cd"]
         task_number = int(query.data.split(":")[-1])
         task_id = data["task_ids"][task_number]
-        task = get_user_achievement(task_id)
+        task = get_user_achievement(session, task_id)
         msg = (
             f"<b>{lexicon['review_user']}</b> {task.user.name}\n"
             f"***\n"
@@ -414,7 +413,9 @@ async def show_review_task(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.callback_query(ReviewTask.pending, F.data == "approve")
-async def approve_methodist_handler(query: CallbackQuery, state: FSMContext):
+async def approve_methodist_handler(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Принять задание."""
     try:
         await query.answer()
@@ -425,7 +426,7 @@ async def approve_methodist_handler(query: CallbackQuery, state: FSMContext):
         cd = data["cd"]
         msg = f'{lexicon["failed_to_find_task"]} {task_id}.'
 
-        if approve_task(task_id):
+        if approve_task(session, task_id):
             msg = f'{lexicon["task_approved"]}: {task_id}.'
 
         await state.update_data(media_group=None)
@@ -441,7 +442,9 @@ async def approve_methodist_handler(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.callback_query(ReviewTask.pending, F.data == "reject")
-async def reject_methodist_handler(query: CallbackQuery, state: FSMContext):
+async def reject_methodist_handler(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Отклонить задание."""
     try:
         await query.answer()
@@ -452,7 +455,7 @@ async def reject_methodist_handler(query: CallbackQuery, state: FSMContext):
         cd = data["cd"]
         msg = f'{lexicon["failed_to_find_task"]} {task_id}.'
 
-        if reject_task(task_id):
+        if reject_task(session, task_id):
             await query.message.answer(
                 f'{lexicon["task_rejected"]}',
                 reply_markup=yes_no_keyboard(language, "methodist_check_task"),
@@ -513,7 +516,9 @@ async def no_methodist_handler(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.message(ReviewTask.reject_message)
-async def rejection_reason(message: Message, state: FSMContext):
+async def rejection_reason(
+    message: Message, state: FSMContext, session: Session
+):
     """Сохраняет причину отклонения задания."""
     try:
         data = await state.get_data()
@@ -523,7 +528,7 @@ async def rejection_reason(message: Message, state: FSMContext):
         cd = data["cd"]
 
         if message.text.lower() != "отмена":
-            save_rejection_reason_in_db(task_id, message.text)
+            save_rejection_reason_in_db(session, task_id, message.text)
             await message.answer(
                 lexicon["rejection_reason_saved"],
                 reply_markup=continue_job_keyboard(language, cd),
@@ -551,10 +556,10 @@ async def rejection_reason(message: Message, state: FSMContext):
         ]
     )
 )
-async def add_task(message: Message):
+async def add_task(message: Message, session: Session):
     """Обработчик кнопки Добавить задание."""
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
         await message.answer(
@@ -567,12 +572,14 @@ async def add_task(message: Message):
 
 
 @methodist_task_router.callback_query(F.data == "ready")
-async def start_add_task(query: CallbackQuery, state: FSMContext):
+async def start_add_task(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Начинает сценарий добавления ачивки в базу."""
     try:
         await query.answer()
         await state.clear()
-        user = select_user(query.from_user.id)
+        user = select_user(session, query.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
         await state.update_data(language=language)
@@ -743,17 +750,18 @@ async def process_add_task_image(message: Message, state: FSMContext):
 
 @methodist_task_router.callback_query(
     AddTask.category,
-    F.data.in_({
-        "add_achievements_category",
-        "achievements_category:next",
-        "achievements_category:previous",
-        "back_to_list_category",
-        "skip"
-    })
+    F.data.in_(
+        {
+            "add_achievements_category",
+            "achievements_category:next",
+            "achievements_category:previous",
+            "back_to_list_category",
+            "skip",
+        }
+    ),
 )
 async def process_add_category_for_task(
-    query: CallbackQuery,
-    state: FSMContext
+    query: CallbackQuery, state: FSMContext, session: Session
 ):
     """Запрашивает категорию для ачивки, отображает список категорий."""
     try:
@@ -769,23 +777,21 @@ async def process_add_category_for_task(
                 reply_markup=confirm_achievements_category(language),
             )
             return
-        if (
-            query.data.startswith("add_achievements_category")
-            or query.data.startswith("back_to_list_category")
-        ):
-            categories = get_all_categories()
+        if query.data.startswith(
+            "add_achievements_category"
+        ) or query.data.startswith("back_to_list_category"):
+            categories = get_all_categories(session)
             categories_list = generate_categories_list(
                 categories=categories,
                 lexicon=lexicon,
                 current_page=0,
-                page_size=PAGE_SIZE
+                page_size=PAGE_SIZE,
             )
             msg = categories_list["msg"]
             first_item = categories_list["first_item"]
             final_item = categories_list["final_item"]
             await state.update_data(
-                categories=categories,
-                categories_list=categories_list
+                categories=categories, categories_list=categories_list
             )
             await state.set_state(AddTask.category)
             await query.message.edit_text(
@@ -795,8 +801,8 @@ async def process_add_category_for_task(
                     start=first_item,
                     end=final_item,
                     cd="achievements_category",
-                    page_size=PAGE_SIZE
-                )
+                    page_size=PAGE_SIZE,
+                ),
             )
         elif query.data.startswith("achievements_category:"):
             categories = data["categories"]
@@ -809,14 +815,13 @@ async def process_add_category_for_task(
                 categories=categories,
                 lexicon=lexicon,
                 current_page=current_page,
-                page_size=PAGE_SIZE
+                page_size=PAGE_SIZE,
             )
             msg = categories_list["msg"]
             first_item = categories_list["first_item"]
             final_item = categories_list["final_item"]
             await state.update_data(
-                categories=categories,
-                categories_list=categories_list
+                categories=categories, categories_list=categories_list
             )
             await state.set_state(AddTask.category)
             await query.message.edit_text(
@@ -826,8 +831,8 @@ async def process_add_category_for_task(
                     start=first_item,
                     end=final_item,
                     cd="achievements_category",
-                    page_size=PAGE_SIZE
-                )
+                    page_size=PAGE_SIZE,
+                ),
             )
     except KeyError as err:
         logger.error(
@@ -857,9 +862,7 @@ async def add_category_for_task(query: CallbackQuery, state: FSMContext):
             reply_markup=confirm_achievements_category(language),
         )
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключе при запросе категории для ачивки: {err}"
-        )
+        logger.error(f"Ошибка в ключе при запросе категории для ачивки: {err}")
     except Exception as err:
         logger.error(f"Ошибка при запросе категории для ачивки: {err}")
 
@@ -867,7 +870,9 @@ async def add_category_for_task(query: CallbackQuery, state: FSMContext):
 @methodist_task_router.callback_query(
     F.data == "confirm_achievements_category"
 )
-async def saving_task_to_db(query: CallbackQuery, state: FSMContext):
+async def saving_task_to_db(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Сохраняет ачивку в БД.
 
     Отправляет собранные данные для подтверждения корректности или для
@@ -879,20 +884,20 @@ async def saving_task_to_db(query: CallbackQuery, state: FSMContext):
         await state.clear()
         language = data["language"]
         lexicon = LEXICON[language]
-        task_created = create_achievement(data)
+        task_created = create_achievement(session, data)
         if not task_created:
             await query.message.answer(
                 lexicon["error_adding_task"],
                 reply_markup=methodist_profile_keyboard(language),
             )
             return
-        task_info = get_achievement_info(data["name"], lexicon)
+        task_info = get_achievement_info(data["name"], lexicon, session)
         info = task_info["info"]
         image = task_info["image"]
         task_id = task_info["id"]
         # Собираем пагинацию для списка ачивок, если пользователь
         # перейдет к редактированию созданной ачивки
-        tasks = get_all_achievements()
+        tasks = get_all_achievements(session)
         page_info = generate_achievements_list(
             tasks=tasks, lexicon=lexicon, current_page=0, page_size=PAGE_SIZE
         )
@@ -959,17 +964,19 @@ async def process_saving_task_to_db(query: CallbackQuery, state: FSMContext):
         ]
     )
 )
-async def show_task_list(message: Message, state: FSMContext):
+async def show_task_list(
+    message: Message, state: FSMContext, session: Session
+):
     """Обработчик кнопки Посмотреть/редактировать ачивки.
 
     Показывает все созданные ачивки с пагинацией.
     """
     try:
         await state.clear()
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
-        tasks = get_all_achievements()
+        tasks = get_all_achievements(session)
         if not tasks:
             await message.answer(
                 lexicon["no_tasks_yet"],
@@ -1092,7 +1099,7 @@ async def show_task_list_callback(query: CallbackQuery, state: FSMContext):
     TaskList.tasks, F.data.startswith("task:")
 )
 @methodist_task_router.callback_query(F.data.startswith("back_to_task:"))
-async def show_task(query: CallbackQuery, state: FSMContext):
+async def show_task(query: CallbackQuery, state: FSMContext, session: Session):
     """Обработчик кнопок выбора отдельной ачивки.
 
     Получаем условный id ачивки из callback_data, достаем реальный id из
@@ -1102,7 +1109,7 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         await query.answer()
         data = await state.get_data()
         if not data:
-            user = select_user(query.from_user.id)
+            user = select_user(session, query.from_user.id)
             await query.message.answer(
                 LEXICON[user.language]["error_getting_achievement"],
                 reply_markup=InlineKeyboardMarkup(
@@ -1116,7 +1123,7 @@ async def show_task(query: CallbackQuery, state: FSMContext):
         # Достаем id ачивки из состояния и делаем запрос к базе
         task_id = data["task_ids"][task_number]
         # Получаем текст для сообщения и изображение ачивки
-        info_image = get_achievement_info(task_id, lexicon)
+        info_image = get_achievement_info(task_id, lexicon, session)
         info = info_image["info"]
         image = info_image["image"]
         msg = f'{lexicon["achievement_chosen"]}\n\n' f"{info}\n\n"
@@ -1214,7 +1221,9 @@ async def edit_name(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.message(EditTask.name)
-async def process_edit_name(message: Message, state: FSMContext):
+async def process_edit_name(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения названия ачивки."""
     try:
         data = await state.get_data()
@@ -1222,7 +1231,7 @@ async def process_edit_name(message: Message, state: FSMContext):
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], name=message.text
+            session, achievement_id=data["task_id"], name=message.text
         )
         if not task_saved:
             await message.answer(
@@ -1265,7 +1274,9 @@ async def change_image(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.message(EditTask.image)
-async def process_change_image(message: Message, state: FSMContext):
+async def process_change_image(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения изображения ачивки."""
     try:
         data = await state.get_data()
@@ -1278,7 +1289,7 @@ async def process_change_image(message: Message, state: FSMContext):
             return
         new_image = message.photo[-1].file_id
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], image=new_image
+            session, achievement_id=data["task_id"], image=new_image
         )
         if not task_saved:
             await message.answer(
@@ -1322,7 +1333,9 @@ async def change_description(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.message(EditTask.description)
-async def process_change_description(message: Message, state: FSMContext):
+async def process_change_description(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения описания ачивки."""
     try:
         data = await state.get_data()
@@ -1330,7 +1343,7 @@ async def process_change_description(message: Message, state: FSMContext):
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], description=message.text
+            session, achievement_id=data["task_id"], description=message.text
         )
         if not task_saved:
             await message.answer(
@@ -1374,7 +1387,9 @@ async def change_instruction(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.message(EditTask.instruction)
-async def process_change_instruction(message: Message, state: FSMContext):
+async def process_change_instruction(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения инструкции ачивки."""
     try:
         data = await state.get_data()
@@ -1382,7 +1397,7 @@ async def process_change_instruction(message: Message, state: FSMContext):
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], instruction=message.text
+            session, achievement_id=data["task_id"], instruction=message.text
         )
         if not task_saved:
             await message.answer(
@@ -1426,7 +1441,9 @@ async def change_score(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.message(EditTask.score)
-async def process_change_score(message: Message, state: FSMContext):
+async def process_change_score(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения баллов ачивки."""
     try:
         data = await state.get_data()
@@ -1434,7 +1451,7 @@ async def process_change_score(message: Message, state: FSMContext):
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], score=int(message.text)
+            session, achievement_id=data["task_id"], score=int(message.text)
         )
         if not task_saved:
             await message.answer(
@@ -1481,7 +1498,9 @@ async def change_price(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.message(EditTask.price)
-async def process_change_price(message: Message, state: FSMContext):
+async def process_change_price(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения стоимости ачивки."""
     try:
         data = await state.get_data()
@@ -1489,7 +1508,7 @@ async def process_change_price(message: Message, state: FSMContext):
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], price=int(message.text)
+            session, achievement_id=data["task_id"], price=int(message.text)
         )
         if not task_saved:
             await message.answer(
@@ -1538,7 +1557,9 @@ async def change_task_type(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_task_router.callback_query(EditTask.achievement_type)
-async def process_change_task_type(query: CallbackQuery, state: FSMContext):
+async def process_change_task_type(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Принимает тип ачивки."""
     try:
         await query.answer()
@@ -1547,7 +1568,9 @@ async def process_change_task_type(query: CallbackQuery, state: FSMContext):
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], achievement_type=query.data
+            session,
+            achievement_id=data["task_id"],
+            achievement_type=query.data,
         )
         if not task_saved:
             await query.message.answer(
@@ -1592,7 +1615,7 @@ async def change_artifact_type(query: CallbackQuery, state: FSMContext):
 
 @methodist_task_router.callback_query(EditTask.artifact_type)
 async def process_change_artifact_type(
-    query: CallbackQuery, state: FSMContext
+    query: CallbackQuery, state: FSMContext, session: Session
 ):
     """Принимает тип артефакта."""
     try:
@@ -1602,7 +1625,7 @@ async def process_change_artifact_type(
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         task_saved = set_achievement_param(
-            achievement_id=data["task_id"], artifact_type=query.data
+            session, achievement_id=data["task_id"], artifact_type=query.data
         )
         if not task_saved:
             await query.message.answer(
@@ -1622,7 +1645,7 @@ async def process_change_artifact_type(
 
 @methodist_task_router.callback_query(F.data == "edit_achievements_category")
 async def change_achievements_category(
-    query: CallbackQuery, state: FSMContext
+    query: CallbackQuery, state: FSMContext, session: Session
 ):
     """Обработчик создает состояние для смены категории ачивки.
 
@@ -1634,19 +1657,18 @@ async def change_achievements_category(
         await state.set_state(EditTask.achievements_category)
         language = data["language"]
         lexicon = LEXICON[language]
-        categories = get_all_categories()
+        categories = get_all_categories(session)
         categories_list = generate_categories_list(
             categories=categories,
             lexicon=lexicon,
             current_page=0,
-            page_size=PAGE_SIZE
+            page_size=PAGE_SIZE,
         )
         msg = categories_list["msg"]
         first_item = categories_list["first_item"]
         final_item = categories_list["final_item"]
         await state.update_data(
-            categories=categories,
-            categories_list=categories_list
+            categories=categories, categories_list=categories_list
         )
         await query.message.edit_text(
             msg,
@@ -1655,8 +1677,8 @@ async def change_achievements_category(
                 start=first_item,
                 end=final_item,
                 cd="achievements_category",
-                page_size=PAGE_SIZE
-            )
+                page_size=PAGE_SIZE,
+            ),
         )
     except KeyError as err:
         logger.error(
@@ -1668,11 +1690,10 @@ async def change_achievements_category(
 
 
 @methodist_task_router.callback_query(
-    EditTask.achievements_category,
-    F.data.startswith("achievements_category:")
+    EditTask.achievements_category, F.data.startswith("achievements_category:")
 )
 async def process_change_artifact_category(
-    query: CallbackQuery, state: FSMContext
+    query: CallbackQuery, state: FSMContext, session: Session
 ):
     """Принимает новую категорию ачивки."""
     try:
@@ -1695,14 +1716,13 @@ async def process_change_artifact_category(
                 categories=categories,
                 lexicon=lexicon,
                 current_page=current_page,
-                page_size=PAGE_SIZE
+                page_size=PAGE_SIZE,
             )
             msg = categories_list["msg"]
             first_item = categories_list["first_item"]
             final_item = categories_list["final_item"]
             await state.update_data(
-                categories=categories,
-                categories_list=categories_list
+                categories=categories, categories_list=categories_list
             )
             await state.set_state(EditTask.achievements_category)
             await query.message.edit_text(
@@ -1712,8 +1732,8 @@ async def process_change_artifact_category(
                     start=first_item,
                     end=final_item,
                     cd="achievements_category",
-                    page_size=PAGE_SIZE
-                )
+                    page_size=PAGE_SIZE,
+                ),
             )
         elif query.data.startswith("achievements_category:"):
             category_ids = int(query.data.split(":")[-1])
@@ -1722,8 +1742,9 @@ async def process_change_artifact_category(
             await state.update_data(category_id=category_id)
             await state.set_state(EditTask.achievements_category)
             task_saved = set_achievement_param(
+                session,
                 achievement_id=data["task_id"],
-                achievements_category=category_id
+                achievements_category=category_id,
             )
             if not task_saved:
                 await query.message.answer(

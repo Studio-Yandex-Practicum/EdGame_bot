@@ -8,6 +8,7 @@ from aiogram.enums import ParseMode
 
 from config_data.config import load_config
 from handlers import counsellor_handlers, user_handlers
+from middlewares.db_mw import DatabaseMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ async def main():
     dp = Dispatcher()
 
     # Регистриуем роутеры в диспетчере и устанавливаем меню
+    dp.update.outer_middleware(DatabaseMiddleware())
     dp.include_router(user_handlers.router)
     dp.include_router(counsellor_handlers.router)
     # Пропускаем накопившиеся апдейты и запускаем polling

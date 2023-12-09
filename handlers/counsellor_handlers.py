@@ -1,16 +1,14 @@
 import logging
 
 from aiogram import F, Router, types
-from aiogram.filters import Text
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
 )
+from sqlalchemy.orm import Session
 
-from db.engine import session
 from db.models import AchievementStatus, User
 from filters.custom_filters import IsCounselour
 from keyboards.counsellor_keyboard import (
@@ -26,6 +24,7 @@ from utils.db_commands import (
     select_user,
     send_to_methdist,
 )
+from utils.states_form import TaskState
 from utils.user_utils import (
     get_achievement_description,
     get_achievement_file_id,
@@ -52,22 +51,6 @@ router.message.filter(IsCounselour())
 router.callback_query.filter(IsCounselour())
 
 
-class TaskState(StatesGroup):
-    """Машина состояний для реализации сценариев диалогов с вожатым."""
-
-    group = State()
-    user_id = State()
-    task_id = State()
-    child_id = State()
-    child_info = State()
-    child_name = State()
-    reject_message = State()
-    children_group = State()
-    achievement_name = State()
-    group_buttons = State()
-    buttons_child_info = State()
-
-
 @router.message(
     F.text.in_([BUTTONS["RU"]["lk"], BUTTONS["TT"]["lk"], BUTTONS["EN"]["lk"]])
 )
@@ -76,8 +59,8 @@ async def enter_profile(message: types.Message):
     await message.answer("Теперь ты в личном кабинете!", reply_markup=keyboard)
 
 
-@router.message(Text("Список детей"))
-async def show_children_list(message: types.Message):
+@router.message(F.text == "Список детей")
+async def show_children_list(message: types.Message, session: Session):
     try:
         children = get_all_children(session)
 
@@ -85,14 +68,13 @@ async def show_children_list(message: types.Message):
             [f"Имя: {child.name} - Очки: {child.score}" for child in children]
         )
         await message.answer(f"Список детей:\n{children_text}")
-    except Exception:
+    except Exception as err:
         await message.answer("Произошла ошибка при получении списка детей.")
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при получении списка детей : {err}")
 
 
-@router.message(Text("Проверить задания"))
-async def check_requests(message: types.Message):
+@router.message(F.text == "Проверить задания")
+async def check_requests(message: types.Message, session: Session):
     children = session.query(User).filter(User.role == "kid").all()
     try:
         for child in children:
@@ -135,37 +117,39 @@ async def check_requests(message: types.Message):
                     message_text,
                     inline_keyboard,
                 )
-    except Exception:
+    except Exception as err:
         await message.answer("Произошла ошибка при поиске заданий.")
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при поиске заданий : {err}")
 
 
 @router.callback_query(lambda c: c.data.startswith("accept:"))
-async def approve_handler(callback_query: types.CallbackQuery):
+async def approve_handler(
+    callback_query: types.CallbackQuery, session: Session
+):
     task_id = int(callback_query.data.split(":")[1])
     name = str(callback_query.data.split(":")[2])
     try:
-        if approve_task(task_id):
+        if approve_task(session, task_id):
             await callback_query.message.answer(f"Задание от {name} принято!")
         else:
             await callback_query.message.answer(
                 f"Не удалось найти задание с ID {task_id}."
             )
-    except Exception:
+    except Exception as err:
         await callback_query.message.answer(
             "Произошла ошибка при подтверждении задания."
         )
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при подтверждении задания : {err}")
 
 
 @router.callback_query(lambda c: c.data.startswith("reject:"))
-async def reject_handler(callback_query: types.CallbackQuery):
+async def reject_handler(
+    callback_query: types.CallbackQuery, session: Session
+):
     task_id = int(callback_query.data.split(":")[1])
     name = str(callback_query.data.split(":")[2])
     try:
-        if reject_task(task_id):
+        if reject_task(session, task_id):
             inline_keyboard = create_yes_no_keyboard(task_id)
             await callback_query.message.answer(
                 f"Задание от {name} отклонено! Хотите указать причину отказа?",
@@ -175,12 +159,11 @@ async def reject_handler(callback_query: types.CallbackQuery):
             await callback_query.message.answer(
                 f"Не удалось найти задание с ID {task_id}."
             )
-    except Exception:
+    except Exception as err:
         await callback_query.message.answer(
             "Произошла ошибка при отклонении задания."
         )
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при отклонении задания : {err}")
 
 
 @router.callback_query(F.data == "yes_handler")
@@ -194,12 +177,11 @@ async def yes_handler(callback_query: types.CallbackQuery, state: FSMContext):
             "Введите причину отказа следующим сообщением. Если передумаете - "
             "введите 'Отмена'"
         )
-    except Exception:
+    except Exception as err:
         await callback_query.message.answer(
             "Произошла ошибка при обработке запроса."
         )
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при обработке запроса : {err}")
 
 
 @router.callback_query(F.data == "no_handler")
@@ -209,16 +191,17 @@ async def no_handler(callback_query: types.CallbackQuery):
         await callback_query.message.answer(
             "Хорошо, задание будет отколонено без комментария"
         )
-    except Exception:
+    except Exception as err:
         await callback_query.message.answer(
             "Произошла ошибка при обработке запроса."
         )
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при обработке запроса : {err}")
 
 
 @router.message(TaskState.reject_message)
-async def rejection_reason(message: types.Message, state: FSMContext):
+async def rejection_reason(
+    message: types.Message, state: FSMContext, session: Session
+):
     task_data = await state.get_data()
     task_id = task_data.get("task_id")
 
@@ -227,25 +210,25 @@ async def rejection_reason(message: types.Message, state: FSMContext):
             "Хорошо, сообщение об отмене будет доставлено без комментария"
         )
         await state.clear()
-        session.close()
         return
-    save_rejection_reason_in_db(task_id, message.text)
+    save_rejection_reason_in_db(session, task_id, message.text)
     await message.answer("Причина отказа сохранена")
     await state.clear()
-    session.close()
 
 
 @router.callback_query(lambda c: c.data.startswith("back:"))
-async def send_to_methodist(callback_query: types.CallbackQuery):
+async def send_to_methodist(
+    callback_query: types.CallbackQuery, session: Session
+):
     task_id = int(callback_query.data.split(":")[1])
     name = str(callback_query.data.split(":")[2])
-    if send_to_methdist(task_id):
+    if send_to_methdist(session, task_id):
         await callback_query.message.answer(
             f"Задание от {name} отправлено на проверку методисту"
         )
 
 
-@router.message(Text("Проверить конкретное задание"))
+@router.message(F.text == "Проверить конкретное задание")
 async def display_task_review_requests(
     message: types.Message, state: FSMContext
 ):
@@ -255,7 +238,9 @@ async def display_task_review_requests(
 
 
 @router.message(TaskState.achievement_name)
-async def display_task(message: types.Message, state: FSMContext):
+async def display_task(
+    message: types.Message, state: FSMContext, session: Session
+):
     achievement_name = message.text
     try:
         achievement_id = get_achievements_by_name(session, achievement_name)
@@ -286,14 +271,13 @@ async def display_task(message: types.Message, state: FSMContext):
                 inline_keyboard,
             )
             await state.clear()
-    except Exception:
+    except Exception as err:
         await message.answer("Произошла ошибка при поиске задания")
         await state.clear()
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при поиске задания : {err}")
 
 
-@router.message(Text("Узнать общий прогресс отряда"))
+@router.message(F.text == "Узнать общий прогресс отряда")
 async def display_troop_progress(message: types.Message, state: FSMContext):
     """Возможность отображения общего прогресса отряда."""
     await state.set_state(TaskState.children_group)
@@ -303,7 +287,9 @@ async def display_troop_progress(message: types.Message, state: FSMContext):
 
 
 @router.message(TaskState.children_group)
-async def display_troop(message: types.Message, state: FSMContext):
+async def display_troop(
+    message: types.Message, state: FSMContext, session: Session
+):
     try:
         children = get_all_children_from_group(session, message.text)
         message_text = (
@@ -324,14 +310,13 @@ async def display_troop(message: types.Message, state: FSMContext):
             await state.clear()
         else:
             raise Exception
-    except Exception:
+    except Exception as err:
         await message.answer("Произошла ошибка при поиске отряда")
         await state.clear()
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при поиске отряда : {err}")
 
 
-@router.message(Text("Получить информацию о ребенке"))
+@router.message(F.text == "Получить информацию о ребенке")
 async def check_child_info(message: types.Message, state: FSMContext):
     """Возможность проверки инфы о выбранном ребенке."""
     await state.set_state(TaskState.child_info)
@@ -341,13 +326,15 @@ async def check_child_info(message: types.Message, state: FSMContext):
 
 
 @router.message(TaskState.child_info)
-async def check_child(message: types.Message, state: FSMContext):
+async def check_child(
+    message: types.Message, state: FSMContext, session: Session
+):
     try:
         search_child = message.text.split(" ")
         name = f"{search_child[0]} {search_child[1]}"
         group = int(search_child[2])
         child = get_child_by_name_and_group(session, name, group)
-        achievements = available_achievements(child.id, child.score)
+        achievements = available_achievements(session, child.id, child.score)
 
         message_text = [
             f"Информация о ребенке по имени {name}:\n\nОчки: {child.score} "
@@ -362,14 +349,13 @@ async def check_child(message: types.Message, state: FSMContext):
         )
         await message.answer("\n".join(message_text))
         await state.clear()
-    except Exception:
+    except Exception as err:
         await message.answer("Произошла ошибка при поиске ребенка")
         await state.clear()
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при поиске ребенка : {err}")
 
 
-@router.message(Text("Проверить задание конкретного ребенка"))
+@router.message(F.text == "Проверить задание конкретного ребенка")
 async def display_child_task_review_requests(
     message: types.Message, state: FSMContext
 ):
@@ -382,7 +368,9 @@ async def display_child_task_review_requests(
 
 
 @router.message(TaskState.child_name)
-async def display_child_task_review(message: types.Message, state: FSMContext):
+async def display_child_task_review(
+    message: types.Message, state: FSMContext, session: Session
+):
     search_child = message.text.split(" ")
     try:
         name = f"{search_child[0]} {search_child[1]}"
@@ -415,14 +403,13 @@ async def display_child_task_review(message: types.Message, state: FSMContext):
                 inline_keyboard,
             )
             await state.clear()
-    except Exception:
-        await message.answer("Произошла ошибка при ребенка")
+    except Exception as err:
+        await message.answer("Произошла ошибка при при поиске ребенка")
         await state.clear()
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при поиске ребенка : {err}")
 
 
-@router.message(Text("Проверить задание всего отряда"))
+@router.message(F.text == "Проверить задание всего отряда")
 async def display_troop_task_review_requests(
     message: types.Message, state: FSMContext
 ):
@@ -432,7 +419,9 @@ async def display_troop_task_review_requests(
 
 
 @router.message(TaskState.group)
-async def display_troop_task_review(message: types.Message, state: FSMContext):
+async def display_troop_task_review(
+    message: types.Message, state: FSMContext, session: Session
+):
     try:
         user_ids = get_all_children_from_group(session, message.text)
         if len(user_ids) == 0:
@@ -467,18 +456,19 @@ async def display_troop_task_review(message: types.Message, state: FSMContext):
                     inline_keyboard,
                 )
                 await state.clear()
-    except Exception:
+    except Exception as err:
         await message.answer("Произошла ошибка при поиске отряда")
         await state.clear()
-    finally:
-        session.close()
+        logger.error(f"Произошла ошибка при поиске отряда : {err}")
 
 
 @router.message(F.text == "Список детей в группе")
-async def get_group_children(message: types.Message, state: FSMContext):
+async def get_group_children(
+    message: types.Message, state: FSMContext, session: Session
+):
     """Возможность выбора группы, в которой есть ребенок."""
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
         teams = get_all_group(session)
@@ -501,12 +491,12 @@ async def get_group_children(message: types.Message, state: FSMContext):
         await message.answer(lexicon["error_group"])
         logger.error(f"Произошла ошибка при поиске группы: {err}")
         await state.clear()
-    finally:
-        session.close()
 
 
 @router.callback_query(TaskState.group_buttons)
-async def show_children_group(query: CallbackQuery, state: FSMContext):
+async def show_children_group(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Возможность выбора информации о ребенке."""
     try:
         await query.answer()
@@ -543,8 +533,6 @@ async def show_children_group(query: CallbackQuery, state: FSMContext):
         await query.message.edit_text(lexicon["error_group"])
         logger.error(f"Произошла ошибка при поиске группы: {err}")
         await state.clear()
-    finally:
-        session.close()
 
 
 @router.callback_query(TaskState.buttons_child_info)
@@ -566,5 +554,4 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
         await query.message.answer(lexicon["error_child"])
         logger.error(f"Произошла ошибка : {err}")
     finally:
-        session.close()
         await state.clear()

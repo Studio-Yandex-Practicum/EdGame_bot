@@ -1,28 +1,29 @@
 import logging
 import time
 
-from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup
+from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
+from sqlalchemy.orm import Session
 
-from lexicon.lexicon import LEXICON, BUTTONS
 from keyboards.keyboards import pagination_keyboard
 from keyboards.methodist_keyboards import (
     add_category_keyboard,
-    edit_category_keyboard,
-    methodist_profile_keyboard,
     category_keyboard_methodist,
     confirm_category_keyboard,
+    edit_category_keyboard,
+    methodist_profile_keyboard,
 )
+from lexicon.lexicon import BUTTONS, LEXICON
 from utils.db_commands import (
     create_category,
     get_all_categories,
     select_user,
     set_category_param,
 )
-from utils.utils import generate_categories_list, get_category_info
-from utils.states_form import AddCategory, EditCategory, CategoryList
 from utils.pagination import PAGE_SIZE
+from utils.states_form import AddCategory, CategoryList, EditCategory
+from utils.utils import generate_categories_list, get_category_info
 
 logger = logging.getLogger(__name__)
 
@@ -39,31 +40,31 @@ methodist_category_router = Router()
         ]
     )
 )
-async def add_category(message: Message):
+async def add_category(message: Message, session: Session):
     """Обработчик кнопки Добавить категорию."""
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
         await message.answer(
             lexicon["add_category"],
-            reply_markup=add_category_keyboard(language)
+            reply_markup=add_category_keyboard(language),
         )
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключе при добавлении категории в базу: {err}"
-        )
+        logger.error(f"Ошибка в ключе при добавлении категории в базу: {err}")
     except Exception as err:
         logger.error(f"Ошибка при добавлении категории в базу: {err}")
 
 
 @methodist_category_router.callback_query(F.data == "ready_category")
-async def start_add_category(query: CallbackQuery, state: FSMContext):
+async def start_add_category(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Начинает сценарий добавления категории в базу."""
     try:
         await query.answer()
         await state.clear()
-        user = select_user(query.from_user.id)
+        user = select_user(session, query.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
         await state.update_data(language=language)
@@ -71,15 +72,15 @@ async def start_add_category(query: CallbackQuery, state: FSMContext):
         await query.message.answer(lexicon["send_category_name"])
         await query.message.delete()
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключе при запросе названия категории: {err}"
-        )
+        logger.error(f"Ошибка в ключе при запросе названия категории: {err}")
     except Exception as err:
         logger.error(f"Ошибка при запросе названия категории: {err}")
 
 
 @methodist_category_router.message(AddCategory.name)
-async def process_add_category_name(message: Message, state: FSMContext):
+async def process_add_category_name(
+    message: Message, state: FSMContext, session: Session
+):
     """Обработчик принимает имя категории, сохраняет категорию в БД.
 
     Просит прислать сообщение.
@@ -92,24 +93,24 @@ async def process_add_category_name(message: Message, state: FSMContext):
         language = data["language"]
         lexicon = LEXICON[language]
         data["name"] = message.text
-        category_created = create_category(data)
+        category_created = create_category(session, data)
         if not category_created:
             await message.answer(
                 lexicon["error_adding_category"],
-                reply_markup=methodist_profile_keyboard(language)
+                reply_markup=methodist_profile_keyboard(language),
             )
             return
-        category_info = get_category_info(data["name"], lexicon)
+        category_info = get_category_info(data["name"], lexicon, session)
         info = category_info["info"]
         category_id = category_info["id"]
         # Собираем пагинацию для списка категорий, если пользователь
         # перейдет к редактированию созданной категории
-        categories = get_all_categories()
+        categories = get_all_categories(session)
         page_info = generate_categories_list(
             categories=categories,
             lexicon=lexicon,
             current_page=0,
-            page_size=PAGE_SIZE
+            page_size=PAGE_SIZE,
         )
         categories_ids = page_info["categories_ids"]
         new_current_page = page_info["current_page"]
@@ -123,15 +124,14 @@ async def process_add_category_name(message: Message, state: FSMContext):
             query_id=query_id,
             current_page=new_current_page,
             task_info=page_info,
-            language=language
+            language=language,
         )
         # Сообщаем пользователю, что сейчас покажем, что получилось
         await message.answer(lexicon["confirm_adding_category"])
         time.sleep(2)
         # Показываем, что получилось
         await message.answer(
-            info,
-            reply_markup=confirm_category_keyboard(language)
+            info, reply_markup=confirm_category_keyboard(language)
         )
     except KeyError as err:
         logger.error(
@@ -155,7 +155,7 @@ async def process_edit_category(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         await query.message.answer(
             lexicon["start_edit_category"],
-            reply_markup=edit_category_keyboard(language, cd=query_id)
+            reply_markup=edit_category_keyboard(language, cd=query_id),
         )
         await query.message.delete()
     except KeyError as err:
@@ -190,7 +190,9 @@ async def edit_category_name(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_category_router.message(EditCategory.name)
-async def process_edit_name(message: Message, state: FSMContext):
+async def process_edit_name(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения названия категории."""
     try:
         data = await state.get_data()
@@ -198,18 +200,17 @@ async def process_edit_name(message: Message, state: FSMContext):
         query_id = data["query_id"]
         lexicon = LEXICON[language]
         category_saved = set_category_param(
-            category_id=data["category_id"],
-            name=message.text
+            session, category_id=data["category_id"], name=message.text
         )
         if not category_saved:
             await message.answer(
                 lexicon["error_adding_category"],
-                reply_markup=methodist_profile_keyboard(language)
+                reply_markup=methodist_profile_keyboard(language),
             )
             return
         await message.answer(
             lexicon["category_edited"],
-            reply_markup=edit_category_keyboard(language, cd=query_id)
+            reply_markup=edit_category_keyboard(language, cd=query_id),
         )
     except KeyError as err:
         logger.error(
@@ -220,14 +221,9 @@ async def process_edit_name(message: Message, state: FSMContext):
 
 
 @methodist_category_router.callback_query(
-    F.data.in_(
-        {"back_to_category_list", "category:next", "category:previous"}
-    )
+    F.data.in_({"back_to_category_list", "category:next", "category:previous"})
 )
-async def show_category_list_callback(
-    query: CallbackQuery,
-    state: FSMContext
-):
+async def show_category_list_callback(query: CallbackQuery, state: FSMContext):
     """Обарботчик кнопки Посмотреть/редактировать категории.
 
     Показывает все созданные категории с пагинацией.
@@ -248,7 +244,7 @@ async def show_category_list_callback(
             lexicon=lexicon,
             current_page=current_page,
             page_size=PAGE_SIZE,
-            methodist=True
+            methodist=True,
         )
         msg = page_info["msg"]
         first_item = page_info["first_item"]
@@ -256,13 +252,13 @@ async def show_category_list_callback(
         new_current_page = page_info["current_page"]
         lk_button = {
             "text": BUTTONS[language]["lk"],
-            "callback_data": "profile"
+            "callback_data": "profile",
         }
         await state.set_state(CategoryList.categories)
         await state.update_data(
             categories=categories,
             current_page=new_current_page,
-            task_info=page_info
+            task_info=page_info,
         )
         if query.data == "back_to_category_list":
             # Возвращаемся со страницы категории,
@@ -275,8 +271,8 @@ async def show_category_list_callback(
                     end=final_item,
                     cd="category",
                     page_size=PAGE_SIZE,
-                    extra_button=lk_button
-                )
+                    extra_button=lk_button,
+                ),
             )
             await query.message.delete()
             return
@@ -288,13 +284,11 @@ async def show_category_list_callback(
                 end=final_item,
                 cd="category",
                 page_size=PAGE_SIZE,
-                extra_button=lk_button
-            )
+                extra_button=lk_button,
+            ),
         )
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключе при просмотре списка категорий: {err}"
-        )
+        logger.error(f"Ошибка в ключе при просмотре списка категорий: {err}")
     except Exception as err:
         logger.error(f"Ошибка при просмотре списка категорий: {err}")
 
@@ -302,7 +296,9 @@ async def show_category_list_callback(
 @methodist_category_router.callback_query(
     F.data.startswith("back_to_category:") | F.data.startswith("category:")
 )
-async def show_category(query: CallbackQuery, state: FSMContext):
+async def show_category(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик кнопок выбора отдельной категории.
 
     Получаем условный id категории из callback_data, достаем реальный id из
@@ -312,12 +308,12 @@ async def show_category(query: CallbackQuery, state: FSMContext):
         await query.answer()
         data = await state.get_data()
         if not data:
-            user = select_user(query.from_user.id)
+            user = select_user(session, query.from_user.id)
             await query.message.answer(
                 LEXICON[user.language]["error_getting_category"],
                 reply_markup=InlineKeyboardMarkup(
                     inline_keyboard=category_keyboard_methodist(user.language)
-                )
+                ),
             )
             return
         language = data["language"]
@@ -328,42 +324,29 @@ async def show_category(query: CallbackQuery, state: FSMContext):
         elif ("category_ids" in data) and query.data.startswith("category:"):
             category_ids = int(query.data.split(":")[-1])
             category_id = data["category_ids"][category_ids]
-        elif (
-            ("categories_ids" in data) and query.data.startswith("category:")
-        ):
+        elif ("categories_ids" in data) and query.data.startswith("category:"):
             category_ids = int(query.data.split(":")[-1])
             category_id = data["categories_ids"][category_ids]
-        category_info = get_category_info(category_id, lexicon)
+        category_info = get_category_info(category_id, lexicon, session)
         info = category_info["info"]
-        msg = (
-            f"{lexicon['category_chosen']}\n\n"
-            f"{info}\n\n"
-        )
+        msg = f"{lexicon['category_chosen']}\n\n" f"{info}\n\n"
         await state.set_state(EditCategory.category_id)
-        await state.update_data(
-            category_id=category_id,
-            query_id=category_id
-        )
+        await state.update_data(category_id=category_id, query_id=category_id)
         await query.message.answer(
-            msg,
-            reply_markup=category_keyboard_methodist(language)
+            msg, reply_markup=category_keyboard_methodist(language)
         )
         await query.message.delete()
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключевом слове при получении категории: {err}"
-        )
+        logger.error(f"Ошибка в ключевом слове при получении категории: {err}")
     except Exception as err:
         logger.error(f"Ошибка при получении категории: {err}")
 
 
 @methodist_category_router.callback_query(
-    EditCategory.confirm_task,
-    F.data == "confirm"
+    EditCategory.confirm_task, F.data == "confirm"
 )
 async def process_saving_category_to_db(
-    query: CallbackQuery,
-    state: FSMContext
+    query: CallbackQuery, state: FSMContext
 ):
     """Обработчик кнопки Подтверждаю."""
     try:
@@ -374,13 +357,11 @@ async def process_saving_category_to_db(
         lexicon = LEXICON[language]
         await query.message.answer(
             lexicon["category_added"],
-            reply_markup=methodist_profile_keyboard(language)
+            reply_markup=methodist_profile_keyboard(language),
         )
         await query.message.delete()
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключе при добавлении категории: {err}"
-        )
+        logger.error(f"Ошибка в ключе при добавлении категории: {err}")
     except Exception as err:
         logger.error(f"Ошибка при добавлении категории: {err}")
 
@@ -394,21 +375,23 @@ async def process_saving_category_to_db(
         ]
     )
 )
-async def show_category_list(message: Message, state: FSMContext):
+async def show_category_list(
+    message: Message, state: FSMContext, session: Session
+):
     """Обарботчик кнопки Посмотреть/редактировать категории.
 
     Показывает все созданные категории с пагинацией.
     """
     try:
         await state.clear()
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
-        categories = get_all_categories()
+        categories = get_all_categories(session)
         if not categories:
             await message.answer(
                 lexicon["no_categories_yet"],
-                reply_markup=add_category_keyboard(language)
+                reply_markup=add_category_keyboard(language),
             )
             return
         current_page = 1
@@ -417,7 +400,7 @@ async def show_category_list(message: Message, state: FSMContext):
             lexicon=lexicon,
             current_page=current_page,
             page_size=PAGE_SIZE,
-            methodist=True
+            methodist=True,
         )
         msg = page_info["msg"]
         category_ids = page_info["categories_ids"]
@@ -425,7 +408,7 @@ async def show_category_list(message: Message, state: FSMContext):
         final_item = page_info["final_item"]
         lk_button = {
             "text": BUTTONS[language]["lk"],
-            "callback_data": "profile"
+            "callback_data": "profile",
         }
         await state.set_state(CategoryList.categories)
         await state.update_data(
@@ -433,7 +416,7 @@ async def show_category_list(message: Message, state: FSMContext):
             category_ids=category_ids,
             current_page=current_page,
             task_info=page_info,
-            language=language
+            language=language,
         )
         await message.answer(
             msg,
@@ -443,12 +426,10 @@ async def show_category_list(message: Message, state: FSMContext):
                 end=final_item,
                 cd="category",
                 page_size=PAGE_SIZE,
-                extra_button=lk_button
-            )
+                extra_button=lk_button,
+            ),
         )
     except KeyError as err:
-        logger.error(
-            f"Ошибка в ключе при просмотре списка категорий: {err}"
-        )
+        logger.error(f"Ошибка в ключе при просмотре списка категорий: {err}")
     except Exception as err:
         logger.error(f"Ошибка при просмотре списка категорий: {err}")

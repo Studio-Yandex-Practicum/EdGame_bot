@@ -7,9 +7,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from config_data.config import load_config
-from db.engine import engine, session
+from db.engine import engine
 from db.models import Password
 from filters.custom_filters import IsStudent
 from keyboards.admin_keyboards import (
@@ -57,18 +58,20 @@ router.include_routers(methodist_router, child_router, admin_router)
 
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart(), StateFilter(default_state))
-async def process_start_command(message: Message, state: FSMContext):
+async def process_start_command(
+    message: Message, state: FSMContext, session: Session
+):
     # Проверяем установлены ли пароли на роли
-    check_password()
+    check_password(session)
 
     # Проверяем есть ли юзер в базе и если нет, то регистрируем
-    user = select_user(message.chat.id)
+    user = select_user(session, message.chat.id)
     if message.chat.id == config.boss_id:
         await state.clear()
         await message.answer(
             "Добро пожаловать, босс", reply_markup=boss_pass_keyboard()
         )
-    elif is_user_in_db(message.chat.id):
+    elif is_user_in_db(session, message.chat.id):
         await state.clear()
         if user.role == "kid":
             await message.answer(
@@ -88,7 +91,7 @@ async def process_start_command(message: Message, state: FSMContext):
         else:
             await message.answer(
                 f"Добро пожаловать, {user.name}",
-                reply_markup=henchman_pass_keyboard(),
+                reply_markup=henchman_pass_keyboard(session),
             )
     else:
         # Анкетируем и сохраняем пользователя в БД
@@ -146,7 +149,9 @@ async def warning_not_name(message: Message, state: FSMContext):
 
 
 @router.message(StateFilter(Profile.get_group), F.text.isdigit())
-async def process_get_group(message: Message, state: FSMContext):
+async def process_get_group(
+    message: Message, state: FSMContext, session: Session
+):
     """Приглашаем ввести пароль."""
     await state.update_data(group=message.text)
     await state.update_data(id=int(message.chat.id))
@@ -160,7 +165,7 @@ async def process_get_group(message: Message, state: FSMContext):
         text = LEXICON["EN"]["get_group"]
     await message.answer(text=text)
     # Вносим данные пользователь в БД
-    register_user(user_data)
+    register_user(session, user_data)
     await state.set_state(EnteringPassword.psw2hash)
 
 
@@ -179,9 +184,11 @@ async def warning_not_group(message: Message, state: FSMContext):
 
 
 @admin_router.message(StateFilter(EnteringPassword.psw2hash))
-async def hashing_password(message: Message, state: FSMContext):
+async def hashing_password(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатываем пароль."""
-    user = select_user(message.chat.id)
+    user = select_user(session, message.chat.id)
     # переводим введенный юзером пароль в хеш
     psw_hash = hashlib.sha256(message.text.encode())
     psw = psw_hash.hexdigest()
@@ -224,7 +231,7 @@ async def hashing_password(message: Message, state: FSMContext):
         session.commit()
         await message.answer(
             text=LEXICON["RU"]["henchman_pass"],
-            reply_markup=henchman_pass_keyboard(),
+            reply_markup=henchman_pass_keyboard(session),
         )
     await state.clear()
 
@@ -233,12 +240,12 @@ async def hashing_password(message: Message, state: FSMContext):
 @child_router.message(
     F.text.in_([BUTTONS["RU"]["lk"], BUTTONS["TT"]["lk"], BUTTONS["EN"]["lk"]])
 )
-async def profile_info(message: Message, state: FSMContext):
+async def profile_info(message: Message, state: FSMContext, session: Session):
     """Обработчик показывает главное меню профиля студента."""
     try:
         await state.clear()
         # Достаем инфу о пользователе из базы
-        user = select_user(message.chat.id)
+        user = select_user(session, message.chat.id)
         lexicon = LEXICON[user.language]
         # Генерируем инфу для ЛК
         msg = generate_profile_info(user, lexicon)
@@ -253,13 +260,15 @@ async def profile_info(message: Message, state: FSMContext):
 
 
 @child_router.callback_query(F.data == "profile")
-async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
+async def profile_info_callback_query(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик показывает главное меню профиля студента."""
     try:
         await query.answer()
         await state.clear()
         # Достаем инфу о пользователе из базы
-        user = select_user(query.from_user.id)
+        user = select_user(session, query.from_user.id)
         lexicon = LEXICON[user.language]
         # Генерируем инфу для ЛК
         msg = generate_profile_info(user, lexicon)
@@ -284,13 +293,13 @@ async def profile_info_callback_query(query: CallbackQuery, state: FSMContext):
         ]
     )
 )
-async def write_to_counsellor(message: Message):
+async def write_to_counsellor(message: Message, session: Session):
     """Обработчик кнопки 'Написать вожатому'.
 
     Отправляет инлайн кнопку со ссылкой на вожатого.
     """
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         # Как-то получаем username вожатого
         counsellor = message.from_user.username
@@ -311,9 +320,9 @@ async def write_to_counsellor(message: Message):
         [BUTTONS["RU"]["help"], BUTTONS["TT"]["help"], BUTTONS["EN"]["help"]]
     )
 )
-async def help_command(message: Message):
+async def help_command(message: Message, session: Session):
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         await message.answer(
             LEXICON[language]["help_info"],
@@ -337,11 +346,11 @@ async def help_command(message: Message):
         ]
     )
 )
-async def edit_profile(message: Message, state: FSMContext):
+async def edit_profile(message: Message, state: FSMContext, session: Session):
     """Обработчик для редактирования профиля ребенка."""
     try:
         await state.clear()
-        user = select_user(message.chat.id)
+        user = select_user(session, message.chat.id)
         await message.answer(
             LEXICON[user.language]["edit_profile"],
             reply_markup=edit_profile_keyboard(user.language),
@@ -353,7 +362,9 @@ async def edit_profile(message: Message, state: FSMContext):
 
 
 @child_router.callback_query(F.data == "change_name")
-async def change_name(query: CallbackQuery, state: FSMContext):
+async def change_name(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик создает состояние для смены имени.
 
     Просит прислать сообщение.
@@ -361,7 +372,7 @@ async def change_name(query: CallbackQuery, state: FSMContext):
     try:
         await query.answer()
         await state.set_state(Data.change_name)
-        user = select_user(query.from_user.id)
+        user = select_user(session, query.from_user.id)
         await query.message.answer(
             LEXICON[user.language]["change_name"],
             reply_markup=ReplyKeyboardRemove(),
@@ -374,11 +385,13 @@ async def change_name(query: CallbackQuery, state: FSMContext):
 
 
 @child_router.message(Data.change_name)
-async def process_change_name(message: Message, state: FSMContext):
+async def process_change_name(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает сообщение для изменения имени."""
     try:
-        user = select_user(message.chat.id)
-        set_user_param(user, name=message.text)
+        user = select_user(session, message.chat.id)
+        set_user_param(session, user, name=message.text)
         await state.clear()
         await message.answer(
             LEXICON[user.language]["name_changed"],
@@ -391,7 +404,9 @@ async def process_change_name(message: Message, state: FSMContext):
 
 
 @child_router.callback_query(F.data == "change_language")
-async def change_language(query: CallbackQuery, state: FSMContext):
+async def change_language(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик создает состояние для смены языка.
 
     Уточняет, какой язык установить.
@@ -399,7 +414,7 @@ async def change_language(query: CallbackQuery, state: FSMContext):
     try:
         await query.answer()
         await state.set_state(Data.change_language)
-        user = select_user(query.from_user.id)
+        user = select_user(session, query.from_user.id)
         await query.message.edit_text(
             LEXICON[user.language]["change_language"],
             reply_markup=create_welcome_keyboard(),
@@ -411,15 +426,17 @@ async def change_language(query: CallbackQuery, state: FSMContext):
 
 
 @child_router.callback_query(Data.change_language)
-async def process_change_language(query: CallbackQuery, state: FSMContext):
+async def process_change_language(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик для изменения языка интерфейса."""
     try:
         await query.answer()
         await state.clear()
-        user = select_user(query.from_user.id)
+        user = select_user(session, query.from_user.id)
         # Изменяем язык бота на новый
         language = query.data
-        set_user_param(user, language=language)
+        set_user_param(session, user, language=language)
         await query.message.edit_text(
             LEXICON[language]["language_changed"],
             reply_markup=edit_profile_keyboard(language),

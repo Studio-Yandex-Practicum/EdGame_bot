@@ -3,6 +3,7 @@ import logging
 from aiogram import F, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
+from sqlalchemy.orm import Session
 
 from keyboards.keyboards import pagination_keyboard
 from keyboards.methodist_keyboards import (
@@ -50,10 +51,12 @@ methodist_team_router = Router()
         ]
     )
 )
-async def process_create_team(message: Message, state: FSMContext):
+async def process_create_team(
+    message: Message, state: FSMContext, session: Session
+):
     """Обработчик кнопки создать команду."""
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
         await message.answer(
@@ -137,7 +140,9 @@ async def process_team_name(message: Message, state: FSMContext):
 @methodist_team_router.callback_query(
     CreateTeam.size, F.data.startswith("size")
 )
-async def process_team_size(query: CallbackQuery, state: FSMContext):
+async def process_team_size(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обрабатывает размер команды."""
     try:
         await query.answer()
@@ -146,7 +151,7 @@ async def process_team_size(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         team_name = data["name"]
         team_size = int(query.data.split(":")[-1])
-        new_team = create_team(name=team_name, size=team_size)
+        new_team = create_team(session, name=team_name, size=team_size)
         await query.message.edit_text(
             lexicon["add_team_member"],
             reply_markup=add_members_or_pass_keyboard(language),
@@ -191,15 +196,17 @@ async def process_pass_adding_members(query: CallbackQuery, state: FSMContext):
 @methodist_team_router.callback_query(
     CreateTeam.add_members, F.data == "add_team_members"
 )
-async def process_add_team_members(query: CallbackQuery, state: FSMContext):
+async def process_add_team_members(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик кнопки 'Добавить участников'.
 
     Выводит список детей для добавления в команду.
     """
     try:
         await query.answer()
-        language = select_user(query.from_user.id).language
-        children = get_users_by_role(role="kid")
+        language = select_user(session, query.from_user.id).language
+        children = get_users_by_role(session, role="kid")
         current_page = 1
         pages = None
         lexicon = LEXICON[language]
@@ -320,11 +327,13 @@ async def process_info_button(query: CallbackQuery, state: FSMContext):
 @methodist_team_router.callback_query(
     F.data.startswith("complete_creating_team")
 )
-async def process_complete_team(query: CallbackQuery, state: FSMContext):
+async def process_complete_team(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Завершает создание команды."""
     await query.answer()
     await state.clear()
-    language = select_user(query.from_user.id).language
+    language = select_user(session, query.from_user.id).language
     lexicon = LEXICON[language]
     await query.message.delete()
     await query.message.answer(
@@ -337,7 +346,9 @@ async def process_complete_team(query: CallbackQuery, state: FSMContext):
 @methodist_team_router.callback_query(
     CreateTeam.choose_member, F.data.startswith("child")
 )
-async def process_choose_child(query: CallbackQuery, state: FSMContext):
+async def process_choose_child(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Показывает информацию о ребенке и кнопки добавления в команду."""
     try:
         await query.answer()
@@ -348,7 +359,7 @@ async def process_choose_child(query: CallbackQuery, state: FSMContext):
         team = data["team"]
         query_id = int(query.data.split(":")[-1])
         child_id = children_ids[query_id]
-        child = select_user(child_id)
+        child = select_user(session, child_id)
         child_info = generate_profile_info(child, lexicon)
         msg = f'{child_info}\n\n{lexicon["add_this_user"]}'
         if child.team and child.team != team:
@@ -379,7 +390,9 @@ async def process_choose_child(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_team_router.callback_query(F.data == "choose_member")
-async def process_choose_member(query: CallbackQuery, state: FSMContext):
+async def process_choose_member(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     try:
         await query.answer()
         data = await state.get_data()
@@ -388,7 +401,7 @@ async def process_choose_member(query: CallbackQuery, state: FSMContext):
         lexicon = LEXICON[language]
         child = data["child"]
         team = data["team"]
-        set_user_param(child, team=team)
+        set_user_param(session, child, team=team)
         child_info = generate_profile_info(child, lexicon)
         msg = f'{child_info}\n\n{lexicon["member_added"]}'
         cd = None
@@ -407,7 +420,9 @@ async def process_choose_member(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_team_router.callback_query(F.data == "delete_member")
-async def process_delete_member(query: CallbackQuery, state: FSMContext):
+async def process_delete_member(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     try:
         await query.answer()
         data = await state.get_data()
@@ -415,7 +430,7 @@ async def process_delete_member(query: CallbackQuery, state: FSMContext):
         language = data["language"]
         lexicon = LEXICON[language]
         child = data["child"]
-        set_user_param(child, delete_team=True)
+        set_user_param(session, child, delete_team=True)
         child_info = generate_profile_info(child, lexicon)
         msg = f'{child_info}\n\n{lexicon["member_deleted"]}'
         cd = None
@@ -442,14 +457,16 @@ async def process_delete_member(query: CallbackQuery, state: FSMContext):
         ]
     )
 )
-async def show_teams_list(message: Message, state: FSMContext):
+async def show_teams_list(
+    message: Message, state: FSMContext, session: Session
+):
     """Показывает список команд с возможностью выбора команды."""
     try:
         await state.clear()
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
-        teams = get_all_teams()
+        teams = get_all_teams(session)
         if not teams:
             await message.answer(
                 lexicon["no_teams_yet"],
@@ -569,7 +586,9 @@ async def process_team_info_button(query: CallbackQuery, state: FSMContext):
 # Редактирование команд и добавление участников
 @methodist_team_router.callback_query(EditTeam.team, F.data.startswith("team"))
 @methodist_team_router.callback_query(F.data.startswith("back_to_team"))
-async def process_choose_team(query: CallbackQuery, state: FSMContext):
+async def process_choose_team(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Показывает информацию о команде.
 
     Предлагает изменить состав или редактировать свойства команды.
@@ -582,7 +601,7 @@ async def process_choose_team(query: CallbackQuery, state: FSMContext):
         team_ids = data["team_ids"]
         query_id = int(query.data.split(":")[-1])
         team_id = team_ids[query_id]
-        team = get_team(team_id)
+        team = get_team(session, team_id)
         team_info = generate_team_info(team, lexicon)
         msg = team_info
         await state.set_state(EditTeam.team)
@@ -602,7 +621,9 @@ async def process_choose_team(query: CallbackQuery, state: FSMContext):
 @methodist_team_router.callback_query(
     EditTeam.team, F.data == "edit_team_members"
 )
-async def process_edit_team_members(query: CallbackQuery, state: FSMContext):
+async def process_edit_team_members(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик кнопки 'Редактировать состав команд'.
 
     Выводит список детей для добавления в команду.
@@ -611,7 +632,7 @@ async def process_edit_team_members(query: CallbackQuery, state: FSMContext):
         await query.answer()
         data = await state.get_data()
         language = data["language"]
-        children = get_users_by_role(role="kid")
+        children = get_users_by_role(session, role="kid")
         current_page = 1
         lexicon = LEXICON[language]
         page_info = generate_users_list(
@@ -738,7 +759,9 @@ async def process_edit_info_button(query: CallbackQuery, state: FSMContext):
 @methodist_team_router.callback_query(
     EditTeam.choose_member, F.data.startswith("edit_child")
 )
-async def process_edit_choose_child(query: CallbackQuery, state: FSMContext):
+async def process_edit_choose_child(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Показывает информацию о ребенке и кнопки добавления в команду."""
     try:
         await query.answer()
@@ -749,7 +772,7 @@ async def process_edit_choose_child(query: CallbackQuery, state: FSMContext):
         team = data["team"]
         query_id = int(query.data.split(":")[-1])
         child_id = children_ids[query_id]
-        child = select_user(child_id)
+        child = select_user(session, child_id)
         child_info = generate_profile_info(child, lexicon)
         msg = f'{child_info}\n\n{lexicon["add_this_user"]}'
         cd = CD["edit_back_to_children_list"]
@@ -827,7 +850,9 @@ async def process_edit_team_name(query: CallbackQuery, state: FSMContext):
 
 
 @methodist_team_router.message(EditTeam.name)
-async def process_new_team_name(message: Message, state: FSMContext):
+async def process_new_team_name(
+    message: Message, state: FSMContext, session: Session
+):
     """Обрабатывает новое название команды."""
     try:
         data = await state.get_data()
@@ -836,7 +861,7 @@ async def process_new_team_name(message: Message, state: FSMContext):
         query_id = data["query_id"]
         team = data["team"]
         new_name = message.text
-        set_team_param(team=team, name=new_name)
+        set_team_param(session, team=team, name=new_name)
         await message.answer(
             lexicon["team_edited"],
             reply_markup=edit_team_keyboard(language, cd=query_id),
@@ -877,7 +902,9 @@ async def process_edit_team_size(query: CallbackQuery, state: FSMContext):
 @methodist_team_router.callback_query(
     EditTeam.size, F.data.startswith("size:")
 )
-async def process_new_team_size(query: CallbackQuery, state: FSMContext):
+async def process_new_team_size(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Запрашивает новое название команды."""
     try:
         await query.answer()
@@ -887,7 +914,7 @@ async def process_new_team_size(query: CallbackQuery, state: FSMContext):
         team = data["team"]
         lexicon = LEXICON[language]
         new_size = int(query.data.split(":")[-1])
-        set_team_param(team=team, size=new_size)
+        set_team_param(session, team=team, size=new_size)
         await query.message.edit_text(
             lexicon["team_edited"],
             reply_markup=edit_team_keyboard(language, cd=query_id),

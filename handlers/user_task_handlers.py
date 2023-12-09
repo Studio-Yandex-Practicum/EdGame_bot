@@ -8,8 +8,8 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     Message,
 )
+from sqlalchemy.orm import Session
 
-from db.engine import session
 from keyboards.keyboards import (
     help_keyboard,
     pagination_keyboard,
@@ -53,7 +53,9 @@ child_task_router = Router()
         ]
     )
 )
-async def show_current_tasks(message: Message, state: FSMContext):
+async def show_current_tasks(
+    message: Message, state: FSMContext, session: Session
+):
     """
     Показывает ачивки в статусе на проверке.
 
@@ -61,10 +63,10 @@ async def show_current_tasks(message: Message, state: FSMContext):
     """
     try:
         # Достаем из базы ачивки со статусом на проверке
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         lexicon = LEXICON[user.language]
         # Генерируем текст с инфой об ачивках
-        msg = generate_text_with_tasks_in_review(user.id, lexicon)
+        msg = generate_text_with_tasks_in_review(user.id, lexicon, session)
         await message.answer(
             msg, reply_markup=task_keyboard(user.language, show_tasks=True)
         )
@@ -83,7 +85,7 @@ async def show_current_tasks(message: Message, state: FSMContext):
         ]
     )
 )
-async def show_reviewed_tasks(message: Message):
+async def show_reviewed_tasks(message: Message, session: Session):
     """
     Показывает ачивки в статусе одобрено или отклонено.
 
@@ -91,10 +93,10 @@ async def show_reviewed_tasks(message: Message):
     """
     try:
         # Достаем из базы ачивки со статусом на проверке
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         lexicon = LEXICON[user.language]
         # Генерируем текст с инфой об ачивках
-        msg = generate_text_with_reviewed_tasks(user.id, lexicon)
+        msg = generate_text_with_reviewed_tasks(user.id, lexicon, session)
         await message.answer(
             msg, reply_markup=task_keyboard(user.language, show_tasks=True)
         )
@@ -114,7 +116,9 @@ async def show_reviewed_tasks(message: Message):
         ]
     )
 )
-async def show_tasks_list(message: Message, state: FSMContext):
+async def show_tasks_list(
+    message: Message, state: FSMContext, session: Session
+):
     """
     Обработчик кнопки Посмотреть доступные ачивки.
 
@@ -122,10 +126,10 @@ async def show_tasks_list(message: Message, state: FSMContext):
     ачивки и их id через Data.
     """
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
-        tasks = available_achievements(user.id, user.score)
+        tasks = available_achievements(session, user.id, user.score)
         if not tasks:
             await message.answer(
                 text=lexicon["no_available_achievements"],
@@ -169,7 +173,9 @@ async def show_tasks_list(message: Message, state: FSMContext):
 
 
 @child_task_router.callback_query(F.data == "available_achievements")
-async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
+async def show_tasks_list_inline(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """
     Обработчик инлайн кнопки Посмотреть доступные ачивки.
 
@@ -178,10 +184,10 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
     """
     try:
         await query.answer()
-        user = select_user(query.from_user.id)
+        user = select_user(session, query.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
-        tasks = available_achievements(user.id, user.score)
+        tasks = available_achievements(session, user.id, user.score)
         if not tasks:
             await query.message.answer(
                 text=lexicon["no_available_achievements"],
@@ -231,7 +237,9 @@ async def show_tasks_list_inline(query: CallbackQuery, state: FSMContext):
         ["back_to_available_achievements", "task:next", "task:previous"]
     )
 )
-async def show_tasks_list_pagination(query: CallbackQuery, state: FSMContext):
+async def show_tasks_list_pagination(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """
     Обработчик инлайн кнопки Посмотреть доступные ачивки.
 
@@ -248,8 +256,8 @@ async def show_tasks_list_pagination(query: CallbackQuery, state: FSMContext):
         language = data["language"]
         lexicon = LEXICON[language]
         if query.data == "back_to_available_achievements":
-            user = select_user(query.from_user.id)
-            tasks = available_achievements(user.id, user.score)
+            user = select_user(session, query.from_user.id)
+            tasks = available_achievements(session, user.id, user.score)
             pages = None
         if not tasks:
             await query.message.answer(
@@ -322,7 +330,7 @@ async def process_info_button(query: CallbackQuery, state: FSMContext):
 @child_task_router.callback_query(
     F.data.startswith("back_to_chosen_achievement:")
 )
-async def show_task(query: CallbackQuery, state: FSMContext):
+async def show_task(query: CallbackQuery, state: FSMContext, session: Session):
     """
     Обработчик кнопок выбора отдельной ачивки.
 
@@ -332,14 +340,14 @@ async def show_task(query: CallbackQuery, state: FSMContext):
     try:
         await query.answer()
         data = await state.get_data()
-        child = select_user(query.from_user.id)
+        child = select_user(session, query.from_user.id)
         language = data["language"]
         lexicon = LEXICON[language]
         task_number = int(query.data.split(":")[-1])
         # Достаем id ачивки из состояния и делаем запрос к базе
         task_id = data["task_ids"][task_number]
         # Получаем текст для сообщения и изображение ачивки
-        task_info = get_achievement_info(task_id, lexicon)
+        task_info = get_achievement_info(task_id, lexicon, session)
         info = task_info["info"]
         image = task_info["image"]
         task = task_info["task"]
@@ -403,7 +411,12 @@ async def process_fulfil_achievement(query: CallbackQuery, state: FSMContext):
 @child_task_router.message(Data.artifact)
 @child_task_router.message(Data.artifact, F.media_group_id)
 async def process_artefact(
-    message: Message, state: FSMContext, bot: Bot, album: dict, media_group
+    message: Message,
+    state: FSMContext,
+    bot: Bot,
+    album: dict,
+    media_group,
+    session: Session,
 ):
     """Обработчик артефактов, файлов, которые отправляет ребенок."""
     try:
@@ -415,7 +428,7 @@ async def process_artefact(
         lexicon = LEXICON[language]
         query_id = data["query_id"]
         counsellors = get_users_by_role_and_group(
-            role="counsellor", group=child.group
+            session, role="counsellor", group=child.group
         )
         # пока нет реальных пользователей вожатых подставляем свой id
         counsellor = counsellors[0] if counsellors else None
@@ -425,6 +438,7 @@ async def process_artefact(
                 achievement_id=task_id,
                 lexicon=lexicon,
                 user=child,
+                session=session,
             )
         else:
             status_changed = await process_artifact(
@@ -432,6 +446,7 @@ async def process_artefact(
                 achievement_id=task_id,
                 lexicon=lexicon,
                 user=child,
+                session=session,
             )
         if not status_changed:
             await message.answer(
@@ -440,7 +455,7 @@ async def process_artefact(
             )
             await state.set_state(Data.artifact)
             return
-        tasks = available_achievements(child.id, child.score)
+        tasks = available_achievements(session, child.id, child.score)
         await state.update_data(tasks=tasks)
         await message.answer(
             lexicon["artifact_sent"],
@@ -470,10 +485,12 @@ async def process_artefact(
         ]
     )
 )
-async def check_child_categories(message: Message, state: FSMContext):
+async def check_child_categories(
+    message: Message, state: FSMContext, session: Session
+):
     """Получение категорий заданий для ребенка."""
     try:
-        user = select_user(message.from_user.id)
+        user = select_user(session, message.from_user.id)
         language = user.language
         lexicon = LEXICON[language]
         category = get_all_categories(session)
@@ -495,8 +512,6 @@ async def check_child_categories(message: Message, state: FSMContext):
     except Exception as err:
         await message.answer(lexicon["error_achievement"])
         logger.error(f"Произошла ошибка при поиске заданий: {err}")
-    finally:
-        session.close()
 
 
 @child_task_router.callback_query(
@@ -554,8 +569,6 @@ async def show_achievements_list_pagination(
         logger.error(f"Проверь правильность ключевых слов: {err}")
     except Exception as err:
         logger.error(f"Ошибка при отправке списка ачивок. {err}")
-    finally:
-        session.close()
 
 
 @child_task_router.callback_query(
@@ -567,7 +580,9 @@ async def show_achievements_list_pagination(
     )
 )
 @child_task_router.callback_query(Data.category)
-async def check_child_buttons(query: CallbackQuery, state: FSMContext):
+async def check_child_buttons(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
     """Обработчик инлайн кнопки ачивки с выводом информации о ачивках."""
     try:
         td = query.data.split(",")
@@ -617,5 +632,3 @@ async def check_child_buttons(query: CallbackQuery, state: FSMContext):
     except Exception as err:
         await query.message.answer(lexicon["error_achievement"])
         logger.error(f"Произошла ошибка при поиске заданий: {err}")
-    finally:
-        session.close()
