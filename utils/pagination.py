@@ -1,9 +1,4 @@
-from .db_commands import get_all_achievements
-
-# Количество ачивок на странице ачивок
 PAGE_SIZE: int = 2
-# Количество возможных кнопок
-ACHIEVEMENTS_NUMBER: int = len(get_all_achievements())
 
 
 def pagination_static(page_size: int, objects: list):
