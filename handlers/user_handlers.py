@@ -209,6 +209,7 @@ async def hashing_password(
             text=LEXICON["RU"]["kid"],
             reply_markup=menu_keyboard(user.language),
         )
+        await state.clear()
     elif psw == counsellor_psw:
         user.role = "counsellor"
         session.add(user)
@@ -217,6 +218,7 @@ async def hashing_password(
             text=LEXICON["RU"]["counsellor"],
             reply_markup=create_profile_keyboard(),
         )
+        await state.clear()
     elif psw == methodist_psw:
         user.role = "methodist"
         session.add(user)
@@ -225,15 +227,18 @@ async def hashing_password(
             text=LEXICON["RU"]["methodist"],
             reply_markup=methodist_profile_keyboard(user.language),
         )
+        await state.clear()
     elif psw == master_psw:
         user.role = "master"
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON["RU"]["henchman_pass"],
+            text=LEXICON["RU"]["master"],
             reply_markup=henchman_pass_keyboard(session),
         )
-    await state.clear()
+        await state.clear()
+    else:
+        await message.answer(text=LEXICON["RU"]["wrong_pass"])
 
 
 # Меню ребенка
