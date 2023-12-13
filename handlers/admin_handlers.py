@@ -1,6 +1,8 @@
 import datetime
 import hashlib
 import logging
+import os
+import shutil
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
@@ -24,7 +26,13 @@ from utils.states_form import (
     MasterPassword,
     MethodistPassword,
 )
-from utils.user_utils import delete_bd, statistics
+from utils.user_utils import (
+    delete_bd,
+    foto_user_id,
+    statistics,
+    text_files,
+    zip_files,
+)
 
 admin_router = Router()
 config = load_config()
@@ -235,7 +243,6 @@ async def close_season(callback: CallbackQuery, bot):
     season.close_season = datetime.datetime.now()
     session.add(season)
     session.commit()
-    statistics()
     file = "statistic.zip"
     await bot.send_document(callback.message.chat.id, FSInputFile(file))
     delete_bd()
@@ -247,8 +254,22 @@ async def export_excel(callback: CallbackQuery, bot):
     """Экспорт в эксель."""
     try:
         statistics()
-        file = "statistic.zip"
+        text_files(session)
+        files_id = foto_user_id(session)
+        for name, foto in files_id.items():
+            j = 0
+            for i in foto:
+                j += 1
+                file = await bot.get_file(i)
+                file_path = file.file_path
+                await bot.download_file(
+                    file_path, f"./statictica//{name}//{name}, {j}"
+                )
+        zip_files()
+        file = "statictica.zip"
         await bot.send_document(callback.message.chat.id, FSInputFile(file))
+        shutil.rmtree("statictica")
+        os.remove("statictica.zip")
     except FileNotFoundError as err:
         logger.error(f"Файл не создан: {err}")
     except Exception as err:

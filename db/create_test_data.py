@@ -6,10 +6,7 @@ from db import models
 from db.engine import session
 
 # Указать здесь file_id фото из вашего бота.
-IMAGE = (
-    "AgACAgIAAxkBAAINs2U9E2g1IK6F2v8IFeoyMSSlsn7PAAIP0TEbm2DpSX8qIhX6pvPDAQA"
-    "DAgADeAADMAQ"
-)
+IMAGE = "python create_test_data.py"
 
 
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):

@@ -1,4 +1,5 @@
 import zipfile
+import os
 
 import xlwt
 from aiogram import types
@@ -240,6 +241,22 @@ def get_achievement_statistics(session: Session):
     )
 
 
+def get_text_user(session: Session, user_id):
+    return (
+        session.query(AchievementStatus.message_text)
+        .filter(AchievementStatus.user_id == user_id)
+        .first()
+    )
+
+
+def get_foto_id_user(session: Session, user_id):
+    return (
+        session.query(AchievementStatus.files_id)
+        .filter(AchievementStatus.user_id == user_id)
+        .first()
+    )
+
+
 def export_xls(a, column_names, name_file):
     workbook = xlwt.Workbook()
     sheet = workbook.add_sheet("contacts")
@@ -269,6 +286,7 @@ def delete_bd():
 
 
 def statistics():
+    os.makedirs("statictica")
     user = get_user_statistics(session)
     column_user = [
         "Номер пользователя",
@@ -277,7 +295,7 @@ def statistics():
         "Очки",
         "Группа",
     ]
-    user_file = "user_statistics.xls"
+    user_file = ".//statictica//user_statistics.xls"
     export_xls(user, column_user, user_file)
     achievement = get_achievement_statistics(session)
     column_achievement = [
@@ -293,13 +311,41 @@ def statistics():
         "Ответ",
         "Причина отклонения",
     ]
-    achievement_file = "achievement_statistic.xls"
+    achievement_file = ".//statictica//achievement_statistic.xls"
     export_xls(achievement, column_achievement, achievement_file)
-    list_files = [user_file, achievement_file]
-    zip_files(list_files)
 
 
-def zip_files(list_files):
-    with zipfile.ZipFile("statistic.zip", "w") as zipF:
-        for file in list_files:
-            zipF.write(file, compress_type=zipfile.ZIP_DEFLATED)
+def text_files(session):
+    a = session.query(User.name, User.id).all()
+    for i in a:
+        a = i[0]
+        if get_text_user(session, i.id):
+            test_user = get_text_user(session, i.id)
+            os.makedirs(f".//statictica//{a}")
+            with open(
+                f".//statictica//{a}//{a}.txt", "w"
+            ) as file:  # Открываем фаил и пишем
+                file.write(test_user[0])
+
+
+def foto_user_id(session):
+    files = {}
+    a = session.query(User.name, User.id).all()
+    for i in a:
+        b = i[0]
+        if get_foto_id_user(session, i.id):
+            foto_user = get_foto_id_user(session, i.id)
+            files.setdefault(b, foto_user[0])
+    return files
+
+
+def zip_files():
+    z = zipfile.ZipFile("statictica.zip", "w")  # Создание нового архива
+    for root, dirs, files in os.walk(
+        "statictica"
+    ):  # Список всех файлов и папок в директории folder
+        for file in files:
+            z.write(
+                os.path.join(root, file)
+            )  # Создание относительных путей и запись файлов в архив
+    z.close()
