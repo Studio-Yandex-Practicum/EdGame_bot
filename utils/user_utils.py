@@ -5,7 +5,6 @@ import xlwt
 from aiogram import types
 from sqlalchemy.orm import Session
 
-
 from db.models import (
     Achievement,
     AchievementStatus,
@@ -290,7 +289,7 @@ def delete_bd(session: Session):
 
 
 def statistics(session):
-    """Создание файлов эксель файлов со 
+    """Создание файлов эксель файлов со
     статистическими данными пользователей и авичек."""
     os.makedirs("statictica")
     user = get_user_statistics(session)
@@ -321,10 +320,9 @@ def statistics(session):
     export_xls(achievement, column_achievement, achievement_file)
 
 
-
 def text_files(session):
-    """Создание текстовых файлов с информацией с 
-    информацией, прислонной от студентов при 
+    """Создание текстовых файлов с информацией с
+    информацией, прислонной от студентов при
     выполнении задания."""
     users = session.query(User.name, User.id).all()
     for user in users:
@@ -334,12 +332,12 @@ def text_files(session):
             os.makedirs(f".//statictica//{user_name}")
             with open(
                 f".//statictica//{user_name}//{user_name}.txt", "w"
-            ) as file:  
+            ) as file:
                 file.write(test_user[0])
 
 
 def foto_user_id(session):
-    """Создание словаря с ключом - Имя студента, 
+    """Создание словаря с ключом - Имя студента,
     значение - foto_user."""
     files = {}
     users = session.query(User.name, User.id).all()
@@ -361,4 +359,3 @@ def zip_files():
                 os.path.join(root, file)
             )  # Создание относительных путей и запись файлов в архив
     z.close()
-    
