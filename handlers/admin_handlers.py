@@ -8,11 +8,10 @@ from aiogram import F, Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
-from aiogram.types import CallbackQuery, FSInputFile, Message
-from sqlalchemy import select
+from aiogram.types import CallbackQuery, Message
+from sqlalchemy.orm import Session
 
 from config_data.config import load_config
-from db.engine import engine, session
 from db.models import Password, Season
 from keyboards.admin_keyboards import (
     boss_pass_keyboard,
@@ -51,31 +50,13 @@ async def change_kid_pass(callback: CallbackQuery, state: FSMContext):
 
 # Обрабатываем пароль ребенка
 @admin_router.message(StateFilter(KidPassword.psw2hash))
-async def hashing_kid_password(message: Message, state: FSMContext):
+async def hashing_kid_password(
+    message: Message, state: FSMContext, session: Session
+):
     """Хешируем и сохраняем новый пароль ребенка."""
-    # Берем остальные пароли из базы
-    conn = engine.connect()
-    s = select(Password)
-    r = conn.execute(s)
-    row = r.fetchone()
-    counsellor_psw = row[2]
-    methodist_psw = row[3]
-    master_psw = row[4]
-    # Удаляем старые пароли в базе
-    i = session.query(Password).first()
-    session.delete(i)
-    session.commit()
-    # Обновляем пароль вожатого
     psw_kid_hash = hashlib.sha256(message.text.encode())
     kid_psw = psw_kid_hash.hexdigest()
-    password = Password(
-        kid_pass=kid_psw,
-        master_pass=master_psw,
-        counsellor_pass=counsellor_psw,
-        methodist_pass=methodist_psw,
-    )
-    session.add(password)
-    session.commit()
+    session.query(Password).update({Password.kid_pass: kid_psw})
     await message.answer(text="Пароль обновлен")
     await state.clear()
 
@@ -94,31 +75,13 @@ async def change_counsellor_pass(callback: CallbackQuery, state: FSMContext):
 
 # Обрабатываем пароль вожатого
 @admin_router.message(StateFilter(CounsellorPassword.psw2hash))
-async def hashing_counsellor_password(message: Message, state: FSMContext):
+async def hashing_counsellor_password(
+    message: Message, state: FSMContext, session: Session
+):
     """Хешируем и сохраняем новый пароль вожатого."""
-    # Берем остальные пароли из базы
-    conn = engine.connect()
-    s = select(Password)
-    r = conn.execute(s)
-    row = r.fetchone()
-    kid_psw = row[1]
-    methodist_psw = row[3]
-    master_psw = row[4]
-    # Удаляем старые пароли в базе
-    i = session.query(Password).first()
-    session.delete(i)
-    session.commit()
-    # Обновляем пароль вожатого
     psw_counsellor_hash = hashlib.sha256(message.text.encode())
     counsellor_psw = psw_counsellor_hash.hexdigest()
-    password = Password(
-        kid_pass=kid_psw,
-        master_pass=master_psw,
-        counsellor_pass=counsellor_psw,
-        methodist_pass=methodist_psw,
-    )
-    session.add(password)
-    session.commit()
+    session.query(Password).update({Password.counsellor_pass: counsellor_psw})
     await message.answer(text="Пароль обновлен")
     await state.clear()
 
@@ -137,31 +100,13 @@ async def change_methodist_pass(callback: CallbackQuery, state: FSMContext):
 
 # Обрабатываем пароль методиста
 @admin_router.message(StateFilter(MethodistPassword.psw2hash))
-async def hashing_methodist_password(message: Message, state: FSMContext):
+async def hashing_methodist_password(
+    message: Message, state: FSMContext, session: Session
+):
     """Хешируем и сохраняем новый пароль методиста."""
-    # Берем остальные пароли из базы
-    conn = engine.connect()
-    s = select(Password)
-    r = conn.execute(s)
-    row = r.fetchone()
-    kid_psw = row[1]
-    counsellor_psw = row[2]
-    master_psw = row[4]
-    # Удаляем старые пароли в базе
-    i = session.query(Password).first()
-    session.delete(i)
-    session.commit()
-    # Обновляем пароль методиста
     psw_methodist_hash = hashlib.sha256(message.text.encode())
     methodist_psw = psw_methodist_hash.hexdigest()
-    password = Password(
-        kid_pass=kid_psw,
-        master_pass=master_psw,
-        counsellor_pass=counsellor_psw,
-        methodist_pass=methodist_psw,
-    )
-    session.add(password)
-    session.commit()
+    session.query(Password).update({Password.methodist_pass: methodist_psw})
     await message.answer(text="Пароль обновлен")
     await state.clear()
 
@@ -180,37 +125,21 @@ async def change_master_pass(callback: CallbackQuery, state: FSMContext):
 
 # Обрабатываем мастер-пароль
 @admin_router.message(StateFilter(MasterPassword.psw2hash))
-async def hashing_master_password(message: Message, state: FSMContext):
+async def hashing_master_password(
+    message: Message, state: FSMContext, session: Session
+):
     """Хешируем и сохраняем новый мастер-пароль."""
-    # Берем остальные пароли из базы
-    conn = engine.connect()
-    s = select(Password)
-    r = conn.execute(s)
-    row = r.fetchone()
-    kid_psw = row[1]
-    counsellor_psw = row[2]
-    methodist_psw = row[3]
-    # Удаляем старые пароли в базе
-    i = session.query(Password).first()
-    session.delete(i)
-    session.commit()
-    # Обновляем мастер-пароль
     psw_master_hash = hashlib.sha256(message.text.encode())
     master_psw = psw_master_hash.hexdigest()
-    password = Password(
-        kid_pass=kid_psw,
-        master_pass=master_psw,
-        counsellor_pass=counsellor_psw,
-        methodist_pass=methodist_psw,
-    )
-    session.add(password)
-    session.commit()
+    session.query(Password).update({Password.master_pass: master_psw})
     await message.answer(text="Пароль обновлен")
     await state.clear()
 
 
 @admin_router.callback_query(F.data == "cancel")
-async def cancel_pass(callback: CallbackQuery, state: FSMContext):
+async def cancel_pass(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
     """Отмена ввода пароля."""
     if callback.message.chat.id == config.boss_id:
         await callback.message.edit_reply_markup(
@@ -218,13 +147,13 @@ async def cancel_pass(callback: CallbackQuery, state: FSMContext):
         )
     else:
         await callback.message.edit_reply_markup(
-            reply_markup=henchman_pass_keyboard()
+            reply_markup=henchman_pass_keyboard(session)
         )
     await state.clear()
 
 
 @admin_router.callback_query(F.data == "open_season")
-async def open_season(callback: CallbackQuery):
+async def open_season(callback: CallbackQuery, session: Session):
     """Открываем сезон."""
     season = Season(
         open_season=datetime.datetime.now(),
@@ -232,12 +161,12 @@ async def open_season(callback: CallbackQuery):
     session.add(season)
     session.commit()
     await callback.message.edit_reply_markup(
-        text="Сезон открыт.", reply_markup=henchman_pass_keyboard()
+        text="Сезон открыт.", reply_markup=henchman_pass_keyboard(session)
     )
 
 
 @admin_router.callback_query(F.data == "close_season")
-async def close_season(callback: CallbackQuery, bot):
+async def close_season(callback: CallbackQuery, session: Session):
     """Закрываем сезон."""
     season = session.query(Season).first()
     season.close_season = datetime.datetime.now()
@@ -250,7 +179,7 @@ async def close_season(callback: CallbackQuery, bot):
 
 
 @admin_router.callback_query(F.data == "export_xls")
-async def export_excel(callback: CallbackQuery, bot):
+async def export_excel(callback: CallbackQuery, session: Session, bot):
     """Экспорт в эксель."""
     try:
         statistics()

@@ -4,8 +4,8 @@ from datetime import datetime
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
-from db.engine import session
 from db.models import (
     Achievement,
     AchievementStatus,
@@ -20,7 +20,7 @@ from .pass_gen import counsellor_pass, kid_pass, master_pass, methodist_pass
 logger = logging.getLogger(__name__)
 
 
-def register_user(data):
+def register_user(session, data):
     user = User(
         id=data["id"],
         name=data["name"],
@@ -38,7 +38,7 @@ def register_user(data):
         return False
 
 
-def check_password():
+def check_password(session):
     password = session.query(Password).first()
     if password is None:
         password = Password(
@@ -56,26 +56,26 @@ def check_password():
             return False
 
 
-def select_user(user_id) -> User:
+def select_user(session, user_id) -> User:
     """Получаем пользователя по id."""
     user = session.query(User).filter(User.id == user_id).first()
     return user
 
 
-def is_user_in_db(user_id):
+def is_user_in_db(session, user_id):
     """Проверяем наличие пользователя в базе данных."""
     return session.query(
         session.query(User).filter(User.id == user_id).exists()
     ).scalar()
 
 
-def get_users_by_role(role: str):
+def get_users_by_role(session, role: str):
     """Получаем пользователей по статусу."""
     users = session.query(User).filter(User.role == role).all()
     return users
 
 
-def get_users_by_role_and_group(role: str, group: int):
+def get_users_by_role_and_group(session, role: str, group: int):
     """Получаем пользователей по статусу и номеру отряда."""
     users = (
         session.query(User)
@@ -86,6 +86,7 @@ def get_users_by_role_and_group(role: str, group: int):
 
 
 def set_user_param(
+    session: Session,
     user: User,
     name: str = None,
     language: str = None,
@@ -118,7 +119,7 @@ def set_user_param(
         session.rollback()
 
 
-def user_achievements(user_id):
+def user_achievements(session, user_id):
     """
     Задания в кабинете ребенка.
 
@@ -142,7 +143,7 @@ def user_achievements(user_id):
     return achievement_list
 
 
-def available_achievements(user_id, user_score) -> list:
+def available_achievements(session, user_id, user_score) -> list:
     """
     Функция для получения доступных ачивок.
 
@@ -156,7 +157,7 @@ def available_achievements(user_id, user_score) -> list:
     )
     nonavailable_achievement_list = []
     for user_achievement in user_achievements:
-        nonavailable_achievement_list.append((user_achievement.achievement_id))
+        nonavailable_achievement_list.append(user_achievement.achievement_id)
     available_achievements = session.query(Achievement).filter(
         Achievement.id.not_in(nonavailable_achievement_list),
         Achievement.price <= user_score,
@@ -168,7 +169,7 @@ def available_achievements(user_id, user_score) -> list:
 
 
 def get_achievement(
-    achievement_id: int = None, name: str = None
+    session, achievement_id: int = None, name: str = None
 ) -> Achievement:
     """Достаем ачивку из базы по ее id."""
     achievement = (
@@ -183,13 +184,14 @@ def get_achievement(
     return achievement if achievement else "Unknown Achievement"
 
 
-def get_all_achievements():
+def get_all_achievements(session):
     """Возвращает все ачивки из базы."""
     achievements = session.query(Achievement).all()
     return achievements
 
 
 def set_achievement_param(
+    session: Session,
     achievement_id: int,
     name: str = None,
     description: str = None,
@@ -202,7 +204,7 @@ def set_achievement_param(
     achievements_category: int = None,
 ):
     """Сеттер для обновления свойств объекта Achievement."""
-    achievement = get_achievement(achievement_id)
+    achievement = get_achievement(session, achievement_id)
     if name:
         achievement.name = name
     if description:
@@ -232,7 +234,11 @@ def set_achievement_param(
 
 
 def send_task(
-    user: User, achievement: Achievement, files_id: list, message_text: str
+    session: Session,
+    user: User,
+    achievement: Achievement,
+    files_id: list,
+    message_text: str,
 ) -> bool:
     """
     Сохраняет задание, отправленное на проверку.
@@ -270,7 +276,7 @@ def send_task(
         return False
 
 
-def change_language(user_id, language):
+def change_language(session, user_id, language):
     """
     Функция для обновления языка пользователя.
 
@@ -289,7 +295,7 @@ def change_language(user_id, language):
         return False
 
 
-def approve_task(user_achievement_id):
+def approve_task(session, user_achievement_id):
     """
     Функция для изменения статуса ачивки (объект AchievementStatus).
 
@@ -334,7 +340,7 @@ def approve_task(user_achievement_id):
         return False
 
 
-def reject_task(user_achievement_id):
+def reject_task(session, user_achievement_id):
     """
     Функция для отклонения задания.
 
@@ -355,7 +361,7 @@ def reject_task(user_achievement_id):
         return False
 
 
-def send_to_methdist(user_achievement_id):
+def send_to_methdist(session, user_achievement_id):
     """
     Функция для передачи ачивки от вожатого методисту.
 
@@ -376,7 +382,7 @@ def send_to_methdist(user_achievement_id):
         return False
 
 
-def create_achievement(data: dict):
+def create_achievement(session, data: dict):
     """Метод для создания новой ачивки в базе."""
     new_achievement = Achievement(
         name=data.get("name", "test"),
@@ -400,7 +406,9 @@ def create_achievement(data: dict):
         return False
 
 
-def get_user_achievement(user_achievement_id: int) -> AchievementStatus:
+def get_user_achievement(
+    session, user_achievement_id: int
+) -> AchievementStatus:
     """Достаем ачивку из базы по ее id."""
     user_achievement = (
         session.query(AchievementStatus)
@@ -410,7 +418,7 @@ def get_user_achievement(user_achievement_id: int) -> AchievementStatus:
     return user_achievement
 
 
-def create_team(name: str, size: int):
+def create_team(session: Session, name: str, size: int):
     """Создает новую команду."""
     new_team = Team(name=name, team_size=size)
     session.add(new_team)
@@ -424,7 +432,11 @@ def create_team(name: str, size: int):
 
 
 def set_team_param(
-    team: Team, name: str = None, size: int = None, users: list[User] = None
+    session: Session,
+    team: Team,
+    name: str = None,
+    size: int = None,
+    users: list[User] = None,
 ):
     """Сеттер для объекта Команды."""
     if name:
@@ -441,12 +453,12 @@ def set_team_param(
         logger.error(f"Ошибка при редактировании команды: {err}")
 
 
-def get_all_teams():
+def get_all_teams(session):
     """Возвращает список всех команд."""
     return session.query(Team).all()
 
 
-def get_team(team_id: int = None, name: str = None):
+def get_team(session, team_id: int = None, name: str = None):
     """Возвращает объект команды по имени."""
     if team_id:
         return session.query(Team).filter(Team.id == team_id).first()
@@ -454,7 +466,7 @@ def get_team(team_id: int = None, name: str = None):
         return session.query(Team).filter(Team.name == name).first()
 
 
-def create_category(data: dict):
+def create_category(session, data: dict):
     """Метод для создания новой категории в базе."""
     new_category = Category(name=data.get("name"))
     session.add(new_category)
@@ -468,7 +480,9 @@ def create_category(data: dict):
         return False
 
 
-def get_category(category_id: int = None, name: str = None) -> Category:
+def get_category(
+    session, category_id: int = None, name: str = None
+) -> Category:
     """Достаем категорию из базы по ее id."""
     category = (
         session.query(Category)
@@ -482,14 +496,14 @@ def get_category(category_id: int = None, name: str = None) -> Category:
     return category if category else "Unknown Category"
 
 
-def get_all_categories():
+def get_all_categories(session):
     """Возвращает все категории из базы."""
     return session.query(Category).all()
 
 
-def set_category_param(category_id: int, name: str = None):
+def set_category_param(session, category_id: int, name: str = None):
     """Сеттер для обновления свойств объекта Category."""
-    category = get_category(category_id)
+    category = get_category(session, category_id)
     if name:
         category.name = name
     try:
@@ -502,7 +516,7 @@ def set_category_param(category_id: int, name: str = None):
         return False
 
 
-def get_tasks_by_status(status: str) -> list[tuple]:
+def get_tasks_by_status(session, status: str) -> list[tuple]:
     """Задания по статусу."""
     return (
         session.query(
@@ -517,7 +531,7 @@ def get_tasks_by_status(status: str) -> list[tuple]:
 
 
 def get_tasks_by_achievement_and_status(
-    achievement_id: int, status: str
+    session, achievement_id: int, status: str
 ) -> list[tuple]:
     """Задания на проверку для определенной ачивки."""
     return (
@@ -536,7 +550,7 @@ def get_tasks_by_achievement_and_status(
 
 
 def get_tasks_by_achievement_category_and_status(
-    category_id: int, status: str
+    session, category_id: int, status: str
 ) -> list[tuple]:
     """Задания на проверку в определенной категории."""
     return (
@@ -554,7 +568,7 @@ def get_tasks_by_achievement_category_and_status(
     )
 
 
-def get_categories_with_tasks(status: str) -> Category:
+def get_categories_with_tasks(session, status: str) -> Category:
     """Категории, в которых есть задания на проверку."""
     return (
         session.query(Category.id, Category.name)
@@ -569,7 +583,7 @@ def get_categories_with_tasks(status: str) -> Category:
     )
 
 
-def get_achievements_with_tasks(status: str) -> Achievement:
+def get_achievements_with_tasks(session, status: str) -> Achievement:
     """Ачивки, которые сдали на проверку."""
     return (
         session.query(Achievement.id, Achievement.name)
@@ -583,7 +597,7 @@ def get_achievements_with_tasks(status: str) -> Achievement:
     )
 
 
-def get_info_for_methodist_profile() -> dict:
+def get_info_for_methodist_profile(session) -> dict:
     """Информация для профиля методиста."""
     teams_count = session.query(func.count(Team.id)).label("teams_count")
 

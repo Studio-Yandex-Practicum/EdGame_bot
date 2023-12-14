@@ -196,3 +196,19 @@ class MasterPassword(StatesGroup):
     """Машина состояний для ввода мастер-пароля."""
 
     psw2hash = State()
+
+
+class TaskState(StatesGroup):
+    """Машина состояний для реализации сценариев диалогов с вожатым."""
+
+    group = State()
+    user_id = State()
+    task_id = State()
+    child_id = State()
+    child_info = State()
+    child_name = State()
+    reject_message = State()
+    children_group = State()
+    achievement_name = State()
+    group_buttons = State()
+    buttons_child_info = State()

@@ -3,7 +3,7 @@ import random
 import factory
 
 from db import models
-from db.engine import session
+from db.engine import Session, session_scope
 
 # Указать здесь file_id фото из вашего бота.
 IMAGE = "python create_test_data.py"
@@ -12,7 +12,7 @@ IMAGE = "python create_test_data.py"
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):
     class Meta:
         abstract = True
-        sqlalchemy_session = session
+        sqlalchemy_session = Session
         sqlalchemy_session_persistence = "commit"
 
 
@@ -79,7 +79,7 @@ def create_users(max_number):
     UserFactory.create_batch(max_number, team=factory.Iterator(teams))
 
 
-def create_users_achievements(min_number):
+def create_users_achievements(min_number, session):
     users = session.query(models.User).all()
     achievements = session.query(models.Achievement).all()
     for user in users:
@@ -96,9 +96,10 @@ def create_test_data():
     min_number = 1
     max_number = 5
     try:
-        create_users(max_number)
-        AchievementFactory.create_batch(max_number)
-        create_users_achievements(min_number)
+        with session_scope as session:
+            create_users(max_number)
+            AchievementFactory.create_batch(max_number)
+            create_users_achievements(min_number, session)
 
     except Exception as error:
         print(f"{error}")

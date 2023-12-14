@@ -20,7 +20,7 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
     fsm_data: Any = None
     page_info: dict = None
 
-    def get_queryset(self) -> Any:
+    def get_queryset(self, session) -> Any:
         raise NotImplementedError
 
     @staticmethod
@@ -34,12 +34,13 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
         raise NotImplementedError
 
     def extra_buttons(self) -> dict | None:
-        """Дополнительные кнопки"""
+        """Дополнительные кнопки."""
         return None
 
     async def handle(self) -> Any:
         try:
             self.fsm_state = self.data["state"]
+            session = self.data["session"]
             self.fsm_data = await self.data["state"].get_data()
             self.language = self.fsm_data["language"]
             lexicon = LEXICON[self.language]
@@ -56,7 +57,7 @@ class BasePaginatedHandler(handlers.CallbackQueryHandler):
             elif self.callback_data == f"{self.cd}:previous":
                 current_page -= 1
 
-            query_set = self.get_queryset()
+            query_set = self.get_queryset(session)
 
             if not query_set:
                 msg = lexicon["nothing"]

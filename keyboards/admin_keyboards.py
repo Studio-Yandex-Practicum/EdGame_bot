@@ -1,10 +1,9 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from db.engine import session
 from db.models import Season
 
 
-def henchman_pass_keyboard():
+def henchman_pass_keyboard(session):
     kid_pass: InlineKeyboardButton = InlineKeyboardButton(
         text="Сменить пароль для студентов", callback_data="kid_pass"
     )

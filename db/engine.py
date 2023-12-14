@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 from dotenv import load_dotenv
@@ -27,4 +28,17 @@ url_object = URL.create(
 )
 
 engine = create_engine(url_object)
-session = scoped_session(sessionmaker(bind=engine))
+Session = scoped_session(sessionmaker(bind=engine))
+
+
+@contextlib.contextmanager
+def session_scope():
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()

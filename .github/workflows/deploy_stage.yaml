@@ -1,0 +1,91 @@
+name: Build and deploy to stage server
+
+on:
+  pull_request:
+    branches:
+      - master
+      - dev
+    types: [ closed ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: edgame_bot
+  REP_OWNER: studio-yandex-practicum
+  DEPLOY_PATH: edgame_bot/
+  WORK_DIR: /EdGame_bot
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  build_and_push_image_to_github_packages:
+    name: Build and push image to GitHub Packages
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    environment:
+      name: Stage
+
+    steps:
+      - name: Check repository
+        uses: actions/checkout@v3
+
+      - name: Login to GutHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          labels: runnumber=${GITHUB_RUN_ID}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REP_OWNER }}/${{ env.IMAGE_NAME }}:latest,
+            ${{ env.REGISTRY }}/${{ env.REP_OWNER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    name: Deploy and start the App
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    needs: build_and_push_image_to_github_packages
+    environment:
+      name: Stage
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Copy docker-compose to server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "docker-compose.deploy_stage.yaml"
+          target: ${{ env.DEPLOY_PATH }}
+          overwrite: true
+
+      - name: Execute remote commands to deploy and start app
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ env.DEPLOY_PATH }}
+
+            docker image prune -f
+            docker pull  ${{ env.REGISTRY }}/${{ env.REP_OWNER }}/${{ env.IMAGE_NAME }}:latest
+            docker compose --file docker-compose.deploy_stage.yaml stop
+            docker compose --file docker-compose.deploy_stage.yaml rm bot
+            docker compose --file docker-compose.deploy_stage.yaml up -d
