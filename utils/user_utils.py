@@ -152,7 +152,7 @@ def change_achievement_status_by_id(
     return False
 
 
-def save_rejection_reason_in_db(id: int, message_text: str):
+def save_rejection_reason_in_db(session, id: int, message_text: str):
     """Сохраняет причину отказа принять задание."""
     user_achievement = (
         session.query(AchievementStatus)
