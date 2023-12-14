@@ -5,7 +5,16 @@ import xlwt
 from aiogram import types
 from sqlalchemy.orm import Session
 
-from db.models import Achievement, AchievementStatus, Category, User
+
+from db.models import (
+    Achievement,
+    AchievementStatus,
+    Category,
+    Password,
+    Season,
+    Team,
+    User,
+)
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -144,7 +153,7 @@ def change_achievement_status_by_id(
     return False
 
 
-def save_rejection_reason_in_db(session, id: int, message_text: str):
+def save_rejection_reason_in_db(id: int, message_text: str):
     """Сохраняет причину отказа принять задание."""
     user_achievement = (
         session.query(AchievementStatus)
@@ -233,6 +242,7 @@ def get_achievement_statistics(session: Session):
 
 
 def get_text_user(session: Session, user_id):
+    """Получение из БД ответов пользователей при выполнении задания"""
     return (
         session.query(AchievementStatus.message_text)
         .filter(AchievementStatus.user_id == user_id)
@@ -241,6 +251,7 @@ def get_text_user(session: Session, user_id):
 
 
 def get_foto_id_user(session: Session, user_id):
+    """Получение из БД foto_id при выполнении задания."""
     return (
         session.query(AchievementStatus.files_id)
         .filter(AchievementStatus.user_id == user_id)
@@ -249,6 +260,7 @@ def get_foto_id_user(session: Session, user_id):
 
 
 def export_xls(a, column_names, name_file):
+    """Запись информации в эксель файл."""
     workbook = xlwt.Workbook()
     sheet = workbook.add_sheet("contacts")
     header_font = xlwt.Font()
@@ -264,7 +276,8 @@ def export_xls(a, column_names, name_file):
     workbook.save(name_file)
 
 
-def delete_bd():
+def delete_bd(session: Session):
+    """Удаление БД при закрытии сезона."""
     session.query(User).delete()
     session.query(Achievement).delete()
     session.query(AchievementStatus).delete()
@@ -276,7 +289,9 @@ def delete_bd():
     session.close()
 
 
-def statistics():
+def statistics(session):
+    """Создание файлов эксель файлов со 
+    статистическими данными пользователей и авичек."""
     os.makedirs("statictica")
     user = get_user_statistics(session)
     column_user = [
@@ -306,27 +321,33 @@ def statistics():
     export_xls(achievement, column_achievement, achievement_file)
 
 
+
 def text_files(session):
-    a = session.query(User.name, User.id).all()
-    for i in a:
-        a = i[0]
-        if get_text_user(session, i.id):
-            test_user = get_text_user(session, i.id)
-            os.makedirs(f".//statictica//{a}")
+    """Создание текстовых файлов с информацией с 
+    информацией, прислонной от студентов при 
+    выполнении задания."""
+    users = session.query(User.name, User.id).all()
+    for user in users:
+        user_name = user[0]
+        if get_text_user(session, user.id):
+            test_user = get_text_user(session, user.id)
+            os.makedirs(f".//statictica//{user_name}")
             with open(
-                f".//statictica//{a}//{a}.txt", "w"
-            ) as file:  # Открываем фаил и пишем
+                f".//statictica//{user_name}//{user_name}.txt", "w"
+            ) as file:  
                 file.write(test_user[0])
 
 
 def foto_user_id(session):
+    """Создание словаря с ключом - Имя студента, 
+    значение - foto_user."""
     files = {}
-    a = session.query(User.name, User.id).all()
-    for i in a:
-        b = i[0]
-        if get_foto_id_user(session, i.id):
-            foto_user = get_foto_id_user(session, i.id)
-            files.setdefault(b, foto_user[0])
+    users = session.query(User.name, User.id).all()
+    for user in users:
+        user_name = user[0]
+        if get_foto_id_user(session, user.id):
+            foto_user = get_foto_id_user(session, user.id)
+            files.setdefault(user_name, foto_user[0])
     return files
 
 
@@ -340,3 +361,4 @@ def zip_files():
                 os.path.join(root, file)
             )  # Создание относительных путей и запись файлов в архив
     z.close()
+    

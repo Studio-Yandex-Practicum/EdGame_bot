@@ -9,6 +9,7 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message
+from aiogram.types.input_file import FSInputFile
 from sqlalchemy.orm import Session
 
 from config_data.config import load_config
@@ -166,23 +167,14 @@ async def open_season(callback: CallbackQuery, session: Session):
 
 
 @admin_router.callback_query(F.data == "close_season")
-async def close_season(callback: CallbackQuery, session: Session):
+async def close_season(callback: CallbackQuery, session: Session, bot):
     """Закрываем сезон."""
     season = session.query(Season).first()
     season.close_season = datetime.datetime.now()
     session.add(season)
     session.commit()
-    file = "statistic.zip"
-    await bot.send_document(callback.message.chat.id, FSInputFile(file))
-    delete_bd()
-    await callback.message.answer(text="Сезон закрыт.")
-
-
-@admin_router.callback_query(F.data == "export_xls")
-async def export_excel(callback: CallbackQuery, session: Session, bot):
-    """Экспорт в эксель."""
     try:
-        statistics()
+        statistics(session)
         text_files(session)
         files_id = foto_user_id(session)
         for name, foto in files_id.items():
@@ -196,6 +188,37 @@ async def export_excel(callback: CallbackQuery, session: Session, bot):
                 )
         zip_files()
         file = "statictica.zip"
+        await bot.send_document(callback.message.chat.id, FSInputFile(file))
+        shutil.rmtree("statictica")
+        os.remove("statictica.zip")
+        delete_bd(session)
+        await callback.message.answer(text="Сезон закрыт.")
+    except FileNotFoundError as err:
+        logger.error(f"Файл не создан: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при выборе статистических данных: {err}")
+    
+
+
+@admin_router.callback_query(F.data == "export_xls")
+async def export_excel(callback: CallbackQuery, session: Session, bot):
+    """Экспорт в эксель."""
+    try:
+        statistics(session)
+        text_files(session)
+        files_id = foto_user_id(session)
+        for name, foto in files_id.items():
+            j = 0
+            for i in foto:
+                j += 1
+                file = await bot.get_file(i)
+                file_path = file.file_path
+                await bot.download_file(
+                    file_path, f"./statictica//{name}//{name}, {j}"
+                )
+        zip_files()
+        file = "statictica.zip"
+        print(100)
         await bot.send_document(callback.message.chat.id, FSInputFile(file))
         shutil.rmtree("statictica")
         os.remove("statictica.zip")
