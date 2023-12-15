@@ -318,8 +318,8 @@ def statistics(session):
 
 
 def text_files(session):
-    """Создание текстовых файлов с информацией с
-    информацией, прислонной от студентов при
+    """Создание текстовых файлов с информацией,
+    присланной от студентов при
     выполнении задания."""
     users = session.query(User.name, User.id).all()
     for user in users:
@@ -347,12 +347,12 @@ def foto_user_id(session):
 
 
 def zip_files():
-    z = zipfile.ZipFile("statictica.zip", "w")  # Создание нового архива
+    z = zipfile.ZipFile("statictica.zip", "w")
     for root, dirs, files in os.walk(
         "statictica"
-    ):  # Список всех файлов и папок в директории folder
+    ):
         for file in files:
             z.write(
                 os.path.join(root, file)
-            )  # Создание относительных путей и запись файлов в архив
+            )
     z.close()
