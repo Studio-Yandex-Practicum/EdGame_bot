@@ -6,7 +6,10 @@ from db import models
 from db.engine import Session, session_scope
 
 # Указать здесь file_id фото из вашего бота.
-IMAGE = "python create_test_data.py"
+IMAGE = (
+    "AgACAgIAAxkBAAINs2U9E2g1IK6F2v8IFeoyMSSlsn7PAAIP0TEbm2DpSX8qIhX6pvPDAQA"
+    "DAgADeAADMAQ"
+)
 
 
 class BaseSQLAlchemyModelFactory(factory.alchemy.SQLAlchemyModelFactory):
@@ -96,7 +99,7 @@ def create_test_data():
     min_number = 1
     max_number = 5
     try:
-        with session_scope as session:
+        with session_scope() as session:
             create_users(max_number)
             AchievementFactory.create_batch(max_number)
             create_users_achievements(min_number, session)

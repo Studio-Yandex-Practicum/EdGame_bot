@@ -211,23 +211,22 @@ def get_achievement_by_category_id(session: Session, category_id):
 
 
 def get_user_statistics(session: Session):
-    a = session.query(
+    return session.query(
         User.id, User.name, User.role, User.score, User.group
     ).all()
-    return a
 
 
 def get_achievement_statistics(session: Session):
     return (
         session.query(
-            Achievement.id,
+            AchievementStatus.user_id,
             Achievement.name,
             Achievement.description,
             Achievement.instruction,
             Achievement.artifact_type,
             Achievement.score,
             Achievement.price,
-            AchievementStatus.user_id,
+            Achievement.id,
             AchievementStatus.status,
             AchievementStatus.message_text,
             AchievementStatus.rejection_reason,
@@ -278,10 +277,8 @@ def export_xls(a, column_names, name_file):
 def delete_bd(session: Session):
     """Удаление БД при закрытии сезона."""
     session.query(User).delete()
-    session.query(Achievement).delete()
     session.query(AchievementStatus).delete()
     session.query(Team).delete()
-    session.query(Category).delete()
     session.query(Password).delete()
     session.query(Season).delete()
     session.commit()
@@ -304,14 +301,14 @@ def statistics(session):
     export_xls(user, column_user, user_file)
     achievement = get_achievement_statistics(session)
     column_achievement = [
-        "Номер ачивки",
+        "Номер Пользователя",
         "Имя",
         "Описание",
         "Инструкция",
         "Тип артефакта",
         "Начальный балл",
         "Цена",
-        "Номер Пользователя",
+        "Номер ачивки",
         "Статус ачивки",
         "Ответ",
         "Причина отклонения",
@@ -327,8 +324,8 @@ def text_files(session):
     users = session.query(User.name, User.id).all()
     for user in users:
         user_name = user[0]
-        if get_text_user(session, user.id):
-            test_user = get_text_user(session, user.id)
+        test_user = get_text_user(session, user.id)
+        if test_user:
             os.makedirs(f".//statictica//{user_name}")
             with open(
                 f".//statictica//{user_name}//{user_name}.txt", "w"
@@ -343,8 +340,8 @@ def foto_user_id(session):
     users = session.query(User.name, User.id).all()
     for user in users:
         user_name = user[0]
-        if get_foto_id_user(session, user.id):
-            foto_user = get_foto_id_user(session, user.id)
+        foto_user = get_foto_id_user(session, user.id)
+        if foto_user:
             files.setdefault(user_name, foto_user[0])
     return files
 

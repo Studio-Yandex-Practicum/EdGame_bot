@@ -174,29 +174,15 @@ async def close_season(callback: CallbackQuery, session: Session, bot):
     session.add(season)
     session.commit()
     try:
-        statistics(session)
-        text_files(session)
-        files_id = foto_user_id(session)
-        for name, foto in files_id.items():
-            j = 0
-            for i in foto:
-                j += 1
-                file = await bot.get_file(i)
-                file_path = file.file_path
-                await bot.download_file(
-                    file_path, f"./statictica//{name}//{name}, {j}"
-                )
-        zip_files()
-        file = "statictica.zip"
-        await bot.send_document(callback.message.chat.id, FSInputFile(file))
-        shutil.rmtree("statictica")
-        os.remove("statictica.zip")
+        await export_excel(callback, session, bot)
         delete_bd(session)
         await callback.message.answer(text="Сезон закрыт.")
     except FileNotFoundError as err:
         logger.error(f"Файл не создан: {err}")
     except Exception as err:
         logger.error(f"Ошибка при выборе статистических данных: {err}")
+    finally:
+        await callback.message.delete()
 
 
 @admin_router.callback_query(F.data == "export_xls")
@@ -206,22 +192,24 @@ async def export_excel(callback: CallbackQuery, session: Session, bot):
         statistics(session)
         text_files(session)
         files_id = foto_user_id(session)
-        for name, foto in files_id.items():
-            j = 0
-            for i in foto:
-                j += 1
-                file = await bot.get_file(i)
-                file_path = file.file_path
-                await bot.download_file(
-                    file_path, f"./statictica//{name}//{name}, {j}"
-                )
+        if files_id:
+            for name, foto in files_id.items():
+                j = 0
+                for i in foto:
+                    j += 1
+                    file = await bot.get_file(i)
+                    file_path = file.file_path
+                    await bot.download_file(
+                        file_path, f"./statictica//{name}//{name}, {j}"
+                    )
         zip_files()
         file = "statictica.zip"
-        print(100)
         await bot.send_document(callback.message.chat.id, FSInputFile(file))
-        shutil.rmtree("statictica")
-        os.remove("statictica.zip")
     except FileNotFoundError as err:
         logger.error(f"Файл не создан: {err}")
     except Exception as err:
         logger.error(f"Ошибка при выборе статистических данных: {err}")
+    finally:
+        shutil.rmtree("statictica")
+        os.remove("statictica.zip")
+        await callback.message.delete()
