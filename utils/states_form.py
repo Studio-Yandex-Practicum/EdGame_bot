@@ -212,3 +212,11 @@ class TaskState(StatesGroup):
     achievement_name = State()
     group_buttons = State()
     buttons_child_info = State()
+
+
+class UserDel(StatesGroup):
+    """Машина состояний для удаления ребенка, вожатого или методиста."""
+
+    get_role = State()
+    list_users = State()
+    user_del = State()
