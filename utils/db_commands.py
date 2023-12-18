@@ -2,7 +2,7 @@ import logging
 import time
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import delete, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -630,3 +630,14 @@ def get_info_for_methodist_profile(session) -> dict:
         .first()
         ._asdict()
     )
+
+
+async def category_deleting(session, category_id):
+    """Удаление категории."""
+    stmt = (
+        delete(Category)
+        .where(Category.id == category_id)
+        .execution_options(synchronize_session=False)
+    )
+
+    session.execute(stmt)

@@ -333,3 +333,18 @@ def pagination_keyboard_category(
         keyboard.append([InlineKeyboardButton(**extra_button)])
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
+
+
+def back_keyboard(
+    language: str, btn_name: str, cd: str
+) -> InlineKeyboardMarkup:
+    buttons = BUTTONS[language]
+    lk = InlineKeyboardButton(text=buttons["lk"], callback_data="profile")
+    back = InlineKeyboardButton(text=buttons[btn_name], callback_data=cd)
+    markup = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [back],
+            [lk],
+        ]
+    )
+    return markup
