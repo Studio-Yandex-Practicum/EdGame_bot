@@ -6,6 +6,7 @@ from db.models import Season, User
 
 
 def henchman_pass_keyboard(session):
+    """Клавиатура админа."""
     kid_pass: InlineKeyboardButton = InlineKeyboardButton(
         text="Сменить пароль для студентов", callback_data="kid_pass"
     )
@@ -48,6 +49,7 @@ def henchman_pass_keyboard(session):
 
 
 def henchman_user_del_keyboard():
+    """Клавиатура удаления пользователя."""
     kid_del: InlineKeyboardButton = InlineKeyboardButton(
         text="Удалить ребенка", callback_data="kid_del"
     )
@@ -72,6 +74,7 @@ def henchman_user_del_keyboard():
 
 
 def kid_del_keyboard():
+    """Клавиатура-список детей для удаления."""
     session = Session()
     kb_builder = InlineKeyboardBuilder()
     kids = session.query(User).filter_by(role="kid").all()
@@ -88,6 +91,7 @@ def kid_del_keyboard():
 
 
 def boss_pass_keyboard():
+    """Клавиатура босса."""
     kid_pass: InlineKeyboardButton = InlineKeyboardButton(
         text="Сменить пароль для студентов", callback_data="kid_pass"
     )
