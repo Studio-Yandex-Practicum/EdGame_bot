@@ -6,7 +6,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, Message
 from sqlalchemy.orm import Session
 
-from keyboards.keyboards import pagination_keyboard
+from keyboards.keyboards import (
+    back_keyboard,
+    pagination_keyboard,
+    yes_no_keyboard,
+)
 from keyboards.methodist_keyboards import (
     add_category_keyboard,
     category_keyboard_methodist,
@@ -16,6 +20,7 @@ from keyboards.methodist_keyboards import (
 )
 from lexicon.lexicon import BUTTONS, LEXICON
 from utils.db_commands import (
+    category_deleting,
     create_category,
     get_all_categories,
     select_user,
@@ -296,6 +301,7 @@ async def show_category_list_callback(query: CallbackQuery, state: FSMContext):
 @methodist_category_router.callback_query(
     F.data.startswith("back_to_category:") | F.data.startswith("category:")
 )
+@methodist_category_router.callback_query(F.data == "no:delete_category")
 async def show_category(
     query: CallbackQuery, state: FSMContext, session: Session
 ):
@@ -433,3 +439,68 @@ async def show_category_list(
         logger.error(f"Ошибка в ключе при просмотре списка категорий: {err}")
     except Exception as err:
         logger.error(f"Ошибка при просмотре списка категорий: {err}")
+
+
+@methodist_category_router.callback_query(F.data == "delete_category")
+async def delete_category(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
+    """Кнопка "Удалить" в разделе редактирования категории."""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        await query.message.edit_text(
+            lexicon["delete_confirmation"],
+            reply_markup=yes_no_keyboard(language, "delete_category"),
+        )
+
+    except Exception as err:
+        logger.error(f"Ошибка при получении категории: {err}")
+
+
+@methodist_category_router.callback_query(F.data == "yes:delete_category")
+async def category_deletion_confirmation(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
+    """Подтверждение удаления категории."""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        category_id = data["category_id"]
+        await category_deleting(session, category_id)
+        categories = get_all_categories(session)
+        if not categories:
+            await query.message.edit_text(
+                lexicon["no_categories_yet"],
+                reply_markup=add_category_keyboard(language),
+            )
+            return
+        page_info = generate_categories_list(
+            categories=categories,
+            lexicon=lexicon,
+            page_size=PAGE_SIZE,
+            methodist=True,
+        )
+        category_ids = page_info["categories_ids"]
+
+        await state.set_data({})
+        await state.update_data(
+            categories=categories,
+            category_ids=category_ids,
+            task_info=page_info,
+            language=language,
+            current_page=1,
+        )
+
+        await query.message.edit_text(
+            lexicon["category_deleting"],
+            reply_markup=back_keyboard(
+                language, "back_to_category_list", "back_to_category_list"
+            ),
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при удалении категории: {err}")
