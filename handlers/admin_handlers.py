@@ -181,7 +181,7 @@ async def close_season(callback: CallbackQuery, session: Session, bot):
         logger.error(f"Файл не создан: {err}")
     except Exception as err:
         logger.error(f"Ошибка при выборе статистических данных: {err}")
-   
+
 
 @admin_router.callback_query(F.data == "export_xls")
 async def export_excel(callback: CallbackQuery, session: Session, bot):
