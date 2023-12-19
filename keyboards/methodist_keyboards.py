@@ -36,7 +36,6 @@ def methodist_profile_keyboard(language: str) -> ReplyKeyboardMarkup:
     help_button = KeyboardButton(text=buttons["help"])
     add_category = KeyboardButton(text=buttons["add_category"])
     category_list = KeyboardButton(text=buttons["category_list"])
-
     keyboard = [
         [add_task, add_category, create_team],
         [tasks_for_review],
@@ -372,6 +371,7 @@ def category_keyboard_methodist(language: str) -> InlineKeyboardMarkup:
     edit_category = InlineKeyboardButton(
         text=buttons["edit_category"], callback_data="edit_category"
     )
+
     delete_category = InlineKeyboardButton(
         text=buttons["delete"], callback_data="delete_category"
     )

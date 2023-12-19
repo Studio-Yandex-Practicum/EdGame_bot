@@ -1,11 +1,15 @@
 import datetime
 import hashlib
+import logging
+import os
+import shutil
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery, Message
+from aiogram.types.input_file import FSInputFile
 from sqlalchemy.orm import Session
 
 from config_data.config import load_config
@@ -22,9 +26,17 @@ from utils.states_form import (
     MasterPassword,
     MethodistPassword,
 )
+from utils.user_utils import (
+    delete_bd,
+    foto_user_id,
+    statistics,
+    text_files,
+    zip_files,
+)
 
 admin_router = Router()
 config = load_config()
+logger = logging.getLogger(__name__)
 
 
 @admin_router.callback_query(F.data == "kid_pass", StateFilter(default_state))
@@ -155,19 +167,47 @@ async def open_season(callback: CallbackQuery, session: Session):
 
 
 @admin_router.callback_query(F.data == "close_season")
-async def close_season(callback: CallbackQuery, session: Session):
+async def close_season(callback: CallbackQuery, session: Session, bot):
     """Закрываем сезон."""
     season = session.query(Season).first()
     season.close_season = datetime.datetime.now()
     session.add(season)
     session.commit()
-    # todo Здесь код экспорта в эксель
-    # todo Удаление таблиц
-    await callback.message.answer(text="Сезон закрыт.")
+    try:
+        await export_excel(callback, session, bot)
+        delete_bd(session)
+        await callback.message.answer(text="Сезон закрыт.")
+    except FileNotFoundError as err:
+        logger.error(f"Файл не создан: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при выборе статистических данных: {err}")
 
 
 @admin_router.callback_query(F.data == "export_xls")
-async def export_excel(callback: CallbackQuery, session: Session):
+async def export_excel(callback: CallbackQuery, session: Session, bot):
     """Экспорт в эксель."""
-    # todo Экспорт в эксель
-    pass
+    try:
+        statistics(session)
+        text_files(session)
+        files_id = foto_user_id(session)
+        if files_id:
+            for name, foto in files_id.items():
+                j = 0
+                for i in foto:
+                    j += 1
+                    file = await bot.get_file(i)
+                    file_path = file.file_path
+                    await bot.download_file(
+                        file_path, f"./statictica//{name}//{name}, {j}"
+                    )
+        zip_files()
+        file = "statictica.zip"
+        await bot.send_document(callback.message.chat.id, FSInputFile(file))
+    except FileNotFoundError as err:
+        logger.error(f"Файл не создан: {err}")
+    except Exception as err:
+        logger.error(f"Ошибка при выборе статистических данных: {err}")
+    finally:
+        shutil.rmtree("statictica")
+        os.remove("statictica.zip")
+        await callback.message.delete()

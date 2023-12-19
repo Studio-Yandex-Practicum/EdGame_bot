@@ -483,5 +483,6 @@ BUTTONS_TT = {
     "all_tasks": "Все задания",
     "achievement_category": "Категории",
     "all_achievements": "Ачивки",
+    "statistics": "Статистика",
     "delete": "Удалить",
 }
