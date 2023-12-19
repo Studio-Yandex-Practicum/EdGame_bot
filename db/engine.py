@@ -28,7 +28,7 @@ url_object = URL.create(
 )
 
 engine = create_engine(url_object)
-Session = scoped_session(sessionmaker(bind=engine))
+Session = scoped_session(sessionmaker(bind=engine, expire_on_commit=False))
 
 
 @contextlib.contextmanager
