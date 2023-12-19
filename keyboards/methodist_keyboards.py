@@ -372,7 +372,6 @@ def category_keyboard_methodist(language: str) -> InlineKeyboardMarkup:
         text=buttons["edit_category"], callback_data="edit_category"
     )
 
-
     delete_category = InlineKeyboardButton(
         text=buttons["delete"], callback_data="delete_category"
     )

@@ -485,3 +485,4 @@ BUTTONS_TT = {
     "all_achievements": "Ачивки",
     "statistics": "Статистика",
     "delete": "Удалить",
+}

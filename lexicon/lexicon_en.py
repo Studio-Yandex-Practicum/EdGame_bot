@@ -484,5 +484,4 @@ BUTTONS_EN = {
     "achievement_category": "Категории",
     "all_achievements": "Ачивки",
     "delete": "Удалить",
-
-
+}

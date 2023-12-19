@@ -483,3 +483,4 @@ BUTTONS_RU = {
     "all_achievements": "Ачивки",
     "statistics": "Статистика",
     "delete": "Удалить",
+}
