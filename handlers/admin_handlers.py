@@ -214,7 +214,8 @@ async def get_kids(
     await callback.message.delete()
     user = select_user(session, callback.message.chat.id)
     await callback.message.answer(
-        LEXICON[user.language]["select_kid"], reply_markup=kid_del_keyboard()
+        LEXICON[user.language]["select_kid"],
+        reply_markup=kid_del_keyboard(session),
     )
     await state.set_state(UserDel.list_users)
 
@@ -230,7 +231,7 @@ async def get_counsellors(
     user = select_user(session, callback.message.chat.id)
     await callback.message.answer(
         LEXICON[user.language]["select_counsellor"],
-        reply_markup=counsellor_del_keyboard(),
+        reply_markup=counsellor_del_keyboard(session),
     )
     await state.set_state(UserDel.list_users)
 
@@ -246,7 +247,7 @@ async def get_methodists(
     user = select_user(session, callback.message.chat.id)
     await callback.message.answer(
         LEXICON[user.language]["select_methodist"],
-        reply_markup=methodist_del_keyboard(),
+        reply_markup=methodist_del_keyboard(session),
     )
     await state.set_state(UserDel.list_users)
 

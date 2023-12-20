@@ -1,7 +1,6 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from db.engine import Session
 from db.models import Season, User
 
 
@@ -73,9 +72,8 @@ def henchman_user_del_keyboard():
     return del_keyboard
 
 
-def kid_del_keyboard():
+def kid_del_keyboard(session):
     """Клавиатура-список детей для удаления."""
-    session = Session()
     kb_builder = InlineKeyboardBuilder()
     kids = session.query(User).filter_by(role="kid").all()
     for kid in kids:
@@ -90,9 +88,8 @@ def kid_del_keyboard():
     return kb_builder.as_markup()
 
 
-def counsellor_del_keyboard():
+def counsellor_del_keyboard(session):
     """Клавиатура-список вожатых для удаления."""
-    session = Session()
     kb_builder = InlineKeyboardBuilder()
     counsellors = session.query(User).filter_by(role="counsellor").all()
     for counsellor in counsellors:
@@ -108,9 +105,8 @@ def counsellor_del_keyboard():
     return kb_builder.as_markup()
 
 
-def methodist_del_keyboard():
+def methodist_del_keyboard(session):
     """Клавиатура-список методистов для удаления."""
-    session = Session()
     kb_builder = InlineKeyboardBuilder()
     methodists = session.query(User).filter_by(role="methodist").all()
     for methodist in methodists:
