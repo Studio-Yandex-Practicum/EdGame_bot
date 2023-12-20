@@ -219,4 +219,3 @@ class UserDel(StatesGroup):
 
     get_role = State()
     list_users = State()
-    user_del = State()

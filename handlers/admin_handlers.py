@@ -12,9 +12,11 @@ from config_data.config import load_config
 from db.models import Password, Season, User
 from keyboards.admin_keyboards import (
     boss_pass_keyboard,
+    counsellor_del_keyboard,
     henchman_pass_keyboard,
     henchman_user_del_keyboard,
     kid_del_keyboard,
+    methodist_del_keyboard,
 )
 from keyboards.keyboards import cancel_keyboard
 from lexicon.lexicon import LEXICON
@@ -218,15 +220,50 @@ async def get_kids(
 
 
 @admin_router.callback_query(
+    F.data == "counsellor_del", StateFilter(UserDel.get_role)
+)
+async def get_counsellors(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Вывод списка вожатых."""
+    await callback.message.delete()
+    user = select_user(session, callback.message.chat.id)
+    await callback.message.answer(
+        LEXICON[user.language]["select_counsellor"],
+        reply_markup=counsellor_del_keyboard(),
+    )
+    await state.set_state(UserDel.list_users)
+
+
+@admin_router.callback_query(
+    F.data == "methodist_del", StateFilter(UserDel.get_role)
+)
+async def get_methodists(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Вывод списка методистов."""
+    await callback.message.delete()
+    user = select_user(session, callback.message.chat.id)
+    await callback.message.answer(
+        LEXICON[user.language]["select_methodist"],
+        reply_markup=methodist_del_keyboard(),
+    )
+    await state.set_state(UserDel.list_users)
+
+
+@admin_router.callback_query(
     F.data.endswith("_del"), StateFilter(UserDel.list_users)
 )
-async def del_kid(callback: CallbackQuery, session: Session):
+async def del_kid(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
     """Удаление ребенка."""
     await callback.message.delete()
     user = select_user(session, callback.message.chat.id)
     user2del = session.query(User).filter_by(id=callback.data[:-4]).first()
     session.delete(user2del)
     session.commit()
+    await state.clear()
     await callback.message.answer(
         LEXICON[user.language]["user_deleted"],
         reply_markup=henchman_pass_keyboard(session),

@@ -90,6 +90,42 @@ def kid_del_keyboard():
     return kb_builder.as_markup()
 
 
+def counsellor_del_keyboard():
+    """Клавиатура-список вожатых для удаления."""
+    session = Session()
+    kb_builder = InlineKeyboardBuilder()
+    counsellors = session.query(User).filter_by(role="counsellor").all()
+    for counsellor in counsellors:
+        kb_builder.row(
+            InlineKeyboardButton(
+                text=f"{counsellor.name} - {counsellor.id}",
+                callback_data=f"{counsellor.id}_del",
+            )
+        )
+    kb_builder.row(
+        InlineKeyboardButton(text="Назад", callback_data="back_del")
+    )
+    return kb_builder.as_markup()
+
+
+def methodist_del_keyboard():
+    """Клавиатура-список методистов для удаления."""
+    session = Session()
+    kb_builder = InlineKeyboardBuilder()
+    methodists = session.query(User).filter_by(role="methodist").all()
+    for methodist in methodists:
+        kb_builder.row(
+            InlineKeyboardButton(
+                text=f"{methodist.name} - {methodist.id}",
+                callback_data=f"{methodist.id}_del",
+            )
+        )
+    kb_builder.row(
+        InlineKeyboardButton(text="Назад", callback_data="back_del")
+    )
+    return kb_builder.as_markup()
+
+
 def boss_pass_keyboard():
     """Клавиатура босса."""
     kid_pass: InlineKeyboardButton = InlineKeyboardButton(
