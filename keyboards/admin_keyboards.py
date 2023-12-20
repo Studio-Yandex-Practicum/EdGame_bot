@@ -2,6 +2,8 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from db.models import Season, User
+from lexicon.lexicon import BUTTONS, LEXICON
+from utils.db_commands import select_user
 
 
 def henchman_pass_keyboard(session):
@@ -47,19 +49,23 @@ def henchman_pass_keyboard(session):
     return henchman_keyboard
 
 
-def henchman_user_del_keyboard():
+def henchman_user_del_keyboard(session, callback):
     """Клавиатура удаления пользователя."""
+    user = select_user(session, callback.message.chat.id)
+
     kid_del: InlineKeyboardButton = InlineKeyboardButton(
-        text="Удалить ребенка", callback_data="kid_del"
+        text=LEXICON[user.language]["kid_del"], callback_data="kid_del"
     )
     counsellor_del: InlineKeyboardButton = InlineKeyboardButton(
-        text="Удалить вожатого", callback_data="counsellor_del"
+        text=LEXICON[user.language]["counsellor_del"],
+        callback_data="counsellor_del",
     )
     methodist_del: InlineKeyboardButton = InlineKeyboardButton(
-        text="Удалить методиста", callback_data="methodist_del"
+        text=LEXICON[user.language]["methodist_del"],
+        callback_data="methodist_del",
     )
     back: InlineKeyboardButton = InlineKeyboardButton(
-        text="Назад", callback_data="back_del"
+        text=BUTTONS[user.language]["back"], callback_data="back_del"
     )
     del_keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup(
         inline_keyboard=[
@@ -72,8 +78,10 @@ def henchman_user_del_keyboard():
     return del_keyboard
 
 
-def kid_del_keyboard(session):
+def kid_del_keyboard(session, callback):
     """Клавиатура-список детей для удаления."""
+    user = select_user(session, callback.message.chat.id)
+
     kb_builder = InlineKeyboardBuilder()
     kids = session.query(User).filter_by(role="kid").all()
     for kid in kids:
@@ -83,13 +91,17 @@ def kid_del_keyboard(session):
             )
         )
     kb_builder.row(
-        InlineKeyboardButton(text="Назад", callback_data="back_del")
+        InlineKeyboardButton(
+            text=BUTTONS[user.language]["back"], callback_data="back_del"
+        )
     )
     return kb_builder.as_markup()
 
 
-def counsellor_del_keyboard(session):
+def counsellor_del_keyboard(session, callback):
     """Клавиатура-список вожатых для удаления."""
+    user = select_user(session, callback.message.chat.id)
+
     kb_builder = InlineKeyboardBuilder()
     counsellors = session.query(User).filter_by(role="counsellor").all()
     for counsellor in counsellors:
@@ -100,13 +112,17 @@ def counsellor_del_keyboard(session):
             )
         )
     kb_builder.row(
-        InlineKeyboardButton(text="Назад", callback_data="back_del")
+        InlineKeyboardButton(
+            text=BUTTONS[user.language]["back"], callback_data="back_del"
+        )
     )
     return kb_builder.as_markup()
 
 
-def methodist_del_keyboard(session):
+def methodist_del_keyboard(session, callback):
     """Клавиатура-список методистов для удаления."""
+    user = select_user(session, callback.message.chat.id)
+
     kb_builder = InlineKeyboardBuilder()
     methodists = session.query(User).filter_by(role="methodist").all()
     for methodist in methodists:
@@ -117,7 +133,9 @@ def methodist_del_keyboard(session):
             )
         )
     kb_builder.row(
-        InlineKeyboardButton(text="Назад", callback_data="back_del")
+        InlineKeyboardButton(
+            text=BUTTONS[user.language]["back"], callback_data="back_del"
+        )
     )
     return kb_builder.as_markup()
 

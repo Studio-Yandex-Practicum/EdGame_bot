@@ -188,7 +188,7 @@ async def get_role2del(
     user = select_user(session, callback.message.chat.id)
     await callback.message.answer(
         LEXICON[user.language]["get_role2del"],
-        reply_markup=henchman_user_del_keyboard(),
+        reply_markup=henchman_user_del_keyboard(session, callback),
     )
     await state.set_state(UserDel.get_role)
 
@@ -215,7 +215,7 @@ async def get_kids(
     user = select_user(session, callback.message.chat.id)
     await callback.message.answer(
         LEXICON[user.language]["select_kid"],
-        reply_markup=kid_del_keyboard(session),
+        reply_markup=kid_del_keyboard(session, callback),
     )
     await state.set_state(UserDel.list_users)
 
@@ -231,7 +231,7 @@ async def get_counsellors(
     user = select_user(session, callback.message.chat.id)
     await callback.message.answer(
         LEXICON[user.language]["select_counsellor"],
-        reply_markup=counsellor_del_keyboard(session),
+        reply_markup=counsellor_del_keyboard(session, callback),
     )
     await state.set_state(UserDel.list_users)
 
@@ -247,7 +247,7 @@ async def get_methodists(
     user = select_user(session, callback.message.chat.id)
     await callback.message.answer(
         LEXICON[user.language]["select_methodist"],
-        reply_markup=methodist_del_keyboard(session),
+        reply_markup=methodist_del_keyboard(session, callback),
     )
     await state.set_state(UserDel.list_users)
 
@@ -263,7 +263,6 @@ async def del_kid(
     user = select_user(session, callback.message.chat.id)
     user2del = session.query(User).filter_by(id=callback.data[:-4]).first()
     session.delete(user2del)
-    session.commit()
     await state.clear()
     await callback.message.answer(
         LEXICON[user.language]["user_deleted"],
