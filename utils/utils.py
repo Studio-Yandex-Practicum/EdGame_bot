@@ -624,3 +624,11 @@ def generate_achievements_list_category(
         "msg": msg,
     }
     return page_info
+
+
+async def data_for_multiselect_kb(queryset):
+    """Данные для клавиатуры с множественным выбором."""
+    data = {}
+    for row in queryset:
+        data[row.id] = {"name": row.name, "selected": False}
+    return data

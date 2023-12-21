@@ -453,7 +453,9 @@ async def delete_category(
         lexicon = LEXICON[language]
         await query.message.edit_text(
             lexicon["delete_confirmation"],
-            reply_markup=yes_no_keyboard(language, "delete_category"),
+            reply_markup=yes_no_keyboard(
+                language, "delete_category", "delete_category"
+            ),
         )
 
     except Exception as err:

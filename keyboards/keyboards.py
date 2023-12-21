@@ -291,13 +291,15 @@ def cancel_keyboard() -> InlineKeyboardMarkup:
     return cancel
 
 
-def yes_no_keyboard(language: str, cd: str) -> InlineKeyboardMarkup:
+def yes_no_keyboard(
+    language: str, yes_cd: str, no_cd: str
+) -> InlineKeyboardMarkup:
     buttons = BUTTONS[language]
     yes_button = InlineKeyboardButton(
-        text=buttons["yes"], callback_data=f"yes:{cd}"
+        text=buttons["yes"], callback_data=f"yes:{yes_cd}"
     )
     no_button = InlineKeyboardButton(
-        text=buttons["no"], callback_data=f"no:{cd}"
+        text=buttons["no"], callback_data=f"no:{no_cd}"
     )
     return InlineKeyboardMarkup(inline_keyboard=[[yes_button], [no_button]])
 
