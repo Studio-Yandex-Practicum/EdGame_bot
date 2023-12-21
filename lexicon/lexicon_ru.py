@@ -389,12 +389,14 @@ LEXICON_RU = {
     "err_group": "Номер группы состоит из цифр",
     # Создание категорий
     "category": "Категория",
+    "category_deleting": "Категория удалена",
     # Фразы для админки
     "henchman_pass": "Выберите какой пароль хотите поменять:",
     "counsellor_pass": "Введите новый пароль для вожатого:",
     "methodist_pass": "Введите новый пароль для методиста:",
     "master_pass": "Введите новый мастер-пароль:",
     "kid_pass": "Введите новый пароль для ребенка:",
+    "delete_confirmation": "Вы точно хотите удалить?",
     "password_updated": "Пароль обновлен",
     "season_opened": "Сезон открыт",
     "season_closed": "Сезон закрыт",
@@ -553,6 +555,8 @@ BUTTONS_RU = {
     "all_tasks": "Все задания",
     "achievement_category": "Категории",
     "all_achievements": "Ачивки",
+    "statistics": "Статистика",
+    "delete": "Удалить",
     # Личный кабинет вожатого
     "list_children": "Список детей",
     "list_children_in_group": "Список детей в группе",

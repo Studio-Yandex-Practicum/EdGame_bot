@@ -1,7 +1,19 @@
+import os
+import zipfile
+
+import xlwt
 from aiogram import types
 from sqlalchemy.orm import Session
 
-from db.models import Achievement, AchievementStatus, Category, User
+from db.models import (
+    Achievement,
+    AchievementStatus,
+    Category,
+    Password,
+    Season,
+    Team,
+    User,
+)
 
 
 def get_user_name(session: Session, user_id: int) -> str:
@@ -196,3 +208,151 @@ def get_achievement_by_category_id(session: Session, category_id):
     for available_achievement in achievement_by_category:
         available_achievements_list.append((available_achievement))
     return available_achievements_list
+
+
+def get_user_statistics(session: Session):
+    return session.query(
+        User.id, User.name, User.role, User.score, User.group
+    ).all()
+
+
+def get_achievement_statistics(session: Session):
+    return (
+        session.query(
+            AchievementStatus.user_id,
+            Achievement.name,
+            Achievement.description,
+            Achievement.instruction,
+            Achievement.artifact_type,
+            Achievement.score,
+            Achievement.price,
+            Achievement.id,
+            AchievementStatus.status,
+            AchievementStatus.message_text,
+            AchievementStatus.rejection_reason,
+        )
+        .join(
+            AchievementStatus,
+            Achievement.id == AchievementStatus.achievement_id,
+        )
+        .all()
+    )
+
+
+def get_text_user(session: Session, user_id):
+    """Получение из БД ответов пользователей при выполнении задания"""
+    return (
+        session.query(AchievementStatus.message_text)
+        .filter(AchievementStatus.user_id == user_id)
+        .first()
+    )
+
+
+def get_foto_id_user(session: Session, user_id):
+    """Получение из БД foto_id при выполнении задания."""
+    return (
+        session.query(AchievementStatus.files_id)
+        .filter(AchievementStatus.user_id == user_id)
+        .first()
+    )
+
+
+def export_xls(a, column_names, name_file):
+    """Запись информации в эксель файл."""
+    workbook = xlwt.Workbook()
+    sheet = workbook.add_sheet("contacts")
+    header_font = xlwt.Font()
+    header_font.name = "Arial"
+    header_font.bold = True
+    header_style = xlwt.XFStyle()
+    header_style.font = header_font
+    for i, name in enumerate(column_names):
+        sheet.write(0, i, name)
+    for i, t in enumerate(a, start=1):
+        for j in range(len(column_names)):
+            sheet.write(i, j, f"{t[j]}")
+    workbook.save(name_file)
+
+
+def delete_bd(session: Session):
+    """Удаление БД при закрытии сезона."""
+    session.query(User).delete()
+    session.query(AchievementStatus).delete()
+    session.query(Team).delete()
+    session.query(Password).delete()
+    session.query(Season).delete()
+    session.commit()
+    session.close()
+
+
+def statistics(session):
+    """Создание файлов эксель файлов со
+    статистическими данными пользователей и авичек."""
+    os.makedirs("statictica")
+    user = get_user_statistics(session)
+    column_user = [
+        "Номер пользователя",
+        "Имя, фамилия",
+        "Роль",
+        "Очки",
+        "Группа",
+    ]
+    user_file = ".//statictica//user_statistics.xls"
+    export_xls(user, column_user, user_file)
+    achievement = get_achievement_statistics(session)
+    column_achievement = [
+        "Номер Пользователя",
+        "Имя",
+        "Описание",
+        "Инструкция",
+        "Тип артефакта",
+        "Начальный балл",
+        "Цена",
+        "Номер ачивки",
+        "Статус ачивки",
+        "Ответ",
+        "Причина отклонения",
+    ]
+    achievement_file = ".//statictica//achievement_statistic.xls"
+    export_xls(achievement, column_achievement, achievement_file)
+
+
+def text_files(session):
+    """Создание текстовых файлов с информацией,
+    присланной от студентов при
+    выполнении задания."""
+    users = session.query(User.name, User.id).all()
+    for user in users:
+        user_name = user[0]
+        test_user = get_text_user(session, user.id)
+        if test_user:
+            os.makedirs(f".//statictica//{user_name}")
+            with open(
+                f".//statictica//{user_name}//{user_name}.txt", "w"
+            ) as file:
+                file.write(test_user[0])
+
+
+def foto_user_id(session):
+    """Создание словаря с ключом - Имя студента,
+    значение - foto_user."""
+    files = {}
+    users = session.query(User.name, User.id).all()
+    for user in users:
+        user_name = user[0]
+        foto_user = get_foto_id_user(session, user.id)
+        if foto_user:
+            files.setdefault(user_name, foto_user[0])
+    return files
+
+
+def zip_files():
+    z = zipfile.ZipFile("statictica.zip", "w")
+    for root, dirs, files in os.walk(
+        "statictica"
+    ):
+        for file in files:
+            z.write(
+                os.path.join(root, file)
+            )
+    z.close()

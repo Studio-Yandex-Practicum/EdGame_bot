@@ -965,7 +965,7 @@ async def process_saving_task_to_db(query: CallbackQuery, state: FSMContext):
 async def show_task_list(
     message: Message, state: FSMContext, session: Session
 ):
-    """Обработчик кнопки Посмотреть/редактировать ачивки.
+    """Обработчик кнопки Посмотреть/редактировать/Удалить ачивки.
 
     Показывает все созданные ачивки с пагинацией.
     """
@@ -1026,7 +1026,7 @@ async def show_task_list(
     F.data.in_(["back_to_achievement_list", "task:next", "task:previous"])
 )
 async def show_task_list_callback(query: CallbackQuery, state: FSMContext):
-    """Обработчик кнопки Посмотреть/редактировать ачивки.
+    """Обработчик кнопки Посмотреть/редактировать/удалить ачивки.
 
     Показывает все созданные ачивки с пагинацией.
     """
