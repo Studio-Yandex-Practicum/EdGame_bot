@@ -186,7 +186,7 @@ async def reject_handler(
         if reject_task(session, task_id):
             inline_keyboard = create_yes_no_keyboard(task_id, user.language)
             await callback_query.message.answer(
-                f"{lexicon['task_from']} {name} {lexicon['rejection_reason']}",
+                f"{lexicon['task_from']} {name} {lexicon['reject_reason']}",
                 reply_markup=inline_keyboard,
             )
         else:
