@@ -436,9 +436,7 @@ async def approve_methodist_handler(
 
     except Exception as err:
         logger.error(f"Произошла ошибка при подтверждении задания: {err}")
-        await query.message.answer(
-            "Произошла ошибка при подтверждении задания."
-        )
+        await query.message.answer(lexicon["err_accept_task"])
 
 
 @methodist_task_router.callback_query(ReviewTask.pending, F.data == "reject")
@@ -469,7 +467,7 @@ async def reject_methodist_handler(
 
     except Exception as err:
         logger.error(f"Произошла ошибка при отклонении задания: {err}")
-        await query.message.answer("Произошла ошибка при отклонении задания.")
+        await query.message.answer(lexicon["err_reject_task"])
 
 
 @methodist_task_router.callback_query(
@@ -490,7 +488,7 @@ async def yes_methodist_handler(query: CallbackQuery, state: FSMContext):
 
     except Exception as err:
         logger.error(f"Произошла ошибка при обработке запроса: {err}")
-        await query.message.answer("Произошла ошибка при обработке запроса.")
+        await query.message.answer(lexicon["request_err"])
 
 
 @methodist_task_router.callback_query(
@@ -512,7 +510,7 @@ async def no_methodist_handler(query: CallbackQuery, state: FSMContext):
 
     except Exception as err:
         logger.error(f"Произошла ошибка при обработке запроса: {err}")
-        await query.message.answer("Произошла ошибка при обработке запроса.")
+        await query.message.answer(lexicon["request_err"])
 
 
 @methodist_task_router.message(ReviewTask.reject_message)
@@ -527,7 +525,7 @@ async def rejection_reason(
         lexicon = LEXICON[language]
         cd = data["cd"]
 
-        if message.text.lower() != "отмена":
+        if message.text.lower() != lexicon["answer_cancel"]:
             save_rejection_reason_in_db(session, task_id, message.text)
             await message.answer(
                 lexicon["rejection_reason_saved"],
@@ -543,7 +541,7 @@ async def rejection_reason(
 
     except Exception as err:
         logger.error(f"Произошла ошибка при обработке запроса: {err}")
-        await message.answer("Произошла ошибка при обработке запроса.")
+        await message.answer(lexicon["request_err"])
 
 
 # Обработчики добавления задания

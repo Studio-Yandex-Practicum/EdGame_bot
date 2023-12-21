@@ -281,9 +281,10 @@ def team_full_keyboard(language: str) -> InlineKeyboardMarkup:
     return markup
 
 
-def cancel_keyboard() -> InlineKeyboardMarkup:
+def cancel_keyboard(language: str) -> InlineKeyboardMarkup:
+    buttons = BUTTONS[language]
     cancel_button: InlineKeyboardButton = InlineKeyboardButton(
-        text="Отмена", callback_data="cancel"
+        text=buttons["cancel"], callback_data="cancel"
     )
     cancel: InlineKeyboardMarkup = InlineKeyboardMarkup(
         inline_keyboard=[[cancel_button]]

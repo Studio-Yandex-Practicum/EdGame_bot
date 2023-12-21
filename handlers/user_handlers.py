@@ -65,33 +65,35 @@ async def process_start_command(
     check_password(session)
 
     # Проверяем есть ли юзер в базе и если нет, то регистрируем
-    user = select_user(session, message.chat.id)
     if message.chat.id == config.boss_id:
         await state.clear()
         await message.answer(
-            "Добро пожаловать, босс", reply_markup=boss_pass_keyboard()
+            lexicon["welcome_boss"], reply_markup=boss_pass_keyboard()
         )
     elif is_user_in_db(session, message.chat.id):
+        user = select_user(session, message.chat.id)
+        language = user.language
+        lexicon = LEXICON[language]
         await state.clear()
         if user.role == "kid":
             await message.answer(
-                f"Добро пожаловать, {user.name}",
-                reply_markup=menu_keyboard(user.language),
+                f"{lexicon['welcome']}, {user.name}",
+                reply_markup=menu_keyboard(language),
             )
         elif user.role == "counsellor":
             await message.answer(
-                f"Добро пожаловать, {user.name}",
-                reply_markup=create_profile_keyboard(),
+                f"{lexicon['welcome']}, {user.name}",
+                reply_markup=create_profile_keyboard(language),
             )
         elif user.role == "methodist":
             await message.answer(
-                f"Добро пожаловать, {user.name}",
-                reply_markup=methodist_profile_keyboard(user.language),
+                f"{lexicon['welcome']}, {user.name}",
+                reply_markup=methodist_profile_keyboard(language),
             )
         else:
             await message.answer(
-                f"Добро пожаловать, {user.name}",
-                reply_markup=henchman_pass_keyboard(session),
+                f"{lexicon['welcome']}, {user.name}",
+                reply_markup=henchman_pass_keyboard(session, language),
             )
     else:
         # Анкетируем и сохраняем пользователя в БД
@@ -108,12 +110,7 @@ async def process_start_command(
 )
 async def process_select_language(callback: CallbackQuery, state: FSMContext):
     await state.update_data(language=callback.data)
-    if callback.data == "RU":
-        text = LEXICON["RU"]["ru_pressed"]
-    elif callback.data == "TT":
-        text = LEXICON["TT"]["tt_pressed"]
-    else:
-        text = LEXICON["EN"]["en_pressed"]
+    text = LEXICON[callback.data]["language_selected"]
     await callback.message.delete()
     await callback.message.answer(text=text)
     await state.set_state(Profile.get_name)
@@ -123,13 +120,9 @@ async def process_select_language(callback: CallbackQuery, state: FSMContext):
 async def process_get_name(message: Message, state: FSMContext):
     """Ввод имени."""
     await state.update_data(name=message.text)
-    user_language = await state.get_data()
-    if user_language["language"] == "RU":
-        text = LEXICON["RU"]["get_name"]
-    elif user_language["language"] == "TT":
-        text = LEXICON["TT"]["get_name"]
-    else:
-        text = LEXICON["EN"]["get_name"]
+    user_data = await state.get_data()
+    language = user_data["language"]
+    text = LEXICON[language]["get_name"]
     await message.answer(text=text)
     await state.set_state(Profile.get_group)
 
@@ -139,12 +132,7 @@ async def warning_not_name(message: Message, state: FSMContext):
     """Проверка, что пользователь ввел буквы в имени."""
     user_data = await state.get_data()
     language = user_data["language"]
-    if language == "RU":
-        text = LEXICON["RU"]["err_name"]
-    elif language == "TT":
-        text = LEXICON["TT"]["err_name"]
-    else:
-        text = LEXICON["EN"]["err_name"]
+    text = LEXICON[language]["err_name"]
     await message.answer(text)
 
 
@@ -157,12 +145,7 @@ async def process_get_group(
     await state.update_data(id=int(message.chat.id))
     user_data = await state.get_data()
     language = user_data["language"]
-    if language == "RU":
-        text = LEXICON["RU"]["get_group"]
-    elif language == "TT":
-        text = LEXICON["TT"]["get_group"]
-    else:
-        text = LEXICON["EN"]["get_group"]
+    text = LEXICON[language]["get_group"]
     await message.answer(text=text)
     # Вносим данные пользователь в БД
     register_user(session, user_data)
@@ -174,12 +157,7 @@ async def warning_not_group(message: Message, state: FSMContext):
     """Проверка, что пользователь ввел цифры в группе."""
     user_data = await state.get_data()
     language = user_data["language"]
-    if language == "RU":
-        text = LEXICON["RU"]["err_group"]
-    elif language == "TT":
-        text = LEXICON["TT"]["err_group"]
-    else:
-        text = LEXICON["EN"]["err_group"]
+    text = LEXICON[language]["err_group"]
     await message.answer(text)
 
 
@@ -206,7 +184,7 @@ async def hashing_password(
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON["RU"]["kid"],
+            text=LEXICON[user.language]["kid"],
             reply_markup=menu_keyboard(user.language),
         )
         await state.clear()
@@ -215,8 +193,8 @@ async def hashing_password(
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON["RU"]["counsellor"],
-            reply_markup=create_profile_keyboard(),
+            text=LEXICON[user.language]["counsellor"],
+            reply_markup=create_profile_keyboard(user.language),
         )
         await state.clear()
     elif psw == methodist_psw:
@@ -224,7 +202,7 @@ async def hashing_password(
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON["RU"]["methodist"],
+            text=LEXICON[user.language]["methodist"],
             reply_markup=methodist_profile_keyboard(user.language),
         )
         await state.clear()
@@ -233,12 +211,12 @@ async def hashing_password(
         session.add(user)
         session.commit()
         await message.answer(
-            text=LEXICON["RU"]["master"],
-            reply_markup=henchman_pass_keyboard(session),
+            text=LEXICON[user.language]["master"],
+            reply_markup=henchman_pass_keyboard(session, user.language),
         )
         await state.clear()
     else:
-        await message.answer(text=LEXICON["RU"]["wrong_pass"])
+        await message.answer(text=LEXICON[user.language]["wrong_pass"])
 
 
 # Меню ребенка

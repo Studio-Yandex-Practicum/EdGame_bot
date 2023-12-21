@@ -461,8 +461,8 @@ def generate_categories_list(
             categories_info = f"{count}: {categories[i].name}"
             categories_list.append(categories_info)
             categories_ids[count] = categories[i].id
-            # Список описаний, разбитый по страницам
-            pages = pagination_static(page_size, categories_list)
+        # Список описаний, разбитый по страницам
+        pages = pagination_static(page_size, categories_list)
     if current_page < 1:
         current_page = len(pages)
     elif current_page > len(pages):
