@@ -67,8 +67,9 @@ async def process_start_command(
     # Проверяем есть ли юзер в базе и если нет, то регистрируем
     if message.chat.id == config.boss_id:
         await state.clear()
+        boss_lexicon = LEXICON["RU"]
         await message.answer(
-            lexicon["welcome_boss"], reply_markup=boss_pass_keyboard()
+            boss_lexicon["welcome_boss"], reply_markup=boss_pass_keyboard()
         )
     elif is_user_in_db(session, message.chat.id):
         user = select_user(session, message.chat.id)

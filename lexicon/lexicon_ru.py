@@ -470,6 +470,7 @@ LEXICON_RU = {
     "in_category": "В категории:",
     "no_tasks": "Нет доступных заданий",
     "category_selected": "Выбрана категория",
+    "to_methodist": "отправлено на проверку методисту",
 }
 
 BUTTONS_RU = {

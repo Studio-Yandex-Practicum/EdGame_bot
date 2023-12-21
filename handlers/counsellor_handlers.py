@@ -257,7 +257,7 @@ async def send_to_methodist(
     name = str(callback_query.data.split(":")[2])
     if send_to_methdist(session, task_id):
         await callback_query.message.answer(
-            f"Задание от {name} отправлено на проверку методисту"
+            f"{lexicon['task_from']} {name} {lexicon['to_methodist']}"
         )
 
 
