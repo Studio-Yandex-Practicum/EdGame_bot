@@ -13,18 +13,22 @@ from aiogram.types.input_file import FSInputFile
 from sqlalchemy.orm import Session
 
 from config_data.config import load_config
-from db.models import Password, Season
+from db.models import Password, Season, User
 from keyboards.admin_keyboards import (
     boss_pass_keyboard,
     henchman_pass_keyboard,
+    henchman_user_del_keyboard,
+    user_del_keyboard,
 )
 from keyboards.keyboards import cancel_keyboard
 from lexicon.lexicon import LEXICON
+from utils.db_commands import select_user
 from utils.states_form import (
     CounsellorPassword,
     KidPassword,
     MasterPassword,
     MethodistPassword,
+    UserDel,
 )
 from utils.user_utils import (
     delete_bd,
@@ -211,3 +215,97 @@ async def export_excel(callback: CallbackQuery, session: Session, bot):
         shutil.rmtree("statictica")
         os.remove("statictica.zip")
         await callback.message.delete()
+
+
+@admin_router.callback_query(F.data == "user_del")
+async def get_role2del(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Выбор роли ребенка, вожатого или методиста."""
+    await callback.message.delete()
+    user = select_user(session, callback.message.chat.id)
+    await callback.message.answer(
+        LEXICON[user.language]["get_role2del"],
+        reply_markup=henchman_user_del_keyboard(session, callback),
+    )
+    await state.set_state(UserDel.get_role)
+
+
+@admin_router.callback_query(F.data == "back_del")
+async def back_del(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Вернуться назад."""
+    await state.clear()
+    await callback.message.edit_reply_markup(
+        reply_markup=henchman_pass_keyboard(session)
+    )
+
+
+@admin_router.callback_query(
+    F.data == "kid_del", StateFilter(UserDel.get_role)
+)
+async def get_kids(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Вывод списка детей."""
+    await callback.message.delete()
+    user = select_user(session, callback.message.chat.id)
+    role = "kid"
+    await callback.message.answer(
+        LEXICON[user.language]["select_kid"],
+        reply_markup=user_del_keyboard(session, role, callback),
+    )
+    await state.set_state(UserDel.list_users)
+
+
+@admin_router.callback_query(
+    F.data == "counsellor_del", StateFilter(UserDel.get_role)
+)
+async def get_counsellors(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Вывод списка вожатых."""
+    await callback.message.delete()
+    user = select_user(session, callback.message.chat.id)
+    role = "counsellor"
+    await callback.message.answer(
+        LEXICON[user.language]["select_counsellor"],
+        reply_markup=user_del_keyboard(session, role, callback),
+    )
+    await state.set_state(UserDel.list_users)
+
+
+@admin_router.callback_query(
+    F.data == "methodist_del", StateFilter(UserDel.get_role)
+)
+async def get_methodists(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Вывод списка методистов."""
+    await callback.message.delete()
+    user = select_user(session, callback.message.chat.id)
+    role = "methodist"
+    await callback.message.answer(
+        LEXICON[user.language]["select_methodist"],
+        reply_markup=user_del_keyboard(session, role, callback),
+    )
+    await state.set_state(UserDel.list_users)
+
+
+@admin_router.callback_query(
+    F.data.endswith("_del"), StateFilter(UserDel.list_users)
+)
+async def del_kid(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Удаление ребенка."""
+    await callback.message.delete()
+    user = select_user(session, callback.message.chat.id)
+    user2del = session.query(User).filter_by(id=callback.data[:-4]).first()
+    session.delete(user2del)
+    await state.clear()
+    await callback.message.answer(
+        LEXICON[user.language]["user_deleted"],
+        reply_markup=henchman_pass_keyboard(session),
+    )
