@@ -99,7 +99,7 @@ def create_test_data():
     min_number = 1
     max_number = 5
     try:
-        with session_scope as session:
+        with session_scope() as session:
             create_users(max_number)
             AchievementFactory.create_batch(max_number)
             create_users_achievements(min_number, session)
