@@ -309,4 +309,3 @@ async def del_kid(
         LEXICON[user.language]["user_deleted"],
         reply_markup=henchman_pass_keyboard(session),
     )
-    
