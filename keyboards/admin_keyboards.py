@@ -112,12 +112,49 @@ def boss_pass_keyboard():
     master_pass: InlineKeyboardButton = InlineKeyboardButton(
         text="Сменить мастер-пароль", callback_data="master_pass"
     )
+    delete_admin = InlineKeyboardButton(
+        text="Удалить администратора", callback_data="show_admins"
+    )
     boss_keyboard: InlineKeyboardMarkup = InlineKeyboardMarkup(
         inline_keyboard=[
             [kid_pass],
             [counsellor_pass],
             [methodist_pass],
             [master_pass],
+            [delete_admin],
         ]
     )
     return boss_keyboard
+
+
+async def multiselect_kb(data: dict, language: str, back_btn_cd: str):
+    """Клавиатура с множественным выбором.
+
+    :data - {22442: {"name": name, "checked": False}}
+    """
+    kb = InlineKeyboardBuilder()
+    for user_id, params in data.items():
+        if params["selected"]:
+            kb.row(
+                InlineKeyboardButton(
+                    text=f"✓ {params['name']} ({user_id})",
+                    callback_data=f"{user_id}_collapse",
+                )
+            )
+        else:
+            kb.row(
+                InlineKeyboardButton(
+                    text=f"{params['name']} ({user_id})",
+                    callback_data=f"{user_id}_extend",
+                )
+            )
+    kb.adjust(2)
+    kb.row(
+        InlineKeyboardButton(
+            text=BUTTONS[language]["back"], callback_data=back_btn_cd
+        ),
+        InlineKeyboardButton(
+            text=BUTTONS[language]["delete"], callback_data="delete_users"
+        ),
+    )
+    return kb.as_markup()

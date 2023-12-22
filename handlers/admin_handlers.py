@@ -2,7 +2,9 @@ import datetime
 import hashlib
 import logging
 import os
+import re
 import shutil
+from typing import Any, Callable
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
@@ -18,11 +20,12 @@ from keyboards.admin_keyboards import (
     boss_pass_keyboard,
     henchman_pass_keyboard,
     henchman_user_del_keyboard,
+    multiselect_kb,
     user_del_keyboard,
 )
-from keyboards.keyboards import cancel_keyboard
+from keyboards.keyboards import cancel_keyboard, yes_no_keyboard
 from lexicon.lexicon import LEXICON
-from utils.db_commands import select_user
+from utils.db_commands import get_users_by_role, select_user, users_deleting
 from utils.states_form import (
     CounsellorPassword,
     KidPassword,
@@ -37,6 +40,7 @@ from utils.user_utils import (
     text_files,
     zip_files,
 )
+from utils.utils import data_for_multiselect_kb
 
 admin_router = Router()
 config = load_config()
@@ -309,3 +313,176 @@ async def del_kid(
         LEXICON[user.language]["user_deleted"],
         reply_markup=henchman_pass_keyboard(session),
     )
+
+
+async def show_user_list(
+    callback: CallbackQuery,
+    state: FSMContext,
+    session: Session,
+    queryset: Callable,
+    language: str,
+    no_btn_cd: str,
+    back_btn_cd: str,
+    no_users_msg: str,
+    msg: str,
+    start_kbd: Any,
+    **queryset_kwargs: dict,
+):
+    """Список пользователей для клавиатуры с множественным выбором.
+
+    :param callback:
+    :param state:
+    :param session:
+    :param queryset: Функция запроса к базе данных
+    :param language: Язык сообщений
+    :param no_btn_cd: Callback для кнопки 'Нет'
+    :param back_btn_cd: Callback для кнопки 'Назад'
+    :param no_users_msg: Сообщение при пустом запросе
+    :param msg: Сообщение
+    :param start_kbd: Клавиатура после удаления пользователя
+    :param **queryset_kwargs: Параметры для запроса к базе данных
+    """
+    await state.clear()
+    users = queryset(session, **queryset_kwargs)
+    if not users:
+        await callback.answer(no_users_msg)
+    else:
+        data = await data_for_multiselect_kb(users)
+        await state.update_data(
+            multiselect=data,
+            no_btn_cd=no_btn_cd,
+            back_btn_cd=back_btn_cd,
+            language=language,
+            start_kbd=start_kbd,
+        )
+        await callback.message.edit_text(
+            text=msg,
+            reply_markup=await multiselect_kb(data, language, back_btn_cd),
+        )
+
+
+@admin_router.callback_query(F.data == "show_admins")
+@admin_router.callback_query(F.data == "no:delete_admin")
+async def show_admins(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Список администраторов."""
+    try:
+        await show_user_list(
+            callback,
+            state,
+            session,
+            get_users_by_role,
+            "RU",
+            "delete_admin",
+            "superuser_keyboard",
+            LEXICON["RU"]["no_admins"],
+            LEXICON["RU"]["select_admins"],
+            boss_pass_keyboard,
+            **{"role": "master"},
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при поиске админов: {err}")
+
+
+async def select_button(
+    callback: CallbackQuery,
+    state: FSMContext,
+    is_selected: bool,
+):
+    """Обрабатывает нажатие кнопки."""
+    await callback.answer()
+    data = await state.get_data()
+    user_id = re.search(r"^\d*", callback.data).group(0)
+    data["multiselect"][int(user_id)]["selected"] = is_selected
+    await callback.message.edit_reply_markup(
+        reply_markup=await multiselect_kb(
+            data["multiselect"], data["language"], data["back_btn_cd"]
+        )
+    )
+
+
+@admin_router.callback_query(F.data.endswith("extend"))
+async def select_users(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Выбор пользователя."""
+    try:
+        await select_button(callback, state, True)
+    except Exception as err:
+        logger.error(f"Ошибка при выборе пользователя: {err}")
+
+
+@admin_router.callback_query(F.data.endswith("collapse"))
+async def unselect_users(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Отмена выбора пользователя."""
+    try:
+        await select_button(callback, state, False)
+    except Exception as err:
+        logger.error(f"Ошибка при выборе пользователя: {err}")
+
+
+@admin_router.callback_query(F.data == "delete_users")
+async def delete_users(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Показывает список выбранных пользователей для удаления."""
+    try:
+        data = await state.get_data()
+        users_for_delete = []
+        msg = [LEXICON[data["language"]]["delete_confirmation"]]
+        for user_id, params in data["multiselect"].items():
+            if params["selected"]:
+                users_for_delete.append(user_id)
+                msg.append(f"{params['name']} ({user_id})")
+        if not users_for_delete:
+            await callback.answer(LEXICON[data["language"]]["unselected"])
+        else:
+            await state.update_data(users_for_delete=users_for_delete)
+            await callback.message.edit_text(
+                text="\n".join(msg),
+                reply_markup=yes_no_keyboard(
+                    data["language"], "delete_users", data["no_btn_cd"]
+                ),
+            )
+
+    except Exception as err:
+        logger.error(f"Ошибка при удалении пользователя: {err}")
+
+
+@admin_router.callback_query(F.data == "yes:delete_users")
+async def delete_user_confirmation(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Удаление пользователя."""
+    try:
+        await callback.answer()
+        data = await state.get_data()
+        await users_deleting(session, data["users_for_delete"])
+        await state.clear()
+        await callback.message.edit_text(
+            text=LEXICON[data["language"]]["user_deleted"],
+            reply_markup=data["start_kbd"](),
+        )
+
+    except Exception as err:
+        logger.error(f"Ошибка при удалении пользователя: {err}")
+
+
+@admin_router.callback_query(F.data == "superuser_keyboard")
+async def superuser_lk(
+    callback: CallbackQuery, state: FSMContext, session: Session
+):
+    """Кабинет супер пользователя."""
+    try:
+        await callback.answer()
+        await state.clear()
+        await callback.message.edit_text(
+            text=LEXICON["RU"]["welcome_superuser"],
+            reply_markup=boss_pass_keyboard(),
+        )
+
+    except Exception as err:
+        logger.error(f"Ошибка при вызове клавиатуры суперпользователя: {err}")
