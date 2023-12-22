@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import shutil
+from typing import Any, Callable
 
 from aiogram import F, Router
 from aiogram.filters import StateFilter
@@ -217,31 +218,91 @@ async def export_excel(callback: CallbackQuery, session: Session, bot):
         await callback.message.delete()
 
 
+async def show_user_list(
+    callback: CallbackQuery,
+    state: FSMContext,
+    session: Session,
+    queryset: Callable,
+    language: str,
+    no_btn_cd: str,
+    back_btn_cd: str,
+    no_users_msg: str,
+    msg: str,
+    start_kbd: Any,
+    **queryset_kwargs: dict,
+):
+    """Список пользователей для клавиатуры с множественным выбором.
+
+    :param callback:
+    :param state:
+    :param session:
+    :param queryset: Функция запроса к базе данных
+    :param language: Язык сообщений
+    :param no_btn_cd: Callback для кнопки 'Нет'
+    :param back_btn_cd: Callback для кнопки 'Назад'
+    :param no_users_msg: Сообщение при пустом запросе
+    :param msg: Сообщение
+    :param start_kbd: Клавиатура после удаления пользователя
+    :param **queryset_kwargs: Параметры для запроса к базе данных
+    """
+    await state.clear()
+    users = queryset(session, **queryset_kwargs)
+    if not users:
+        await callback.answer(no_users_msg)
+    else:
+        data = await data_for_multiselect_kb(users)
+        await state.update_data(
+            multiselect=data,
+            no_btn_cd=no_btn_cd,
+            back_btn_cd=back_btn_cd,
+            language=language,
+            start_kbd=start_kbd,
+        )
+        await callback.message.edit_text(
+            text=msg,
+            reply_markup=await multiselect_kb(data, language, back_btn_cd),
+        )
+
+
 @admin_router.callback_query(F.data == "show_admins")
 @admin_router.callback_query(F.data == "no:delete_admin")
 async def show_admins(
-    query: CallbackQuery, state: FSMContext, session: Session
+    callback: CallbackQuery, state: FSMContext, session: Session
 ):
     """Список администраторов."""
     try:
-        await state.clear()
-        admins = get_users_by_role(session, "master")
-        if not admins:
-            await query.answer(LEXICON["RU"]["no_admins"])
-        else:
-            data = await data_for_multiselect_kb(admins)
-            back_btn_cd = "superuser_keyboard"
-            await state.update_data(
-                multiselect=data,
-                no_btn_cd="delete_admin",
-                back_btn_cd=back_btn_cd,
-            )
-            await query.message.edit_text(
-                text=LEXICON["RU"]["select_admins"],
-                reply_markup=await multiselect_kb(data, back_btn_cd),
-            )
+        await show_user_list(
+            callback,
+            state,
+            session,
+            get_users_by_role,
+            "RU",
+            "delete_admin",
+            "superuser_keyboard",
+            LEXICON["RU"]["no_admins"],
+            LEXICON["RU"]["select_admins"],
+            boss_pass_keyboard,
+            **{"role": "master"},
+        )
     except Exception as err:
         logger.error(f"Ошибка при поиске админов: {err}")
+
+
+async def select_button(
+    callback: CallbackQuery,
+    state: FSMContext,
+    is_selected: bool,
+):
+    """Обрабатывает нажатие кнопки."""
+    await callback.answer()
+    data = await state.get_data()
+    user_id = re.search(r"^\d*", callback.data).group(0)
+    data["multiselect"][int(user_id)]["selected"] = is_selected
+    await callback.message.edit_reply_markup(
+        reply_markup=await multiselect_kb(
+            data["multiselect"], data["language"], data["back_btn_cd"]
+        )
+    )
 
 
 @admin_router.callback_query(F.data.endswith("extend"))
@@ -250,15 +311,7 @@ async def select_users(
 ):
     """Выбор пользователя."""
     try:
-        await callback.answer()
-        data = await state.get_data()
-        user_id = re.search(r"^\d*", callback.data).group(0)
-        data["multiselect"][int(user_id)]["selected"] = True
-        await callback.message.edit_reply_markup(
-            reply_markup=await multiselect_kb(
-                data["multiselect"], data["back_btn_cd"]
-            )
-        )
+        await select_button(callback, state, True)
     except Exception as err:
         logger.error(f"Ошибка при выборе пользователя: {err}")
 
@@ -269,15 +322,7 @@ async def unselect_users(
 ):
     """Отмена выбора пользователя."""
     try:
-        await callback.answer()
-        data = await state.get_data()
-        user_id = re.search(r"^\d*", callback.data).group(0)
-        data["multiselect"][int(user_id)]["selected"] = False
-        await callback.message.edit_reply_markup(
-            reply_markup=await multiselect_kb(
-                data["multiselect"], data["back_btn_cd"]
-            )
-        )
+        await select_button(callback, state, False)
     except Exception as err:
         logger.error(f"Ошибка при выборе пользователя: {err}")
 
@@ -290,19 +335,19 @@ async def delete_users(
     try:
         data = await state.get_data()
         users_for_delete = []
-        msg = [LEXICON["RU"]["delete_confirmation"]]
+        msg = [LEXICON[data["language"]]["delete_confirmation"]]
         for user_id, params in data["multiselect"].items():
             if params["selected"]:
                 users_for_delete.append(user_id)
                 msg.append(f"{params['name']} ({user_id})")
         if not users_for_delete:
-            await callback.answer(LEXICON["RU"]["unselected"])
+            await callback.answer(LEXICON[data["language"]]["unselected"])
         else:
             await state.update_data(users_for_delete=users_for_delete)
             await callback.message.edit_text(
                 text="\n".join(msg),
                 reply_markup=yes_no_keyboard(
-                    "RU", "delete_users", data["no_btn_cd"]
+                    data["language"], "delete_users", data["no_btn_cd"]
                 ),
             )
 
@@ -314,15 +359,15 @@ async def delete_users(
 async def delete_user_confirmation(
     callback: CallbackQuery, state: FSMContext, session: Session
 ):
-    """Удаление администратора."""
+    """Удаление пользователя."""
     try:
         await callback.answer()
         data = await state.get_data()
         await users_deleting(session, data["users_for_delete"])
         await state.clear()
         await callback.message.edit_text(
-            text=LEXICON["RU"]["user_deleted"],
-            reply_markup=boss_pass_keyboard(),
+            text=LEXICON[data["language"]]["user_deleted"],
+            reply_markup=data["start_kbd"](),
         )
 
     except Exception as err:

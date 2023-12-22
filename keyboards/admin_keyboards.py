@@ -71,7 +71,7 @@ def boss_pass_keyboard():
     return boss_keyboard
 
 
-async def multiselect_kb(data: dict, back_btn_cd: str):
+async def multiselect_kb(data: dict, language: str, back_btn_cd: str):
     """Клавиатура с множественным выбором.
 
     :data - {22442: {"name": name, "checked": False}}
@@ -95,10 +95,10 @@ async def multiselect_kb(data: dict, back_btn_cd: str):
     kb.adjust(2)
     kb.row(
         InlineKeyboardButton(
-            text=BUTTONS["RU"]["back"], callback_data=back_btn_cd
+            text=BUTTONS[language]["back"], callback_data=back_btn_cd
         ),
         InlineKeyboardButton(
-            text=BUTTONS["RU"]["delete"], callback_data="delete_users"
+            text=BUTTONS[language]["delete"], callback_data="delete_users"
         ),
     )
     return kb.as_markup()
