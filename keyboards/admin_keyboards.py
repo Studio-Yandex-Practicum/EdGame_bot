@@ -1,9 +1,9 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from db.models import Season, User
+from db.models import Season
 from lexicon.lexicon import BUTTONS, LEXICON
-from utils.db_commands import select_user
+from utils.db_commands import get_users_by_role, select_user
 
 
 def henchman_pass_keyboard(session):
@@ -78,58 +78,16 @@ def henchman_user_del_keyboard(session, callback):
     return del_keyboard
 
 
-def kid_del_keyboard(session, callback):
-    """Клавиатура-список детей для удаления."""
+def user_del_keyboard(session, role, callback):
+    """Клавиатура-список для удаления."""
     user = select_user(session, callback.message.chat.id)
+    user_role2del = get_users_by_role(session, role=role)
 
     kb_builder = InlineKeyboardBuilder()
-    kids = session.query(User).filter_by(role="kid").all()
-    for kid in kids:
+    for user in user_role2del:
         kb_builder.row(
             InlineKeyboardButton(
-                text=f"{kid.name} - {kid.id}", callback_data=f"{kid.id}_del"
-            )
-        )
-    kb_builder.row(
-        InlineKeyboardButton(
-            text=BUTTONS[user.language]["back"], callback_data="back_del"
-        )
-    )
-    return kb_builder.as_markup()
-
-
-def counsellor_del_keyboard(session, callback):
-    """Клавиатура-список вожатых для удаления."""
-    user = select_user(session, callback.message.chat.id)
-
-    kb_builder = InlineKeyboardBuilder()
-    counsellors = session.query(User).filter_by(role="counsellor").all()
-    for counsellor in counsellors:
-        kb_builder.row(
-            InlineKeyboardButton(
-                text=f"{counsellor.name} - {counsellor.id}",
-                callback_data=f"{counsellor.id}_del",
-            )
-        )
-    kb_builder.row(
-        InlineKeyboardButton(
-            text=BUTTONS[user.language]["back"], callback_data="back_del"
-        )
-    )
-    return kb_builder.as_markup()
-
-
-def methodist_del_keyboard(session, callback):
-    """Клавиатура-список методистов для удаления."""
-    user = select_user(session, callback.message.chat.id)
-
-    kb_builder = InlineKeyboardBuilder()
-    methodists = session.query(User).filter_by(role="methodist").all()
-    for methodist in methodists:
-        kb_builder.row(
-            InlineKeyboardButton(
-                text=f"{methodist.name} - {methodist.id}",
-                callback_data=f"{methodist.id}_del",
+                text=f"{user.name} - {user.id}", callback_data=f"{user.id}_del"
             )
         )
     kb_builder.row(

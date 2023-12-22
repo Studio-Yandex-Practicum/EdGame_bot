@@ -12,11 +12,9 @@ from config_data.config import load_config
 from db.models import Password, Season, User
 from keyboards.admin_keyboards import (
     boss_pass_keyboard,
-    counsellor_del_keyboard,
     henchman_pass_keyboard,
     henchman_user_del_keyboard,
-    kid_del_keyboard,
-    methodist_del_keyboard,
+    user_del_keyboard,
 )
 from keyboards.keyboards import cancel_keyboard
 from lexicon.lexicon import LEXICON
@@ -213,9 +211,10 @@ async def get_kids(
     """Вывод списка детей."""
     await callback.message.delete()
     user = select_user(session, callback.message.chat.id)
+    role = "kid"
     await callback.message.answer(
         LEXICON[user.language]["select_kid"],
-        reply_markup=kid_del_keyboard(session, callback),
+        reply_markup=user_del_keyboard(session, role, callback),
     )
     await state.set_state(UserDel.list_users)
 
@@ -229,9 +228,10 @@ async def get_counsellors(
     """Вывод списка вожатых."""
     await callback.message.delete()
     user = select_user(session, callback.message.chat.id)
+    role = "counsellor"
     await callback.message.answer(
         LEXICON[user.language]["select_counsellor"],
-        reply_markup=counsellor_del_keyboard(session, callback),
+        reply_markup=user_del_keyboard(session, role, callback),
     )
     await state.set_state(UserDel.list_users)
 
@@ -245,9 +245,10 @@ async def get_methodists(
     """Вывод списка методистов."""
     await callback.message.delete()
     user = select_user(session, callback.message.chat.id)
+    role = "methodist"
     await callback.message.answer(
         LEXICON[user.language]["select_methodist"],
-        reply_markup=methodist_del_keyboard(session, callback),
+        reply_markup=user_del_keyboard(session, role, callback),
     )
     await state.set_state(UserDel.list_users)
 
