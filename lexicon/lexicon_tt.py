@@ -279,6 +279,8 @@ LEXICON_TT = {
         "номером ачивки."
     ),
     "editing_completed": "Закончили редактировать! Выбирай подходящий раздел!",
+    "achievement_deleting": "Задание удалено",
+    "no_achievement_deleting": "Отменено удаление задания",
     # Проверка задания
     "review_name": "Название:",
     "review_description": "Описание:",
@@ -410,7 +412,6 @@ BUTTONS_TT = {
     "available_achievements": "Доступные задания",
     "current_achievements": "Текущие задания",
     "reviewed_achievements": "Проверенные задания",
-    "write_to_methodist": "Написать преподавателю",
     "write_to_counsellor": "Написать вожатому",
     "join_team": "Присоединиться к команде",
     "leave_team": "Уйти из команды",
@@ -427,6 +428,7 @@ BUTTONS_TT = {
     # Личный кабинет методиста
     "add_task": "Добавить задание",
     "edit_task": "Редактировать задание",
+    "delete_task": "Удалить задание",
     "tasks_for_review": "Проверить задания",
     "no_tasks_yet": "Задания еще не созданы=)",
     "approve": "Принять",
@@ -454,7 +456,7 @@ BUTTONS_TT = {
     "edit_score": "Кол-во баллов",
     "edit_price": "Стоимость ачивки",
     "start_over": "Начать заново",
-    "achievement_list": "Посмотреть/Редактировать ачивки",
+    "achievement_list": "Посмотреть/Редактировать/Удалить ачивки",
     "complete_editing_task": "Завершить!",
     "create_team": "Создать команду",
     "add_team_members": "Добавить участников",
@@ -474,7 +476,7 @@ BUTTONS_TT = {
     "edit_category_name": "Название категории",
     "complete_editing_category": "Завершить!",
     "back_to_category_list": "<< Назад к списку категорий",
-    "category_list": "Посмотреть/Редактировать категории",
+    "category_list": "Посмотреть/Редактировать//Удалить категории",
     "add_achievements_category": "Добавить",
     "skip": "Пропустить",
     "confirm_achievements_category": "Подтвердить категорию",

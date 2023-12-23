@@ -31,12 +31,11 @@ def create_welcome_keyboard() -> InlineKeyboardMarkup:
 def menu_keyboard(language: str) -> ReplyKeyboardMarkup:
     """Генерирует клавиатуру с кнопками в главном меню."""
     buttons = BUTTONS[language]
-    write_to_methodist = KeyboardButton(text=buttons["write_to_methodist"])
     lk = KeyboardButton(text=buttons["lk"])
     help_button = KeyboardButton(text=buttons["help"])
 
     keyboard: ReplyKeyboardMarkup = ReplyKeyboardMarkup(
-        keyboard=[[lk], [help_button], [write_to_methodist]],
+        keyboard=[[lk], [help_button]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )

@@ -15,7 +15,10 @@ from aiogram.types import (
 from sqlalchemy.orm import Session
 
 from handlers.handlers import BasePaginatedHandler
-from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
+from keyboards.keyboards import (
+    pagination_keyboard,
+    yes_no_keyboard,
+)
 from keyboards.methodist_keyboards import (
     add_achievements_category,
     add_task_keyboard,
@@ -45,6 +48,7 @@ from utils.db_commands import (
     reject_task,
     select_user,
     set_achievement_param,
+    task_deleting,
 )
 from utils.pagination import PAGE_SIZE
 from utils.states_form import AddTask, EditTask, ReviewTask, TaskList
@@ -1761,3 +1765,63 @@ async def process_change_artifact_category(
         logger.error(f"Ошибка в ключе при изменении категории ачивки: {err}")
     except Exception as err:
         logger.error(f"Ошибка при сохранении категории ачивки: {err}")
+
+
+@methodist_task_router.callback_query(F.data == "delete_task")
+async def delete_task(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
+    """Кнопка "Удалить" в разделе редактирования авички."""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        await query.message.answer(
+            lexicon["delete_confirmation"],
+            reply_markup=yes_no_keyboard(language, "delete_task"),
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при получении задания: {err}")
+
+
+@methodist_task_router.callback_query(F.data == "yes:delete_task")
+async def process_delete_task(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
+    """Удаление задания."""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        task_id = data["task_id"]
+        task_deleting(session, task_id)
+        await query.message.answer(
+            lexicon["achievement_deleting"],
+            reply_markup=methodist_profile_keyboard(
+                language,
+            ),
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при удалении задания: {err}")
+
+
+@methodist_task_router.callback_query(F.data == "no:delete_task")
+async def no_delete_task(
+    query: CallbackQuery, state: FSMContext, session: Session
+):
+    """Отмена удаления задания"""
+    try:
+        await query.answer()
+        data = await state.get_data()
+        language = data["language"]
+        lexicon = LEXICON[language]
+        await query.message.answer(
+            lexicon["no_achievement_deleting"],
+            reply_markup=methodist_profile_keyboard(
+                language,
+            ),
+        )
+    except Exception as err:
+        logger.error(f"Ошибка при удалении задания: {err}")
