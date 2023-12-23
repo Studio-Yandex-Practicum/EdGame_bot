@@ -643,6 +643,16 @@ async def category_deleting(session, category_id):
     session.execute(stmt)
 
 
+async def users_deleting(session, users_id: list):
+    """Удаление пользователей."""
+    stmt = (
+        delete(User)
+        .where(User.id.in_(users_id))
+        .execution_options(synchronize_session=False)
+    )
+
+    session.execute(stmt)
+
 def task_deleting(session, achievement_id):
     """Удаление заданий."""
     stmt = (
