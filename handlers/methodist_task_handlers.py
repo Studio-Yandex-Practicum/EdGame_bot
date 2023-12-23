@@ -15,10 +15,7 @@ from aiogram.types import (
 from sqlalchemy.orm import Session
 
 from handlers.handlers import BasePaginatedHandler
-from keyboards.keyboards import (
-    pagination_keyboard,
-    yes_no_keyboard,
-)
+from keyboards.keyboards import pagination_keyboard, yes_no_keyboard
 from keyboards.methodist_keyboards import (
     add_achievements_category,
     add_task_keyboard,
