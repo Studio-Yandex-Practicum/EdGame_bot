@@ -653,6 +653,7 @@ async def users_deleting(session, users_id: list):
 
     session.execute(stmt)
 
+
 def task_deleting(session, achievement_id):
     """Удаление заданий."""
     stmt = (
@@ -660,5 +661,4 @@ def task_deleting(session, achievement_id):
         .where(Achievement.id == achievement_id)
         .execution_options(synchronize_session=False)
     )
-
     session.execute(stmt)
