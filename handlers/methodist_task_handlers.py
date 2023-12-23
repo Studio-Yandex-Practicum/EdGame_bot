@@ -1772,13 +1772,15 @@ async def delete_task(
 ):
     """Кнопка "Удалить" в разделе редактирования авички."""
     try:
+        print(100)
         await query.answer()
         data = await state.get_data()
         language = data["language"]
         lexicon = LEXICON[language]
         await query.message.answer(
             lexicon["delete_confirmation"],
-            reply_markup=yes_no_keyboard(language, "delete_task"),
+            reply_markup=yes_no_keyboard(language, "delete_task",
+                                         "delete_task"),
         )
     except Exception as err:
         logger.error(f"Ошибка при получении задания: {err}")
@@ -1808,7 +1810,7 @@ async def process_delete_task(
 
 @methodist_task_router.callback_query(F.data == "no:delete_task")
 async def no_delete_task(
-    query: CallbackQuery, state: FSMContext, session: Session
+    query: CallbackQuery, state: FSMContext,
 ):
     """Отмена удаления задания"""
     try:
