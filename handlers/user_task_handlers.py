@@ -593,7 +593,8 @@ async def check_child_buttons(
         achievement = get_achievement_by_category_id(session, category_id)
         if not achievement:
             await query.message.answer(
-                f"В {category_name} - Нет доступных заданий"
+                f"{lexicon['in_category']} {category_name} - "
+                f"{lexicon['no_tasks']}"
             )
             return
         info = generate_achievements_list_category(
@@ -616,7 +617,9 @@ async def check_child_buttons(
             pagination_info=info,
             language=language,
         )
-        await query.message.answer(f"Выбрана категория - {category_name}")
+        await query.message.answer(
+            f"{lexicon['category_selected']} - {category_name}"
+        )
         await query.message.edit_text(
             msg,
             reply_markup=pagination_keyboard_category(

@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 methodist_category_router = Router()
 
 
-# Обработчики добавления категории
 @methodist_category_router.message(
     F.text.in_(
         [
