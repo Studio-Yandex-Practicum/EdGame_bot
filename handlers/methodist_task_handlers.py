@@ -456,7 +456,9 @@ async def reject_methodist_handler(
         if reject_task(session, task_id):
             await query.message.answer(
                 f'{lexicon["task_rejected"]}',
-                reply_markup=yes_no_keyboard(language, "methodist_check_task"),
+                reply_markup=yes_no_keyboard(
+                    language, "methodist_check_task", "methodist_check_task"
+                ),
             )
 
         else:
