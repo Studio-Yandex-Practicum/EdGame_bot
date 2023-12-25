@@ -275,9 +275,11 @@ async def back_del(
     callback: CallbackQuery, state: FSMContext, session: Session
 ):
     """Вернуться назад."""
+    user = select_user(session, callback.from_user.id)
+    language = user.language
     await state.clear()
     await callback.message.edit_reply_markup(
-        reply_markup=henchman_pass_keyboard(session)
+        reply_markup=henchman_pass_keyboard(session, language)
     )
 
 
@@ -339,6 +341,8 @@ async def del_kid(
     callback: CallbackQuery, state: FSMContext, session: Session
 ):
     """Удаление ребенка."""
+    user = select_user(session, callback.from_user.id)
+    language = user.language
     await callback.message.delete()
     user = select_user(session, callback.message.chat.id)
     user2del = session.query(User).filter_by(id=callback.data[:-4]).first()
@@ -346,7 +350,7 @@ async def del_kid(
     await state.clear()
     await callback.message.answer(
         LEXICON[user.language]["user_deleted"],
-        reply_markup=henchman_pass_keyboard(session),
+        reply_markup=henchman_pass_keyboard(session, language),
     )
 
 
