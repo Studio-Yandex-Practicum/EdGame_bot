@@ -155,7 +155,10 @@ def task_keyboard_methodist(language: str) -> InlineKeyboardMarkup:
     edit_task = InlineKeyboardButton(
         text=buttons["edit_task"], callback_data="edit_task"
     )
-    keyboard = [[edit_task], [achievement_list], [lk]]
+    delete_task = InlineKeyboardButton(
+        text=buttons["delete_task"], callback_data="delete_task"
+    )
+    keyboard = [[edit_task], [delete_task], [achievement_list], [lk]]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     return markup
 
