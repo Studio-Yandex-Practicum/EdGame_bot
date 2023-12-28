@@ -1772,7 +1772,6 @@ async def delete_task(
 ):
     """Кнопка "Удалить" в разделе редактирования авички."""
     try:
-        print(100)
         await query.answer()
         data = await state.get_data()
         language = data["language"]
